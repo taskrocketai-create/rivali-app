@@ -33,6 +33,14 @@ export type RaceSession = {
   average_lap_sec: number | null;
   consistency_stdev_sec: number | null;
   lap_count: number | null;
+  setup: {
+    class_name?: string | null;
+    tire_set_id?: string | null;
+    dirty_tire_rule?: boolean;
+    dirty_tire_cutoff?: string | null;
+    tire_locked?: boolean;
+    [key: string]: unknown;
+  };
   conditions: Record<string, string | number | null>;
   raw_file_name: string;
   tracks: { name: string } | null;
