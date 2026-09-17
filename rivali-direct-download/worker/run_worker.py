@@ -4,12 +4,16 @@ import math
 import os
 import tempfile
 import time
+import shutil
+from datetime import datetime, timezone
 from dataclasses import asdict
+import requests
 
 from daq_tools.readers import XRKReader
 from supabase import create_client
 from engine.corner_analysis import segment_oval, summarize_by_turn
 from engine.session_summary import summarize_session
+from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
 
 GPS_LAT_NAMES=("GPS Latitude","GPS Lat","Latitude","Lat","GPS_Latitude")
 GPS_LON_NAMES=("GPS Longitude","GPS Long","GPS Lon","Longitude","Lon","GPS_Longitude")
@@ -110,12 +114,73 @@ def process_one(client):
         if path and os.path.exists(path):os.unlink(path)
     return True
 
+def process_knowledge_video(client):
+    rows = client.table("knowledge_upload_jobs").select("*").eq("status", "queued").order("created_at").limit(1).execute().data or []
+    if not rows:
+        return False
+    job = rows[0]
+    job_id = job["id"]
+    workspace = tempfile.mkdtemp(prefix="rivali-knowledge-")
+    source_path = os.path.join(workspace, "source-video")
+    now = lambda: datetime.now(timezone.utc).isoformat()
+    try:
+        client.table("knowledge_upload_jobs").update({"status": "transcribing", "started_at": now(), "error": None}).eq("id", job_id).eq("status", "queued").execute()
+        signed = client.storage.from_("knowledge-video-intake").create_signed_url(job["storage_path"], 3600)
+        signed_url = signed.get("signedURL") or signed.get("signedUrl")
+        if not signed_url:
+            raise RuntimeError("Could not create a temporary download link for this video.")
+        with requests.get(signed_url, stream=True, timeout=(20, 300)) as response:
+            response.raise_for_status()
+            with open(source_path, "wb") as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        handle.write(chunk)
+        audio_paths = extract_audio_chunks(source_path, workspace)
+        transcript = transcribe_chunks(audio_paths)
+        client.table("knowledge_upload_jobs").update({"status": "extracting"}).eq("id", job_id).execute()
+        points = distill_transcript(transcript)
+        rows_to_insert = []
+        for point in points:
+            category = point["category"]
+            rows_to_insert.append({
+                "user_id": job["uploader_id"],
+                "title": point["title"],
+                "body": point["body"],
+                "source_type": "uploaded_video",
+                "source_name": job["original_filename"],
+                "source_platform": job.get("source_platform"),
+                "source_upload_id": job_id,
+                "knowledge_category": category,
+                "confidence_note": point["confidence_note"],
+                "evidence_level": "opinion" if category == "disputed_or_opinion" else "anecdotal",
+                "confidence": "low" if category in ("specific_numeric_recommendation", "disputed_or_opinion") else "medium",
+                # Video claims are searchable immediately but never silently promoted to vetted facts.
+                "status": "disputed" if category == "disputed_or_opinion" else "draft",
+                "tags": ["uploaded-video", category.replace("_", "-")],
+            })
+        if rows_to_insert:
+            client.table("knowledge_items").insert(rows_to_insert).execute()
+        client.storage.from_("knowledge-video-intake").remove([job["storage_path"]])
+        client.table("knowledge_upload_jobs").update({
+            "status": "completed", "knowledge_points_added": len(rows_to_insert),
+            "completed_at": now(), "error": None,
+        }).eq("id", job_id).execute()
+        print(f"completed knowledge upload {job_id}: {len(rows_to_insert)} points", flush=True)
+    except Exception as exc:
+        message = str(exc)[:2000]
+        client.table("knowledge_upload_jobs").update({"status": "failed", "error": message, "completed_at": now()}).eq("id", job_id).execute()
+        print(f"failed knowledge upload {job_id}: {message}", flush=True)
+    finally:
+        # Transcript and extracted audio exist only inside this temporary directory.
+        shutil.rmtree(workspace, ignore_errors=True)
+    return True
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--interval",type=int,default=8);args=parser.parse_args();url,secret=os.environ.get("SUPABASE_URL"),os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not secret:raise SystemExit("SUPABASE_URL and SUPABASE_SECRET_KEY are required")
     client=create_client(url,secret)
     while True:
-        found=process_one(client)
+        found=process_knowledge_video(client) or process_one(client)
         if args.once:break
         if not found:time.sleep(args.interval)
 if __name__=="__main__":main()
