@@ -28,13 +28,23 @@ CONVERSATION RULES:
 type DougScreen = "home" | "raceday" | "upload" | "evidence" | "track_map" | "garage" | "drivers" | "karts" | "history" | "compare" | "profile";
 type AppTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 
+export type DougAction =
+  | { kind: "start_raceday"; summary: string; details: string }
+  | { kind: "select_entry"; summary: string; details: string; target: string }
+  | { kind: "record_setup_change"; summary: string; details: string; change: string }
+  | { kind: "lock_dirty_tires"; summary: string; details: string; tireSet: string };
+
 const screenToTab: Record<DougScreen, AppTab> = {
   home: "home", raceday: "home", upload: "upload", evidence: "sessions",
   track_map: "tracks", garage: "profile", drivers: "drivers", karts: "karts",
   history: "sessions", compare: "compare", profile: "profile",
 };
 
-export function DougCall({ racedayContext, onNavigate }: { racedayContext: string; onNavigate: (tab: AppTab) => void }) {
+export function DougCall({ racedayContext, onNavigate, onRequestAction }: {
+  racedayContext: string;
+  onNavigate: (tab: AppTab) => void;
+  onRequestAction: (action: DougAction) => void;
+}) {
   const sessionRef = useRef<RealtimeSession | null>(null);
   const [state, setState] = useState<CallState>("idle");
   const [muted, setMuted] = useState(false);
@@ -62,11 +72,38 @@ export function DougCall({ racedayContext, onNavigate }: { racedayContext: strin
           return `Opened the ${screen.replaceAll("_", " ")} screen successfully.`;
         },
       });
+      const prepareAction = tool({
+        name: "prepare_action",
+        description: "Prepare a data-changing Rivali action for driver confirmation. Never claim the action is complete. Use this for starting a Raceday, switching the active class entry, recording a setup change, or locking a Dirty Tire set.",
+        parameters: z.object({
+          action: z.enum(["start_raceday", "select_entry", "record_setup_change", "lock_dirty_tires"]),
+          summary: z.string().min(1).max(100),
+          details: z.string().min(1).max(240),
+          target: z.string().max(120).optional(),
+          change: z.string().max(240).optional(),
+          tire_set: z.string().max(120).optional(),
+        }),
+        execute: async ({ action, summary, details, target, change, tire_set }) => {
+          if (action === "select_entry" && !target) return "Ask which class entry the driver wants before preparing the action.";
+          if (action === "record_setup_change" && !change) return "Ask what changed before preparing the action.";
+          if (action === "lock_dirty_tires" && !tire_set) return "Ask which tire set is being committed before preparing the action.";
+          const prepared: DougAction = action === "select_entry"
+            ? { kind: action, summary, details, target: target! }
+            : action === "record_setup_change"
+              ? { kind: action, summary, details, change: change! }
+              : action === "lock_dirty_tires"
+                ? { kind: action, summary, details, tireSet: tire_set! }
+                : { kind: action, summary, details };
+          onRequestAction(prepared);
+          setCaption(`${summary} — waiting for your confirmation.`);
+          return "The confirmation card is on screen. Ask the driver to confirm it there. Do not say it has been saved yet.";
+        },
+      });
       const agent = new RealtimeAgent({
         name: "Doug",
         voice: "cedar",
-        instructions: `${DOUG_INSTRUCTIONS}\n- You can control Rivali with open_screen. When the driver asks to see or open something, call the tool instead of merely describing where it is. After navigating, say one short sentence about what is on screen.\n- Use upload when the driver wants to add a MyChron file. Use evidence or history for prior sessions, compare for comparisons, track_map for GPS layout, and garage for saved equipment.\n\nCURRENT RACEDAY CONTEXT:\n${racedayContext}`,
-        tools: [openScreen],
+        instructions: `${DOUG_INSTRUCTIONS}\n- You can control Rivali with open_screen. When the driver asks to see or open something, call the tool instead of merely describing where it is. After navigating, say one short sentence about what is on screen.\n- Use prepare_action for anything that changes race data. Never say a prepared action is complete until the driver confirms it on screen.\n- Use upload when the driver wants to add a MyChron file. Use evidence or history for prior sessions, compare for comparisons, track_map for GPS layout, and garage for saved equipment.\n\nCURRENT RACEDAY CONTEXT:\n${racedayContext}`,
+        tools: [openScreen, prepareAction],
       });
       const session = new RealtimeSession(agent, { model: "gpt-realtime-2.1" });
       session.on("audio_start", () => setState("speaking"));
