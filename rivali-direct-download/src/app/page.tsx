@@ -1,62 +1,53 @@
-import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, CloudUpload, Gauge, Map, ShieldCheck } from "lucide-react";
+import { login, signup } from "@/app/login/actions";
+import { RivaliLogo } from "@/components/rivali-logo";
 
 const features = [
   {
     icon: CloudUpload,
-    title: "Upload the run",
-    body: "Send the MyChron .xrk file from any phone or laptop. Rivali preserves the raw data and queues analysis.",
+    title: "Stay on task",
+    body: "Doug keeps the next important action visible so the driver knows exactly what matters now.",
   },
   {
     icon: Map,
-    title: "Map every corner",
-    body: "Overlay the recorded GPS line on satellite imagery and define start/finish plus Turns 1–4.",
+    title: "Jump anywhere",
+    body: "Follow Doug’s recommendation or move freely to any tool, session, setup, or comparison.",
   },
   {
     icon: Gauge,
-    title: "Compare what changed",
-    body: "Connect lap time, corner speed, setup, stagger, weather, humidity, and track condition across sessions.",
+    title: "Race-day guidance",
+    body: "Get clear direction during the Raceday without digging through menus or losing your place.",
   },
   {
     icon: ShieldCheck,
-    title: "Keep data separated",
-    body: "Private accounts and row-level security keep every race team’s files and history isolated.",
+    title: "Build knowledge",
+    body: "Every setup, session, and result gives Doug better context for the next controlled change.",
   },
 ];
 
-export default function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const query = await searchParams;
   return (
-    <main>
-      <nav className="nav shell">
-        <Link className="wordmark" href="/">
-          RIVALI<span>TURN DATA INTO SPEED</span>
-        </Link>
-        <Link className="button ghost small" href="/login">
-          Sign in
-        </Link>
+    <main className="doug-landing">
+      <nav className="nav shell landing-nav">
+        <RivaliLogo compact />
+        <a className="button landing-login-link" href="#driver-access">Log in</a>
       </nav>
-      <section className="hero shell">
-        <div className="eyebrow">
-          THE DIGITAL CREW CHIEF FOR DIRT OVAL KARTS
+      <section className="doug-sales-hero shell">
+        <div className="doug-sales-copy">
+          <div className="eyebrow">YOUR AI CREW CHIEF</div>
+          <h1>Race smarter.<br /><em>Every session.</em></h1>
+          <p>Doug turns your notes, setup data, and race-day decisions into a clear plan—without taking control away from you.</p>
+          <div className="hero-actions">
+            <a className="button" href="#driver-access">Start your Raceday <ArrowRight size={18} /></a>
+            <a className="button landing-secondary-button" href="#system">See how it works</a>
+          </div>
         </div>
-        <h1>
-          Your stopwatch tells you <em>what</em> happened. Rivali helps explain{" "}
-          <em>why.</em>
-        </h1>
-        <p className="lede">
-          Upload race data, match it to the kart setup and track conditions,
-          then turn each session into a grounded next move.
-        </p>
-        <div className="hero-actions">
-          <Link className="button" href="/login">
-            Open Rivali <ArrowRight size={18} />
-          </Link>
-          <a className="text-link" href="#system">
-            See the system
-          </a>
-        </div>
-        <div className="speed-line" aria-hidden="true">
-          <span />
+        <div className="landing-doug" aria-label="Doug, Rivali AI crew chief">
+          <div className="landing-doug-glow" />
+          <Image src="/doug-crew-chief.png" alt="Doug, Rivali's dirt racing crew chief" width={620} height={744} priority />
+          <div className="landing-welcome"><small>DOUG — CREW CHIEF</small><strong>“Ready when you are. Tell me everything, or I can walk you through it.”</strong></div>
         </div>
       </section>
       <section className="feature-grid shell" id="system">
@@ -68,6 +59,21 @@ export default function Home() {
             <p>{body}</p>
           </article>
         ))}
+      </section>
+      <section className="landing-access shell" id="driver-access">
+        <div className="landing-access-copy">
+          <div className="eyebrow">DRIVER ACCESS</div>
+          <h2>Ready to race?</h2>
+          <p>Sign in to continue your current Raceday, or create a private garage for your driver, kart, tracks, setup history, and data.</p>
+        </div>
+        <form className="landing-login card">
+          {query.error && <p className="form-error">{String(query.error)}</p>}
+          {query.message && <p className="form-success">{String(query.message)}</p>}
+          <div className="field"><label htmlFor="landing-email">Email</label><input id="landing-email" name="email" type="email" autoComplete="email" required /></div>
+          <div className="field"><label htmlFor="landing-password">Password</label><input id="landing-password" name="password" type="password" minLength={8} autoComplete="current-password" required /></div>
+          <button className="button full" formAction={login}>Sign in and call Doug</button>
+          <button className="button ghost full" formAction={signup}>Create driver account</button>
+        </form>
       </section>
       <section className="proof shell">
         <div>
