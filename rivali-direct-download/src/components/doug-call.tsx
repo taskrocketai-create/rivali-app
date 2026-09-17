@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Phone, PhoneOff } from "lucide-react";
+import { tool } from "@openai/agents";
 import { RealtimeAgent, RealtimeSession } from "@openai/agents/realtime";
+import { z } from "zod";
 
 type CallState = "idle" | "connecting" | "listening" | "speaking" | "error";
 
@@ -23,7 +25,16 @@ CONVERSATION RULES:
 - Rivali is an Italian name created in the South by a good old former racer. You may make a brief joke about that occasionally, never repeatedly.
 - Your name is Doug. Do not call yourself Wade or any other name.`;
 
-export function DougCall({ racedayContext }: { racedayContext: string }) {
+type DougScreen = "home" | "raceday" | "upload" | "evidence" | "track_map" | "garage" | "drivers" | "karts" | "history" | "compare" | "profile";
+type AppTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
+
+const screenToTab: Record<DougScreen, AppTab> = {
+  home: "home", raceday: "home", upload: "upload", evidence: "sessions",
+  track_map: "tracks", garage: "profile", drivers: "drivers", karts: "karts",
+  history: "sessions", compare: "compare", profile: "profile",
+};
+
+export function DougCall({ racedayContext, onNavigate }: { racedayContext: string; onNavigate: (tab: AppTab) => void }) {
   const sessionRef = useRef<RealtimeSession | null>(null);
   const [state, setState] = useState<CallState>("idle");
   const [muted, setMuted] = useState(false);
@@ -38,10 +49,24 @@ export function DougCall({ racedayContext }: { racedayContext: string }) {
       const response = await fetch("/api/realtime-token", { method: "POST" });
       const payload = await response.json();
       if (!response.ok || !payload.value) throw new Error(payload.error ?? "Could not connect Doug.");
+      const openScreen = tool({
+        name: "open_screen",
+        description: "Navigate the Rivali app to the screen the driver requests. Use this immediately when the driver asks to show, open, view, upload, compare, or manage something.",
+        parameters: z.object({
+          screen: z.enum(["home", "raceday", "upload", "evidence", "track_map", "garage", "drivers", "karts", "history", "compare", "profile"]),
+          reason: z.string().max(120),
+        }),
+        execute: async ({ screen }) => {
+          onNavigate(screenToTab[screen]);
+          setCaption(`Doug opened ${screen.replaceAll("_", " ")}.`);
+          return `Opened the ${screen.replaceAll("_", " ")} screen successfully.`;
+        },
+      });
       const agent = new RealtimeAgent({
         name: "Doug",
         voice: "cedar",
-        instructions: `${DOUG_INSTRUCTIONS}\n\nCURRENT RACEDAY CONTEXT:\n${racedayContext}`,
+        instructions: `${DOUG_INSTRUCTIONS}\n- You can control Rivali with open_screen. When the driver asks to see or open something, call the tool instead of merely describing where it is. After navigating, say one short sentence about what is on screen.\n- Use upload when the driver wants to add a MyChron file. Use evidence or history for prior sessions, compare for comparisons, track_map for GPS layout, and garage for saved equipment.\n\nCURRENT RACEDAY CONTEXT:\n${racedayContext}`,
+        tools: [openScreen],
       });
       const session = new RealtimeSession(agent, { model: "gpt-realtime-2.1" });
       session.on("audio_start", () => setState("speaking"));

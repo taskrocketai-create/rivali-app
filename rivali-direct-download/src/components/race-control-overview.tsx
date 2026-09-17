@@ -5,7 +5,7 @@ import { ArrowRight, CloudSun, Gauge, MapPinned, Timer, Upload, Wrench } from "l
 import type { Kart, Racer, RaceSession, Track } from "@/types/domain";
 import { DougCall } from "./doug-call";
 
-type OverviewTab = "upload" | "debrief" | "tracks" | "sessions";
+type OverviewTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 
 const dougQuotes = [
   "Fast comes from getting one thing right, then doing it again.",
@@ -45,7 +45,7 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
         <div className="crew-conversation">
           <div className="conversation-status"><span /> DOUG IS READY</div>
           <p className="doug-line">{latest ? `We continuing ${latest.tracks?.name ?? "the current Raceday"}, or starting a new one?` : "Tell me everything you know about the driver, kart, classes and track. Don’t organize it—I’ll handle that part."}</p>
-          <DougCall racedayContext={racedayContext} />
+          <DougCall racedayContext={racedayContext} onNavigate={onNavigate} />
           <div className="conversation-actions">
             <button onClick={() => onNavigate("upload")}><Upload /> Start a new Raceday</button>
             {latest && <button onClick={() => onNavigate("sessions")}><Timer /> Continue current Raceday</button>}
