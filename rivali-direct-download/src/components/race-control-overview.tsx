@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight, CloudSun, Gauge, MapPinned, Mic, Timer, Upload, Wrench } from "lucide-react";
+import { ArrowRight, CloudSun, Gauge, MapPinned, Timer, Upload, Wrench } from "lucide-react";
 import type { Kart, Racer, RaceSession, Track } from "@/types/domain";
+import { DougCall } from "./doug-call";
 
 type OverviewTab = "upload" | "debrief" | "tracks" | "sessions";
 
@@ -29,6 +30,10 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
   const trackCondition = typeof conditions.track_condition === "string" && conditions.track_condition ? conditions.track_condition : "Not recorded";
   const gap = latest?.best_lap_sec && latest.average_lap_sec ? latest.average_lap_sec - latest.best_lap_sec : null;
   const quote = racedayQuote(latest?.session_date ?? new Date().toISOString().slice(0, 10));
+  const racedayContext = JSON.stringify({
+    latestSession: latest ? { date: latest.session_date, type: latest.session_type, driver: latest.racers?.name, kart: latest.karts?.name, track: latest.tracks?.name, setup: latest.setup, conditions: latest.conditions, bestLapSeconds: latest.best_lap_sec } : null,
+    savedDrivers: racers.map((item) => item.name), savedKarts: karts.map((item) => item.name), savedTracks: tracks.map((item) => item.name),
+  });
   return (
     <div className="doug-home">
       <section className="crew-chief-stage">
@@ -40,7 +45,7 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
         <div className="crew-conversation">
           <div className="conversation-status"><span /> DOUG IS READY</div>
           <p className="doug-line">{latest ? `We continuing ${latest.tracks?.name ?? "the current Raceday"}, or starting a new one?` : "Tell me everything you know about the driver, kart, classes and track. Don’t organize it—I’ll handle that part."}</p>
-          <button className="talk-to-doug" onClick={() => onNavigate("debrief")}><span className="mic-pulse"><Mic /></span><span><small>PRESS TO TALK</small><strong>TALK TO DOUG</strong></span><ArrowRight /></button>
+          <DougCall racedayContext={racedayContext} />
           <div className="conversation-actions">
             <button onClick={() => onNavigate("upload")}><Upload /> Start a new Raceday</button>
             {latest && <button onClick={() => onNavigate("sessions")}><Timer /> Continue current Raceday</button>}
