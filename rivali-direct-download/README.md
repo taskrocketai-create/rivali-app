@@ -56,3 +56,4 @@ Start with one worker instance. Job claiming is atomic, but one instance keeps o
 ## Validation boundary
 
 The XRK reader and lap summary were previously tested on a real public AiM sample. Oval splitting is mechanically tested, but its current radius threshold still needs calibration against a real dirt-oval `.xrk` file before recommendations should rely on its corner labels without review.
+
