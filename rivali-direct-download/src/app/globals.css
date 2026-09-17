@@ -1064,3 +1064,23 @@ body { background: #070809; }
   .search-row { gap: 6px; }
   .search-row .button { width: 100%; }
 }
+.doug-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(209, 42, 31, 0.65);
+  border-left: 5px solid #d12a1f;
+  background: linear-gradient(100deg, rgba(209, 42, 31, 0.14), rgba(15, 16, 18, 0.96) 38%);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+.doug-confirm small { display: block; color: #d12a1f; font-weight: 800; letter-spacing: .12em; }
+.doug-confirm strong { display: block; margin-top: 3px; font-size: 1.08rem; text-transform: uppercase; }
+.doug-confirm p { margin: 5px 0 0; color: #c8c8c8; }
+.doug-confirm-actions { display: flex; gap: 10px; flex: 0 0 auto; }
+@media (max-width: 680px) {
+  .doug-confirm { align-items: stretch; flex-direction: column; gap: 14px; }
+  .doug-confirm-actions button { flex: 1; }
+}
