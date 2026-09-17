@@ -30,6 +30,10 @@ export type RaceSession = {
   session_type: string;
   status: string;
   best_lap_sec: number | null;
+  average_lap_sec: number | null;
+  consistency_stdev_sec: number | null;
+  lap_count: number | null;
+  conditions: Record<string, string | number | null>;
   raw_file_name: string;
   tracks: { name: string } | null;
   racers: { name: string } | null;
