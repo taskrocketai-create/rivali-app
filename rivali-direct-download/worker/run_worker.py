@@ -67,13 +67,25 @@ def save_grounded_recommendation(client, session_id, owner_id):
             text = f"Use the {reference['session_date']} run as the comparison baseline; it was {delta:.3f}s faster in similar recorded conditions. The main logged differences were {differences}. Test one difference at a time rather than treating correlation as proof."
         confidence = "high" if len(matches) >= 3 else "medium"
         evidence = [{"session_id": session_id, "role": "current", "best_lap_sec": current["best_lap_sec"]}, {"session_id": reference["id"], "role": "condition_matched_reference", "best_lap_sec": reference["best_lap_sec"]}, {"matched_session_count": len(matches)}]
-    knowledge = client.table("knowledge_items").select("id,title,evidence_level,confidence,track_id,kart_id").eq("user_id", owner_id).eq("status", "active").order("updated_at", desc=True).limit(200).execute().data or []
+    # Knowledge is globally curated by the Rivali administrator. The worker's
+    # server credential reads active items; racer accounts cannot edit them.
+    knowledge = client.table("knowledge_items").select("id,title,evidence_level,confidence,track_id,kart_id").eq("status", "active").order("updated_at", desc=True).limit(200).execute().data or []
     applicable = [item for item in knowledge if (item.get("track_id") is None or item.get("track_id") == current["track_id"]) and (item.get("kart_id") is None or item.get("kart_id") == current["kart_id"])]
     applicable.sort(key=lambda item: (item.get("track_id") is None, item.get("kart_id") is None, item.get("confidence") != "high"))
     if applicable:
         selected = applicable[:3]
         text += " Knowledge to review before changing the kart: " + "; ".join(item["title"] for item in selected) + "."
         evidence.extend({"knowledge_item_id": item["id"], "title": item["title"], "evidence_level": item["evidence_level"], "confidence": item["confidence"]} for item in selected)
+    setup = current.get("setup") or {}
+    if setup.get("dirty_tire_rule") and setup.get("tire_locked"):
+        tire_set = setup.get("tire_set_id") or "the committed tire set"
+        text += f" Dirty Tire lock is active for {tire_set}: do not recommend tire changes; use class-legal chassis adjustments only."
+        evidence.append({
+            "rule": "dirty_tire_lock",
+            "tire_set_id": setup.get("tire_set_id"),
+            "tire_adjustments_allowed": False,
+            "chassis_adjustments_allowed": True,
+        })
     client.table("recommendations").upsert({"user_id": owner_id, "session_id": session_id, "recommendation": text, "confidence": confidence, "evidence": evidence}, on_conflict="session_id").execute()
 
 def process_one(client):
