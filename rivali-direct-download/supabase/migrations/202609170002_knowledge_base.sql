@@ -19,8 +19,7 @@ create table public.knowledge_items (
   supersedes_id uuid references public.knowledge_items(id),
   search_vector tsvector generated always as (
     setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(body, '')), 'B') ||
-    setweight(to_tsvector('english', array_to_string(tags, ' ')), 'C')
+    setweight(to_tsvector('english', coalesce(body, '')), 'B')
   ) stored,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
