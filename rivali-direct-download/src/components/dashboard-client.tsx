@@ -7,6 +7,7 @@ import {
   MapPinned,
   History,
   Mic,
+  Gauge,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -17,9 +18,11 @@ import type {
 } from "@/types/domain";
 import { TrackMapEditor } from "./track-map-editor";
 import { VoiceDebriefRecorder } from "./voice-debrief";
+import { RaceControlOverview } from "./race-control-overview";
 
-type Tab = "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions";
+type Tab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions";
 const tabItems: [Tab, string, typeof Upload][] = [
+  ["home", "Race control", Gauge],
   ["upload", "Upload session", Upload],
   ["debrief", "Voice debrief", Mic],
   ["drivers", "Drivers", Users],
@@ -39,7 +42,7 @@ export function DashboardClient({
   tracks: Track[];
   sessions: RaceSession[];
 }) {
-  const [tab, setTab] = useState<Tab>("upload");
+  const [tab, setTab] = useState<Tab>("home");
   const [racers, setRacers] = useState(initialRacers);
   const [karts, setKarts] = useState(initialKarts);
   const [tracks, setTracks] = useState(initialTracks);
@@ -221,7 +224,7 @@ export function DashboardClient({
           status: "queued",
         })
         .select(
-          "id,session_date,session_type,status,best_lap_sec,raw_file_name,tracks(name),racers(name),recommendations(recommendation,confidence)",
+          "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,conditions,raw_file_name,tracks(name),racers(name),recommendations(recommendation,confidence)",
         )
         .single();
       if (sessionError) throw sessionError;
@@ -255,12 +258,21 @@ export function DashboardClient({
               setMessage("");
             }}
           >
-            <Icon size={17} /> {label}
+            <Icon size={18} /> <span>{label}</span>
           </button>
         ))}
       </aside>
       <section className="panel">
         {message && <div className="notice">{message}</div>}
+        {tab === "home" && (
+          <RaceControlOverview
+            racers={racers}
+            karts={karts}
+            tracks={tracks}
+            sessions={sessions}
+            onNavigate={(destination) => setTab(destination)}
+          />
+        )}
         {tab === "upload" && (
           <form className="card stack" onSubmit={uploadSession}>
             <h2>Upload a MyChron session</h2>
