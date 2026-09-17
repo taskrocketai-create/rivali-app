@@ -57,6 +57,8 @@ export function DashboardClient({
   const [airTempF, setAirTempF] = useState("");
   const [humidityPct, setHumidityPct] = useState("");
   const [weatherNotes, setWeatherNotes] = useState("");
+  const [dirtyTireRule, setDirtyTireRule] = useState(false);
+  const [tireLocked, setTireLocked] = useState(false);
   const supabase = createClient();
   async function ownerId() {
     const { data, error } = await supabase.auth.getClaims();
@@ -197,6 +199,13 @@ export function DashboardClient({
         });
       if (uploadError) throw uploadError;
       const setup = {
+        class_name: form.get("class_name") || null,
+        tire_set_id: form.get("tire_set_id") || null,
+        dirty_tire_rule: dirtyTireRule,
+        dirty_tire_cutoff: dirtyTireRule
+          ? form.get("dirty_tire_cutoff") || null
+          : null,
+        tire_locked: dirtyTireRule && tireLocked,
         lf_pressure_psi: Number(form.get("lf_pressure_psi")) || null,
         rf_pressure_psi: Number(form.get("rf_pressure_psi")) || null,
         lr_pressure_psi: Number(form.get("lr_pressure_psi")) || null,
@@ -227,7 +236,7 @@ export function DashboardClient({
           status: "queued",
         })
         .select(
-          "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)",
+          "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)",
         )
         .single();
       if (sessionError) throw sessionError;
@@ -238,6 +247,8 @@ export function DashboardClient({
       if (jobError) throw jobError;
       setSessions([session as unknown as RaceSession, ...sessions]);
       event.currentTarget.reset();
+      setDirtyTireRule(false);
+      setTireLocked(false);
       setMessage("Session uploaded and queued for analysis.");
     } catch (error) {
       if (createdSessionId)
@@ -346,6 +357,51 @@ export function DashboardClient({
                 <input name="file" type="file" accept=".xrk" required />
               </div>
             </div>
+            <div className="section-heading-row"><h3>Class and tire rules</h3></div>
+            <div className="grid-3">
+              <div className="field">
+                <label>Class</label>
+                <input name="class_name" placeholder="Clone Heavy" />
+              </div>
+              <div className="field">
+                <label>Tire set</label>
+                <input name="tire_set_id" placeholder="Set 33-B" />
+              </div>
+              <label className="rule-toggle">
+                <input
+                  type="checkbox"
+                  checked={dirtyTireRule}
+                  onChange={(event) => {
+                    setDirtyTireRule(event.target.checked);
+                    if (!event.target.checked) setTireLocked(false);
+                  }}
+                />
+                <span><strong>Dirty Tire Class</strong><small>Lock tire changes after the cutoff</small></span>
+              </label>
+            </div>
+            {dirtyTireRule && (
+              <div className={`dirty-tire-rule ${tireLocked ? "locked" : "armed"}`}>
+                <div>
+                  <strong>{tireLocked ? "DIRTY TIRE LOCKED" : "DIRTY TIRE RULE ARMED"}</strong>
+                  <span>{tireLocked ? "Chassis adjustments allowed · Tire adjustments prohibited" : "Record when the tire set becomes locked"}</span>
+                </div>
+                <div className="dirty-tire-controls">
+                  <label>
+                    Cutoff
+                    <select name="dirty_tire_cutoff" defaultValue="qualifying">
+                      <option value="practice">After practice</option>
+                      <option value="hot_laps">After hot laps</option>
+                      <option value="heat">After heat</option>
+                      <option value="qualifying">After qualifying</option>
+                    </select>
+                  </label>
+                  <label className="lock-switch">
+                    <input type="checkbox" checked={tireLocked} onChange={(event) => setTireLocked(event.target.checked)} />
+                    Tire set is locked now
+                  </label>
+                </div>
+              </div>
+            )}
             <div className="section-heading-row"><h3>Conditions</h3><button className="button small secondary" type="button" disabled={!selectedTrackId || weatherBusy} onClick={() => void loadCurrentWeather(selectedTrackId)}>{weatherBusy ? "Loading weather..." : "Refresh track weather"}</button></div>
             <div className="grid-3">
               <div className="field">
@@ -389,19 +445,19 @@ export function DashboardClient({
             <div className="grid-3">
               <div className="field">
                 <label>LF pressure</label>
-                <input name="lf_pressure_psi" type="number" step=".1" />
+                <input name="lf_pressure_psi" type="number" step=".1" disabled={tireLocked} />
               </div>
               <div className="field">
                 <label>RF pressure</label>
-                <input name="rf_pressure_psi" type="number" step=".1" />
+                <input name="rf_pressure_psi" type="number" step=".1" disabled={tireLocked} />
               </div>
               <div className="field">
                 <label>LR pressure</label>
-                <input name="lr_pressure_psi" type="number" step=".1" />
+                <input name="lr_pressure_psi" type="number" step=".1" disabled={tireLocked} />
               </div>
               <div className="field">
                 <label>RR pressure</label>
-                <input name="rr_pressure_psi" type="number" step=".1" />
+                <input name="rr_pressure_psi" type="number" step=".1" disabled={tireLocked} />
               </div>
               <div className="field">
                 <label>Rear sprocket</label>
@@ -563,6 +619,12 @@ export function DashboardClient({
                     {x.status}
                     {x.best_lap_sec ? ` · ${x.best_lap_sec.toFixed(3)}s` : ""}
                   </span>
+                  {x.setup?.dirty_tire_rule && (
+                    <span className={`tire-rule-badge ${x.setup.tire_locked ? "locked" : "armed"}`}>
+                      {x.setup.tire_locked ? "DIRTY TIRE LOCKED" : "DIRTY TIRE"}
+                      {x.setup.tire_set_id ? ` · ${x.setup.tire_set_id}` : ""}
+                    </span>
+                  )}
                   {x.recommendations?.[0] && (
                     <small style={{ gridColumn: "1 / -1" }}>
                       <strong>
