@@ -8,6 +8,9 @@ import {
   History,
   Mic,
   Gauge,
+  Home,
+  BarChart3,
+  UserRound,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -20,7 +23,7 @@ import { TrackMapEditor } from "./track-map-editor";
 import { VoiceDebriefRecorder } from "./voice-debrief";
 import { RaceControlOverview } from "./race-control-overview";
 
-type Tab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions";
+type Tab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 const tabItems: [Tab, string, typeof Upload][] = [
   ["home", "Race control", Gauge],
   ["upload", "Upload session", Upload],
@@ -224,7 +227,7 @@ export function DashboardClient({
           status: "queued",
         })
         .select(
-          "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,conditions,raw_file_name,tracks(name),racers(name),recommendations(recommendation,confidence)",
+          "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)",
         )
         .single();
       if (sessionError) throw sessionError;
@@ -573,7 +576,36 @@ export function DashboardClient({
             )}
           </div>
         )}
+        {tab === "compare" && (
+          <div className="card compare-panel">
+            <div className="eyebrow">SESSION ANALYSIS</div>
+            <h2>Compare laps</h2>
+            <p className="muted">Select two processed sessions to compare best lap, average pace, consistency, setup, and conditions.</p>
+            <div className="grid-2">
+              <div className="field"><label>Baseline session</label><select><option>Select session</option>{sessions.map((x) => <option key={`a-${x.id}`}>{x.session_date} · {x.tracks?.name} · {x.session_type}</option>)}</select></div>
+              <div className="field"><label>Comparison session</label><select><option>Select session</option>{sessions.map((x) => <option key={`b-${x.id}`}>{x.session_date} · {x.tracks?.name} · {x.session_type}</option>)}</select></div>
+            </div>
+            <div className="notice">Detailed overlay comparison will activate when two processed sessions are selected.</div>
+          </div>
+        )}
+        {tab === "profile" && (
+          <div className="profile-hub">
+            <div className="card"><div className="eyebrow">RIVALI GARAGE</div><h2>Race profile</h2><p className="muted">Manage the drivers, karts, and tracks that feed every session analysis.</p></div>
+            <div className="profile-grid">
+              <button className="card" onClick={() => setTab("drivers")}><Users /><strong>Drivers</strong><span>{racers.length} saved</span></button>
+              <button className="card" onClick={() => setTab("karts")}><Wrench /><strong>Karts</strong><span>{karts.length} saved</span></button>
+              <button className="card" onClick={() => setTab("tracks")}><MapPinned /><strong>Tracks</strong><span>{tracks.length} saved</span></button>
+              <button className="card" onClick={() => setTab("debrief")}><Mic /><strong>Debriefs</strong><span>Trackside notes</span></button>
+            </div>
+          </div>
+        )}
       </section>
+      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+        {[["home", "Home", Home], ["sessions", "Sessions", History], ["compare", "Compare", BarChart3], ["profile", "Profile", UserRound]].map(([id, label, Icon]) => {
+          const NavIcon = Icon as typeof Home;
+          return <button key={id as string} className={tab === id ? "active" : ""} onClick={() => { setTab(id as Tab); setMessage(""); }}><NavIcon /><span>{label as string}</span></button>;
+        })}
+      </nav>
     </div>
   );
 }
