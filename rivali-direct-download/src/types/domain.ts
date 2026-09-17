@@ -1,0 +1,50 @@
+export type Racer = {
+  id: string;
+  name: string;
+  experience_level: string | null;
+  driver_weight_lb: number | null;
+};
+export type Kart = {
+  id: string;
+  racer_id: string;
+  name: string;
+  chassis_make: string | null;
+  chassis_model: string | null;
+  tire_compound: string | null;
+};
+export type LatLng = { lat: number; lng: number };
+export type TurnMarker = LatLng & { radius_m: number };
+export type Track = {
+  id: string;
+  name: string;
+  location: string | null;
+  surface_type: string | null;
+  start_finish: LatLng[] | null;
+  turns: Record<string, TurnMarker> | null;
+};
+export type RaceSession = {
+  id: string;
+  session_date: string;
+  session_type: string;
+  status: string;
+  best_lap_sec: number | null;
+  raw_file_name: string;
+  tracks: { name: string } | null;
+  racers: { name: string } | null;
+  recommendations?: { recommendation: string; confidence: string }[];
+};
+export type KnowledgeItem = {
+  id: string;
+  title: string;
+  body: string;
+  source_type: string;
+  source_name: string | null;
+  source_url: string | null;
+  evidence_level: string;
+  confidence: string;
+  status: string;
+  track_id: string | null;
+  kart_id: string | null;
+  tags: string[];
+  updated_at: string;
+};
