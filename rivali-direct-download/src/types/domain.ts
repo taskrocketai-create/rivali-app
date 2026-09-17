@@ -71,3 +71,12 @@ export type KnowledgeItem = {
   tags: string[];
   updated_at: string;
 };
+export type KnowledgeUploadJob = {
+  id: string;
+  original_filename: string;
+  status: "queued" | "uploading" | "transcribing" | "extracting" | "completed" | "failed";
+  knowledge_points_added: number;
+  error: string | null;
+  source_platform: string | null;
+  created_at: string;
+};
