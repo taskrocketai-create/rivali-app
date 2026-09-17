@@ -19,6 +19,8 @@ export type Track = {
   name: string;
   location: string | null;
   surface_type: string | null;
+  latitude: number | null;
+  longitude: number | null;
   start_finish: LatLng[] | null;
   turns: Record<string, TurnMarker> | null;
 };
@@ -32,6 +34,14 @@ export type RaceSession = {
   tracks: { name: string } | null;
   racers: { name: string } | null;
   recommendations?: { recommendation: string; confidence: string }[];
+};
+export type VoiceDebrief = {
+  id: string;
+  session_id: string;
+  status: string;
+  transcript: string | null;
+  error: string | null;
+  created_at: string;
 };
 export type KnowledgeItem = {
   id: string;

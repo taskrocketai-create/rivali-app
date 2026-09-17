@@ -6,25 +6,25 @@ import {
   Wrench,
   MapPinned,
   History,
-  BookOpen,
+  Mic,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Kart,
-  KnowledgeItem,
   Racer,
   RaceSession,
   Track,
 } from "@/types/domain";
 import { TrackMapEditor } from "./track-map-editor";
+import { VoiceDebriefRecorder } from "./voice-debrief";
 
-type Tab = "upload" | "drivers" | "karts" | "tracks" | "knowledge" | "sessions";
+type Tab = "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions";
 const tabItems: [Tab, string, typeof Upload][] = [
   ["upload", "Upload session", Upload],
+  ["debrief", "Voice debrief", Mic],
   ["drivers", "Drivers", Users],
   ["karts", "Karts", Wrench],
   ["tracks", "GPS track map", MapPinned],
-  ["knowledge", "Knowledge base", BookOpen],
   ["sessions", "Session history", History],
 ];
 
@@ -33,22 +33,24 @@ export function DashboardClient({
   karts: initialKarts,
   tracks: initialTracks,
   sessions: initialSessions,
-  knowledge: initialKnowledge,
 }: {
   racers: Racer[];
   karts: Kart[];
   tracks: Track[];
   sessions: RaceSession[];
-  knowledge: KnowledgeItem[];
 }) {
   const [tab, setTab] = useState<Tab>("upload");
   const [racers, setRacers] = useState(initialRacers);
   const [karts, setKarts] = useState(initialKarts);
   const [tracks, setTracks] = useState(initialTracks);
   const [sessions, setSessions] = useState(initialSessions);
-  const [knowledge, setKnowledge] = useState(initialKnowledge);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [weatherBusy, setWeatherBusy] = useState(false);
+  const [selectedTrackId, setSelectedTrackId] = useState("");
+  const [airTempF, setAirTempF] = useState("");
+  const [humidityPct, setHumidityPct] = useState("");
+  const [weatherNotes, setWeatherNotes] = useState("");
   const supabase = createClient();
   async function ownerId() {
     const { data, error } = await supabase.auth.getClaims();
@@ -131,7 +133,7 @@ export function DashboardClient({
           location: form.get("location") || null,
           surface_type: form.get("surface_type") || null,
         })
-        .select("id,name,location,surface_type,start_finish,turns")
+        .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
         .single();
       if (error) throw error;
       setTracks([...tracks, data]);
@@ -144,6 +146,25 @@ export function DashboardClient({
     } finally {
       setBusy(false);
     }
+  }
+  async function loadCurrentWeather(trackId: string) {
+    setSelectedTrackId(trackId);
+    if (!trackId) return;
+    const track = tracks.find((item) => item.id === trackId);
+    if (track?.latitude == null || track?.longitude == null) return setMessage("Search and save this track on the GPS Track Map before using automatic weather.");
+    setWeatherBusy(true);
+    setMessage("Loading current track weather...");
+    try {
+      const response = await fetch(`/api/weather?latitude=${track.latitude}&longitude=${track.longitude}`);
+      const weather = await response.json();
+      if (!response.ok) throw new Error(weather.error ?? "Current weather lookup failed.");
+      setAirTempF(String(weather.temperatureF ?? ""));
+      setHumidityPct(String(weather.humidityPct ?? ""));
+      setWeatherNotes([`Auto weather ${weather.observedAt ?? ""} ${weather.timezone ?? ""}`.trim(), `wind ${weather.windSpeedMph ?? "?"} mph at ${weather.windDirectionDeg ?? "?"}°`, `gusts ${weather.windGustMph ?? "?"} mph`, `cloud cover ${weather.cloudCoverPct ?? "?"}%`, `precipitation ${weather.precipitationIn ?? 0} in`, `weather code ${weather.weatherCode ?? "?"}`].join("; "));
+      setMessage("Current weather loaded from the track coordinates. Adjust it if track-side conditions differ.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Current weather lookup failed.");
+    } finally { setWeatherBusy(false); }
   }
   async function uploadSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -222,80 +243,6 @@ export function DashboardClient({
       setBusy(false);
     }
   }
-  async function addKnowledge(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setMessage("");
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const file = form.get("source_file") as File;
-    let sourceFilePath: string | null = null;
-    try {
-      const user_id = await ownerId();
-      if (file?.size) {
-        if (file.size > 25 * 1024 * 1024)
-          throw new Error("Knowledge files must be 25 MB or smaller.");
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        sourceFilePath = `${user_id}/${crypto.randomUUID()}/${safeName}`;
-        const { error: uploadError } = await supabase.storage
-          .from("knowledge")
-          .upload(sourceFilePath, file, { upsert: false });
-        if (uploadError) throw uploadError;
-      }
-      const { data, error } = await supabase
-        .from("knowledge_items")
-        .insert({
-          user_id,
-          title: form.get("title"),
-          body: form.get("body"),
-          source_type: form.get("source_type"),
-          source_name: form.get("source_name") || null,
-          source_url: form.get("source_url") || null,
-          source_file_path: sourceFilePath,
-          evidence_level: form.get("evidence_level"),
-          confidence: form.get("confidence"),
-          status: form.get("status"),
-          track_id: form.get("track_id") || null,
-          kart_id: form.get("kart_id") || null,
-          class_name: form.get("class_name") || null,
-          tire_compound: form.get("tire_compound") || null,
-          tags: String(form.get("tags") || "")
-            .split(",")
-            .map((tag) => tag.trim().toLowerCase())
-            .filter(Boolean),
-          effective_date: form.get("effective_date") || null,
-        })
-        .select(
-          "id,title,body,source_type,source_name,source_url,evidence_level,confidence,status,track_id,kart_id,tags,updated_at",
-        )
-        .single();
-      if (error) throw error;
-      setKnowledge([data as KnowledgeItem, ...knowledge]);
-      formElement.reset();
-      setMessage("Knowledge item saved with its source and evidence rating.");
-    } catch (error) {
-      if (sourceFilePath)
-        await supabase.storage.from("knowledge").remove([sourceFilePath]);
-      setMessage(
-        error instanceof Error ? error.message : "Could not save knowledge.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function archiveKnowledge(id: string) {
-    const { error } = await supabase
-      .from("knowledge_items")
-      .update({ status: "archived", updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return setMessage(error.message);
-    setKnowledge(
-      knowledge.map((item) =>
-        item.id === id ? { ...item, status: "archived" } : item,
-      ),
-    );
-    setMessage("Knowledge item archived. Its provenance remains preserved.");
-  }
   return (
     <div className="workspace">
       <aside className="tabs">
@@ -350,7 +297,7 @@ export function DashboardClient({
               </div>
               <div className="field">
                 <label>Track</label>
-                <select name="track_id" required>
+                <select name="track_id" required value={selectedTrackId} onChange={(event) => void loadCurrentWeather(event.target.value)}>
                   <option value="">Select</option>
                   {tracks.map((x) => (
                     <option key={x.id} value={x.id}>
@@ -384,11 +331,11 @@ export function DashboardClient({
                 <input name="file" type="file" accept=".xrk" required />
               </div>
             </div>
-            <h3>Conditions</h3>
+            <div className="section-heading-row"><h3>Conditions</h3><button className="button small secondary" type="button" disabled={!selectedTrackId || weatherBusy} onClick={() => void loadCurrentWeather(selectedTrackId)}>{weatherBusy ? "Loading weather..." : "Refresh track weather"}</button></div>
             <div className="grid-3">
               <div className="field">
                 <label>Air temp °F</label>
-                <input name="air_temp_f" type="number" step=".1" />
+                <input name="air_temp_f" type="number" step=".1" value={airTempF} onChange={(event) => setAirTempF(event.target.value)} />
               </div>
               <div className="field">
                 <label>Humidity %</label>
@@ -398,6 +345,8 @@ export function DashboardClient({
                   min="0"
                   max="100"
                   step=".1"
+                  value={humidityPct}
+                  onChange={(event) => setHumidityPct(event.target.value)}
                 />
               </div>
               <div className="field">
@@ -417,6 +366,8 @@ export function DashboardClient({
               <input
                 name="weather_notes"
                 placeholder="Cloud cover, wind, recent watering..."
+                value={weatherNotes}
+                onChange={(event) => setWeatherNotes(event.target.value)}
               />
             </div>
             <h3>Current setup</h3>
@@ -495,6 +446,7 @@ export function DashboardClient({
             </div>
           </div>
         )}
+        {tab === "debrief" && <VoiceDebriefRecorder sessions={sessions} />}
         {tab === "karts" && (
           <div className="grid-2">
             <form className="card" onSubmit={addKart}>
@@ -575,195 +527,6 @@ export function DashboardClient({
                 )
               }
             />
-          </div>
-        )}
-        {tab === "knowledge" && (
-          <div className="stack">
-            <form className="card" onSubmit={addKnowledge}>
-              <h2>Feed the knowledge base</h2>
-              <p className="muted">
-                Save the claim and its source separately. Mark disputed or
-                unproven information honestly so Rivali never presents opinion
-                as settled science.
-              </p>
-              <div className="grid-2">
-                <div className="field">
-                  <label>Title</label>
-                  <input
-                    name="title"
-                    required
-                    minLength={3}
-                    placeholder="Low-humidity clay transition"
-                  />
-                </div>
-                <div className="field">
-                  <label>Source type</label>
-                  <select name="source_type" defaultValue="manual">
-                    <option value="manual">Manual entry</option>
-                    <option value="manufacturer_manual">
-                      Manufacturer manual
-                    </option>
-                    <option value="book">Book</option>
-                    <option value="article">Article</option>
-                    <option value="video">Video / transcript</option>
-                    <option value="podcast">Podcast</option>
-                    <option value="race_observation">Race observation</option>
-                    <option value="test_result">Measured test result</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-              <div className="field">
-                <label>Knowledge, rule, or observation</label>
-                <textarea
-                  name="body"
-                  rows={5}
-                  minLength={10}
-                  required
-                  placeholder="State exactly what was learned, including limits and exceptions."
-                />
-              </div>
-              <div className="grid-3">
-                <div className="field">
-                  <label>Source name</label>
-                  <input
-                    name="source_name"
-                    placeholder="Author, racer, manual..."
-                  />
-                </div>
-                <div className="field">
-                  <label>Source URL</label>
-                  <input name="source_url" type="url" />
-                </div>
-                <div className="field">
-                  <label>Source file</label>
-                  <input
-                    name="source_file"
-                    type="file"
-                    accept=".pdf,.txt,.md,.csv,.docx"
-                  />
-                </div>
-              </div>
-              <div className="grid-3">
-                <div className="field">
-                  <label>Evidence level</label>
-                  <select name="evidence_level" defaultValue="anecdotal">
-                    <option value="opinion">Opinion</option>
-                    <option value="anecdotal">Anecdotal experience</option>
-                    <option value="manufacturer">Manufacturer guidance</option>
-                    <option value="measured">Measured observation</option>
-                    <option value="controlled_test">Controlled test</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Confidence</label>
-                  <select name="confidence" defaultValue="medium">
-                    <option>low</option>
-                    <option>medium</option>
-                    <option>high</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Status</label>
-                  <select name="status" defaultValue="draft">
-                    <option>draft</option>
-                    <option>active</option>
-                    <option>disputed</option>
-                  </select>
-                </div>
-              </div>
-              <h3>Where it applies</h3>
-              <div className="grid-3">
-                <div className="field">
-                  <label>Track</label>
-                  <select name="track_id">
-                    <option value="">All tracks</option>
-                    {tracks.map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Kart / chassis</label>
-                  <select name="kart_id">
-                    <option value="">All karts</option>
-                    {karts.map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Class</label>
-                  <input name="class_name" placeholder="All classes" />
-                </div>
-                <div className="field">
-                  <label>Tire compound</label>
-                  <input name="tire_compound" placeholder="All compounds" />
-                </div>
-                <div className="field">
-                  <label>Tags</label>
-                  <input name="tags" placeholder="clay, stagger, loose-exit" />
-                </div>
-                <div className="field">
-                  <label>Effective date</label>
-                  <input name="effective_date" type="date" />
-                </div>
-              </div>
-              <button className="button" disabled={busy}>
-                {busy ? "Saving..." : "Add knowledge"}
-              </button>
-            </form>
-            <div className="card">
-              <h2>Stored knowledge</h2>
-              {knowledge.length === 0 ? (
-                <p className="muted">No knowledge items yet.</p>
-              ) : (
-                knowledge.map((item) => (
-                  <article
-                    key={item.id}
-                    style={{
-                      borderBottom: "1px solid var(--line)",
-                      padding: "16px 0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 16,
-                      }}
-                    >
-                      <div>
-                        <strong>{item.title}</strong>
-                        <div className={`status ${item.status}`}>
-                          {item.status} · {item.evidence_level} ·{" "}
-                          {item.confidence} confidence
-                        </div>
-                      </div>
-                      {item.status !== "archived" && (
-                        <button
-                          type="button"
-                          className="button ghost small"
-                          onClick={() => archiveKnowledge(item.id)}
-                        >
-                          Archive
-                        </button>
-                      )}
-                    </div>
-                    <p>{item.body}</p>
-                    {item.tags.length > 0 && (
-                      <small className="muted">
-                        Tags: {item.tags.join(", ")}
-                      </small>
-                    )}
-                  </article>
-                ))
-              )}
-            </div>
           </div>
         )}
         {tab === "sessions" && (

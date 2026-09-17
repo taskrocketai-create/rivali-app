@@ -6,6 +6,7 @@ import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 
 type Mode = "start" | "1" | "2" | "3" | "4" | null;
 type TracePoint = { lat: number; lng: number; time: number };
+type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
 
 export function TrackMapEditor({
   tracks,
@@ -20,6 +21,7 @@ export function TrackMapEditor({
   const mapRef = useRef<Leaflet.Map | null>(null);
   const leafletRef = useRef<typeof Leaflet | null>(null);
   const layers = useRef<Leaflet.Layer[]>([]);
+  const searchMarker = useRef<Leaflet.Marker | null>(null);
   const [trackId, setTrackId] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [mode, setMode] = useState<Mode>(null);
@@ -29,6 +31,9 @@ export function TrackMapEditor({
   const radiusRef = useRef(radius);
   const [trace, setTrace] = useState<TracePoint[]>([]);
   const [mapReady, setMapReady] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const [message, setMessage] = useState(
     "Select a processed session to load its recorded GPS trace.",
   );
@@ -79,7 +84,7 @@ export function TrackMapEditor({
       }).addTo(map);
       layers.current.push(marker, circle);
     });
-  }, [startFinish, trace, turns]);
+  }, [startFinish, trace, turns, setTurns]);
   useEffect(() => {
     radiusRef.current = radius;
   }, [radius]);
@@ -147,11 +152,40 @@ export function TrackMapEditor({
     const markers = track?.turns ?? {};
     setStartFinish(sf);
     setTurns(markers);
+    if (track?.latitude != null && track?.longitude != null) mapRef.current?.setView([track.latitude, track.longitude], 17);
     setMessage(
       track?.start_finish
         ? "Loaded the saved layout. Drag or replace any marker."
         : "Load a session, then define the start/finish line and four turn centers.",
     );
+  }
+  async function searchTracks() {
+    if (searchQuery.trim().length < 3) return setMessage("Enter at least three characters to search.");
+    setSearching(true);
+    setMessage("Searching for the track...");
+    try {
+      const response = await fetch(`/api/track-search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Track search failed.");
+      setSearchResults(payload.results ?? []);
+      setMessage(payload.results?.length ? "Choose the correct result to center the satellite map." : "No matches found. Try the track name plus city and state.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Track search failed.");
+    } finally { setSearching(false); }
+  }
+  async function chooseSearchResult(result: SearchResult) {
+    const map = mapRef.current, L = leafletRef.current;
+    if (map && L) {
+      map.setView([result.latitude, result.longitude], 18);
+      searchMarker.current?.remove();
+      searchMarker.current = L.marker([result.latitude, result.longitude]).addTo(map).bindPopup(result.label).openPopup();
+    }
+    setSearchResults([]);
+    if (!trackId) return setMessage("Map centered. Select the saved track above to attach this location to it.");
+    const { data, error } = await supabase.from("tracks").update({ location: result.label, latitude: result.latitude, longitude: result.longitude }).eq("id", trackId).select("id,name,location,surface_type,latitude,longitude,start_finish,turns").single();
+    if (error) return setMessage(error.message);
+    onTrackUpdated(data as Track);
+    setMessage("Track location saved. Session weather can now use these coordinates.");
   }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
@@ -167,7 +201,7 @@ export function TrackMapEditor({
       .from("tracks")
       .update({ start_finish: startFinish, turns: normalized })
       .eq("id", trackId)
-      .select("id,name,location,surface_type,start_finish,turns")
+      .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
       .single();
     if (error) return setMessage(error.message);
     onTrackUpdated(data as Track);
@@ -181,6 +215,14 @@ export function TrackMapEditor({
         Use MyChron GPS data as the racing line. Draw the start/finish line
         across the track, then place the center of Turns 1–4.
       </p>
+      <div className="field">
+        <label>Find a track on the satellite map</label>
+        <div className="search-row">
+          <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchTracks(); } }} placeholder="Track name, city, and state" />
+          <button className="button small" type="button" disabled={searching} onClick={searchTracks}>{searching ? "Searching..." : "Search"}</button>
+        </div>
+        {searchResults.length > 0 && <div className="search-results">{searchResults.map((result) => <button key={result.id} type="button" onClick={() => chooseSearchResult(result)}><strong>{result.label.split(",")[0]}</strong><span>{result.label}</span></button>)}</div>}
+      </div>
       <div className="grid-2">
         <div className="field">
           <label>Track</label>
