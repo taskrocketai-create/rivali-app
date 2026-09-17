@@ -56,18 +56,19 @@ export function VoiceDebriefRecorder({ sessions }: { sessions: RaceSession[] }) 
     let path = "";
     let savedDebrief: VoiceDebrief | null = null;
     try {
-      const blob = new Blob(chunksRef.current, { type: mimeType });
+      const baseMimeType = mimeType.split(";")[0].toLowerCase();
+      const blob = new Blob(chunksRef.current, { type: baseMimeType });
       if (!blob.size) throw new Error("The recording was empty.");
       if (blob.size > 25 * 1024 * 1024) throw new Error("Recording exceeds the 25 MB transcription limit.");
       const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
       const userId = claimsData?.claims?.sub;
       if (claimsError || !userId) throw new Error("Your session expired. Sign in again.");
       const id = crypto.randomUUID();
-      const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+      const ext = baseMimeType.includes("mp4") ? "m4a" : baseMimeType.includes("mpeg") ? "mp3" : baseMimeType.includes("ogg") ? "ogg" : baseMimeType.includes("wav") ? "wav" : "webm";
       path = `${userId}/${sessionId}/${id}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("voice-debriefs").upload(path, blob, { contentType: mimeType, upsert: false });
+      const { error: uploadError } = await supabase.storage.from("voice-debriefs").upload(path, blob, { contentType: baseMimeType, upsert: false });
       if (uploadError) throw uploadError;
-      const { data: debrief, error: insertError } = await supabase.from("voice_debriefs").insert({ id, user_id: userId, session_id: sessionId, audio_storage_path: path, audio_mime_type: mimeType, duration_seconds: elapsedRef.current, status: "uploaded" }).select("id,session_id,status,transcript,error,created_at").single();
+      const { data: debrief, error: insertError } = await supabase.from("voice_debriefs").insert({ id, user_id: userId, session_id: sessionId, audio_storage_path: path, audio_mime_type: baseMimeType, duration_seconds: elapsedRef.current, status: "uploaded" }).select("id,session_id,status,transcript,error,created_at").single();
       if (insertError) throw insertError;
       savedDebrief = debrief;
       const response = await fetch("/api/voice-debrief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ debriefId: id }) });
