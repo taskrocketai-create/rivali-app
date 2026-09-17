@@ -22,6 +22,7 @@ import type {
 import { TrackMapEditor } from "./track-map-editor";
 import { VoiceDebriefRecorder } from "./voice-debrief";
 import { RaceControlOverview } from "./race-control-overview";
+import type { DougAction } from "./doug-call";
 
 type Tab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 const tabItems: [Tab, string, typeof Upload][] = [
@@ -59,7 +60,54 @@ export function DashboardClient({
   const [weatherNotes, setWeatherNotes] = useState("");
   const [dirtyTireRule, setDirtyTireRule] = useState(false);
   const [tireLocked, setTireLocked] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState(initialSessions[0]?.id ?? "");
+  const [pendingDougAction, setPendingDougAction] = useState<DougAction | null>(null);
   const supabase = createClient();
+  const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
+
+  async function confirmDougAction() {
+    if (!pendingDougAction) return;
+    const action = pendingDougAction;
+    setBusy(true);
+    setMessage("");
+    try {
+      if (action.kind === "start_raceday") {
+        setTab("upload");
+        setMessage("Raceday intake opened. Doug still needs the event details before anything is saved.");
+      } else if (action.kind === "select_entry") {
+        const query = action.target.toLowerCase();
+        const match = sessions.find((session) =>
+          [session.setup.class_name, session.racers?.name, session.karts?.name]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(query)),
+        );
+        if (!match) throw new Error(`I couldn't find a saved entry matching “${action.target}”.`);
+        setActiveSessionId(match.id);
+        setMessage(`${action.target} is now the active entry.`);
+      } else {
+        if (!activeSession) throw new Error("Upload or select a session before changing its setup.");
+        const now = new Date().toISOString();
+        const existingLog = Array.isArray(activeSession.setup.change_log) ? activeSession.setup.change_log : [];
+        const setup = action.kind === "record_setup_change"
+          ? { ...activeSession.setup, change_log: [...existingLog, { change: action.change, recorded_at: now, source: "doug" }] }
+          : { ...activeSession.setup, dirty_tire_rule: true, tire_locked: true, tire_set_id: action.tireSet, tire_locked_at: now };
+        const { data, error } = await supabase
+          .from("sessions")
+          .update({ setup })
+          .eq("id", activeSession.id)
+          .select("id,setup")
+          .single();
+        if (error) throw error;
+        setSessions((current) => current.map((session) => session.id === data.id ? { ...session, setup: data.setup } : session));
+        setMessage(action.kind === "record_setup_change" ? "Setup change saved." : `Dirty Tires locked: ${action.tireSet}. Chassis adjustments remain available.`);
+      }
+      setPendingDougAction(null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Doug could not complete that action.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function ownerId() {
     const { data, error } = await supabase.auth.getClaims();
     if (error || !data?.claims?.sub)
@@ -278,13 +326,23 @@ export function DashboardClient({
       </aside>
       <section className="panel">
         {message && <div className="notice">{message}</div>}
+        {pendingDougAction && (
+          <div className="doug-confirm" role="dialog" aria-label="Confirm Doug's action">
+            <div><small>DOUG WANTS TO</small><strong>{pendingDougAction.summary}</strong><p>{pendingDougAction.details}</p></div>
+            <div className="doug-confirm-actions">
+              <button className="button" onClick={() => setPendingDougAction(null)} disabled={busy}>Cancel</button>
+              <button className="button primary" onClick={() => void confirmDougAction()} disabled={busy}>{busy ? "Saving…" : "Confirm"}</button>
+            </div>
+          </div>
+        )}
         {tab === "home" && (
           <RaceControlOverview
             racers={racers}
             karts={karts}
             tracks={tracks}
-            sessions={sessions}
+            sessions={activeSession ? [activeSession, ...sessions.filter((session) => session.id !== activeSession.id)] : sessions}
             onNavigate={(destination) => setTab(destination)}
+            onRequestAction={setPendingDougAction}
           />
         )}
         {tab === "upload" && (
