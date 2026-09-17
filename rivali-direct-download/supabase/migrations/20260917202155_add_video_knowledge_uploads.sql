@@ -49,13 +49,13 @@ alter table public.knowledge_upload_jobs enable row level security;
 
 create policy "knowledge_upload_admin_select" on public.knowledge_upload_jobs
 for select to authenticated
-using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'rivali_admin');
+using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'rivali_admin');
 
 create policy "knowledge_upload_admin_insert" on public.knowledge_upload_jobs
 for insert to authenticated
 with check (
   (select auth.uid()) = uploader_id
-  and (select auth.jwt() -> 'app_metadata' ->> 'role') = 'rivali_admin'
+  and ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'rivali_admin'
 );
 
 grant select, insert on public.knowledge_upload_jobs to authenticated;
@@ -81,7 +81,7 @@ for insert to authenticated
 with check (
   bucket_id='knowledge-video-intake'
   and (storage.foldername(name))[1]=(select auth.uid())::text
-  and (select auth.jwt() -> 'app_metadata' ->> 'role') = 'rivali_admin'
+  and ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'rivali_admin'
 );
 
 create policy "knowledge_video_admin_delete" on storage.objects
@@ -89,5 +89,14 @@ for delete to authenticated
 using (
   bucket_id='knowledge-video-intake'
   and (storage.foldername(name))[1]=(select auth.uid())::text
-  and (select auth.jwt() -> 'app_metadata' ->> 'role') = 'rivali_admin'
+  and ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'rivali_admin'
 );
+
+create index knowledge_items_source_upload_idx on public.knowledge_items(source_upload_id)
+  where source_upload_id is not null;
+create index knowledge_items_supersedes_idx on public.knowledge_items(supersedes_id)
+  where supersedes_id is not null;
+create index knowledge_items_track_user_idx on public.knowledge_items(track_id, user_id)
+  where track_id is not null;
+create index knowledge_items_kart_user_idx on public.knowledge_items(kart_id, user_id)
+  where kart_id is not null;
