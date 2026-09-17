@@ -187,6 +187,28 @@ export function TrackMapEditor({
     onTrackUpdated(data as Track);
     setMessage("Track location saved. Session weather can now use these coordinates.");
   }
+  function useCurrentLocation() {
+    if (!navigator.geolocation) return setMessage("Location is not supported by this device.");
+    setSearching(true);
+    setMessage("Locating you at the track...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const result: SearchResult = {
+          id: "device-location",
+          label: "Current trackside location",
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          type: "device",
+        };
+        void chooseSearchResult(result).finally(() => setSearching(false));
+      },
+      (error) => {
+        setSearching(false);
+        setMessage(error.code === 1 ? "Location permission was denied. Search by track name instead." : "Could not determine your location. Try track search instead.");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+    );
+  }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
     if (startFinish.length !== 2 || Object.keys(turns).length !== 4)
@@ -219,7 +241,8 @@ export function TrackMapEditor({
         <label>Find a track on the satellite map</label>
         <div className="search-row">
           <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchTracks(); } }} placeholder="Track name, city, and state" />
-          <button className="button small" type="button" disabled={searching} onClick={searchTracks}>{searching ? "Searching..." : "Search"}</button>
+          <button className="button small" type="button" disabled={searching} onClick={searchTracks}>{searching ? "Working..." : "Search"}</button>
+          <button className="button small secondary" type="button" disabled={searching} onClick={useCurrentLocation}>Use my location</button>
         </div>
         {searchResults.length > 0 && <div className="search-results">{searchResults.map((result) => <button key={result.id} type="button" onClick={() => chooseSearchResult(result)}><strong>{result.label.split(",")[0]}</strong><span>{result.label}</span></button>)}</div>}
       </div>
