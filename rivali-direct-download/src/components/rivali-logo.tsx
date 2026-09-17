@@ -5,7 +5,7 @@ export function RivaliLogo({ compact = false }: { compact?: boolean }) {
   return (
     <Link className={`brand-logo ${compact ? "compact" : ""}`} href="/">
       <Image
-        src="/rivali-logo.webp"
+        src="/rivali-logo-transparent.png"
         alt="Rivali — Turn Data Into Speed"
         width={1200}
         height={800}

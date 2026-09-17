@@ -1,10 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { ArrowRight, CloudSun, Gauge, MapPinned, Timer, Upload, Wrench } from "lucide-react";
 import type { Kart, Racer, RaceSession, Track } from "@/types/domain";
-import { DougCall } from "./doug-call";
-import type { DougAction } from "./doug-call";
 
 type OverviewTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 
@@ -21,10 +18,9 @@ function racedayQuote(seed: string) {
   return dougQuotes[value % dougQuotes.length];
 }
 
-export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigate, onRequestAction }: {
+export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigate }: {
   racers: Racer[]; karts: Kart[]; tracks: Track[]; sessions: RaceSession[];
   onNavigate: (tab: OverviewTab) => void;
-  onRequestAction: (action: DougAction) => void;
 }) {
   const latest = sessions[0];
   const conditions = latest?.conditions ?? {};
@@ -32,22 +28,12 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
   const trackCondition = typeof conditions.track_condition === "string" && conditions.track_condition ? conditions.track_condition : "Not recorded";
   const gap = latest?.best_lap_sec && latest.average_lap_sec ? latest.average_lap_sec - latest.best_lap_sec : null;
   const quote = racedayQuote(latest?.session_date ?? new Date().toISOString().slice(0, 10));
-  const racedayContext = JSON.stringify({
-    latestSession: latest ? { date: latest.session_date, type: latest.session_type, driver: latest.racers?.name, kart: latest.karts?.name, track: latest.tracks?.name, setup: latest.setup, conditions: latest.conditions, bestLapSeconds: latest.best_lap_sec } : null,
-    savedDrivers: racers.map((item) => item.name), savedKarts: karts.map((item) => item.name), savedTracks: tracks.map((item) => item.name),
-  });
   return (
     <div className="doug-home">
-      <section className="crew-chief-stage">
-        <div className="doug-portrait-wrap" aria-label="Doug, Rivali AI crew chief">
-          <div className="doug-speed-lines" />
-          <Image className="doug-portrait" src="/doug-crew-chief.png" alt="Doug, Rivali's dirt racing crew chief" width={620} height={744} priority />
-          <div className="doug-nameplate"><strong>DOUG</strong><span>AI CREW CHIEF</span></div>
-        </div>
+      <section className="race-command-intro">
         <div className="crew-conversation">
           <div className="conversation-status"><span /> DOUG IS READY</div>
           <p className="doug-line">{latest ? `We continuing ${latest.tracks?.name ?? "the current Raceday"}, or starting a new one?` : "Tell me everything you know about the driver, kart, classes and track. Don’t organize it—I’ll handle that part."}</p>
-          <DougCall racedayContext={racedayContext} onNavigate={onNavigate} onRequestAction={onRequestAction} />
           <div className="conversation-actions">
             <button onClick={() => onNavigate("upload")}><Upload /> Start a new Raceday</button>
             {latest && <button onClick={() => onNavigate("sessions")}><Timer /> Continue current Raceday</button>}

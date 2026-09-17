@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   Upload,
   Users,
@@ -23,6 +23,7 @@ import { TrackMapEditor } from "./track-map-editor";
 import { VoiceDebriefRecorder } from "./voice-debrief";
 import { RaceControlOverview } from "./race-control-overview";
 import type { DougAction } from "./doug-call";
+import { FloatingDoug } from "./floating-doug";
 
 type Tab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 const tabItems: [Tab, string, typeof Upload][] = [
@@ -64,6 +65,10 @@ export function DashboardClient({
   const [pendingDougAction, setPendingDougAction] = useState<DougAction | null>(null);
   const supabase = createClient();
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
+  const racedayContext = useMemo(() => JSON.stringify({
+    latestSession: activeSession ? { date: activeSession.session_date, type: activeSession.session_type, driver: activeSession.racers?.name, kart: activeSession.karts?.name, track: activeSession.tracks?.name, setup: activeSession.setup, conditions: activeSession.conditions, bestLapSeconds: activeSession.best_lap_sec } : null,
+    savedDrivers: racers.map((item) => item.name), savedKarts: karts.map((item) => item.name), savedTracks: tracks.map((item) => item.name),
+  }), [activeSession, racers, karts, tracks]);
 
   async function confirmDougAction() {
     if (!pendingDougAction) return;
@@ -342,7 +347,6 @@ export function DashboardClient({
             tracks={tracks}
             sessions={activeSession ? [activeSession, ...sessions.filter((session) => session.id !== activeSession.id)] : sessions}
             onNavigate={(destination) => setTab(destination)}
-            onRequestAction={setPendingDougAction}
           />
         )}
         {tab === "upload" && (
@@ -726,6 +730,12 @@ export function DashboardClient({
           return <button key={id as string} className={tab === id ? "active" : ""} onClick={() => { setTab(id as Tab); setMessage(""); }}><NavIcon /><span>{label as string}</span></button>;
         })}
       </nav>
+      <FloatingDoug
+        racedayContext={racedayContext}
+        onNavigate={(destination) => setTab(destination)}
+        onRequestAction={setPendingDougAction}
+        attentionKey={pendingDougAction?.summary ?? message}
+      />
     </div>
   );
 }
