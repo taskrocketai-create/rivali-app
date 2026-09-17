@@ -1,3 +1,0 @@
-supabase==2.31.0
-pandas==2.2.3
-daq-tools @ git+https://github.com/zaggyai/daq_tools.git@5160d914cc80cb6514701576ec4252bfd6ed9f7b
