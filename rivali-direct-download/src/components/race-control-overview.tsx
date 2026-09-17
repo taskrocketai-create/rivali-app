@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowRight, CloudSun, Gauge, MapPinned, Timer, Upload, Wrench } from "lucide-react";
 import type { Kart, Racer, RaceSession, Track } from "@/types/domain";
 import { DougCall } from "./doug-call";
+import type { DougAction } from "./doug-call";
 
 type OverviewTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 
@@ -20,9 +21,10 @@ function racedayQuote(seed: string) {
   return dougQuotes[value % dougQuotes.length];
 }
 
-export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigate }: {
+export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigate, onRequestAction }: {
   racers: Racer[]; karts: Kart[]; tracks: Track[]; sessions: RaceSession[];
   onNavigate: (tab: OverviewTab) => void;
+  onRequestAction: (action: DougAction) => void;
 }) {
   const latest = sessions[0];
   const conditions = latest?.conditions ?? {};
@@ -45,7 +47,7 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
         <div className="crew-conversation">
           <div className="conversation-status"><span /> DOUG IS READY</div>
           <p className="doug-line">{latest ? `We continuing ${latest.tracks?.name ?? "the current Raceday"}, or starting a new one?` : "Tell me everything you know about the driver, kart, classes and track. Don’t organize it—I’ll handle that part."}</p>
-          <DougCall racedayContext={racedayContext} onNavigate={onNavigate} />
+          <DougCall racedayContext={racedayContext} onNavigate={onNavigate} onRequestAction={onRequestAction} />
           <div className="conversation-actions">
             <button onClick={() => onNavigate("upload")}><Upload /> Start a new Raceday</button>
             {latest && <button onClick={() => onNavigate("sessions")}><Timer /> Continue current Raceday</button>}
