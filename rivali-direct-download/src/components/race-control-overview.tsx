@@ -7,6 +7,7 @@ import {
   Gauge,
   MapPinned,
   Mic,
+  Wrench,
   Timer,
   Upload,
 } from "lucide-react";
@@ -46,8 +47,10 @@ export function RaceControlOverview({
       <section className="race-hero">
         <div>
           <div className="eyebrow">RACE CONTROL · LIVE WORKSPACE</div>
-          <h1>Find the next tenth.</h1>
-          <p>Turn every lap, setup change, and driver comment into a faster decision.</p>
+          <h1 className="desktop-race-title">Find the next tenth.</h1>
+          <h1 className="mobile-race-title">Race Control</h1>
+          <p className="desktop-race-subtitle">Turn every lap, setup change, and driver comment into a faster decision.</p>
+          <p className="mobile-race-subtitle">Drivers · Data · Stronger Together</p>
         </div>
         <div className="race-status">
           <span className="status-light" />
@@ -73,6 +76,7 @@ export function RaceControlOverview({
               </div>
               <div className="session-chips">
                 <div><Gauge /><small>DRIVER</small><strong>{latest.racers?.name ?? "—"}</strong></div>
+                <div><Wrench /><small>KART</small><strong>{latest.karts?.name ?? "—"}</strong></div>
                 <div><MapPinned /><small>TRACK</small><strong>{latest.tracks?.name ?? "—"}</strong></div>
                 <div><CloudSun /><small>WEATHER</small><strong>{temp}</strong><span>{trackCondition}</span></div>
               </div>
@@ -94,9 +98,9 @@ export function RaceControlOverview({
 
       <section className="performance-grid">
         <div className="metric-card"><Timer /><small>BEST LAP</small><strong>{lap(latest?.best_lap_sec)}</strong><span>seconds</span></div>
-        <div className="metric-card"><Timer /><small>AVERAGE LAP</small><strong>{lap(latest?.average_lap_sec)}</strong><span>seconds</span></div>
+        <div className="metric-card"><Timer /><small>LAST LAP</small><strong>—</strong><span>awaiting live timing</span></div>
         <div className="metric-card"><Gauge /><small>BEST-TO-AVG</small><strong>{gap == null ? "—" : `+${gap.toFixed(3)}`}</strong><span>consistency gap</span></div>
-        <div className="metric-card"><Flag /><small>LAPS</small><strong>{latest?.lap_count ?? "—"}</strong><span>{trackCondition}</span></div>
+        <div className="metric-card"><CloudSun /><small>CONDITIONS</small><strong>{trackCondition}</strong><span>{temp}</span></div>
       </section>
 
       <section className="race-actions">
