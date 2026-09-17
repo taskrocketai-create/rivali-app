@@ -37,6 +37,7 @@ export type RaceSession = {
   raw_file_name: string;
   tracks: { name: string } | null;
   racers: { name: string } | null;
+  karts: { name: string } | null;
   recommendations?: { recommendation: string; confidence: string }[];
 };
 export type VoiceDebrief = {
