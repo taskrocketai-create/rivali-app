@@ -7,6 +7,9 @@ import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 type Mode = "start" | "1" | "2" | "3" | "4" | null;
 type TracePoint = { lat: number; lng: number; time: number };
 type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
+const FEET_PER_METER = 3.28084;
+const feetToMeters = (feet: number) => feet / FEET_PER_METER;
+const metersToFeet = (meters: number) => Math.round(meters * FEET_PER_METER);
 
 export function TrackMapEditor({
   tracks,
@@ -27,8 +30,8 @@ export function TrackMapEditor({
   const [mode, setMode] = useState<Mode>(null);
   const [startFinish, setStartFinish] = useState<LatLng[]>([]);
   const [turns, setTurns] = useState<Record<string, TurnMarker>>({});
-  const [radius, setRadius] = useState(18);
-  const radiusRef = useRef(radius);
+  const [radiusFeet, setRadiusFeet] = useState(60);
+  const radiusRef = useRef(feetToMeters(radiusFeet));
   const [trace, setTrace] = useState<TracePoint[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,8 +89,8 @@ export function TrackMapEditor({
     });
   }, [startFinish, trace, turns, setTurns]);
   useEffect(() => {
-    radiusRef.current = radius;
-  }, [radius]);
+    radiusRef.current = feetToMeters(radiusFeet);
+  }, [radiusFeet]);
   useEffect(() => {
     let active = true;
     (async () => {
@@ -152,6 +155,8 @@ export function TrackMapEditor({
     const markers = track?.turns ?? {};
     setStartFinish(sf);
     setTurns(markers);
+    const savedRadius = Object.values(markers)[0]?.radius_m;
+    if (savedRadius) setRadiusFeet(metersToFeet(savedRadius));
     if (track?.latitude != null && track?.longitude != null) mapRef.current?.setView([track.latitude, track.longitude], 17);
     setMessage(
       track?.start_finish
@@ -216,7 +221,7 @@ export function TrackMapEditor({
     const normalized = Object.fromEntries(
       Object.entries(turns).map(([key, value]) => [
         key,
-        { ...value, radius_m: radius },
+        { ...value, radius_m: feetToMeters(radiusFeet) },
       ]),
     );
     const { data, error } = await supabase
@@ -319,14 +324,16 @@ export function TrackMapEditor({
       </div>
       <div className="grid-2">
         <div className="field">
-          <label>Turn-zone radius (meters)</label>
+          <label>Turn-zone radius (feet)</label>
           <input
             type="number"
-            min="3"
-            max="100"
-            value={radius}
-            onChange={(e) => setRadius(Number(e.target.value))}
+            min="10"
+            max="300"
+            step="5"
+            value={radiusFeet}
+            onChange={(e) => setRadiusFeet(Number(e.target.value))}
           />
+          <small className="muted">Start near 60 ft. Increase it until the circle covers the full corner without reaching the straightaways.</small>
         </div>
         <button className="button" type="button" onClick={save}>
           Save track layout
