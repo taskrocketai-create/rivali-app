@@ -259,6 +259,84 @@ button {
   font-weight: 800;
   font-size: 0.82rem;
 }
+.rule-toggle {
+  min-height: 58px;
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.rule-toggle input,
+.lock-switch input {
+  accent-color: var(--red);
+  width: 18px;
+  height: 18px;
+}
+.rule-toggle span {
+  display: grid;
+  gap: 3px;
+}
+.rule-toggle small {
+  color: var(--muted);
+}
+.dirty-tire-rule {
+  border-left: 5px solid var(--gold);
+  background: rgba(217, 157, 54, 0.1);
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.dirty-tire-rule.locked {
+  border-color: var(--red);
+  background: rgba(167, 42, 32, 0.1);
+}
+.dirty-tire-rule > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.dirty-tire-rule span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.dirty-tire-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.dirty-tire-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.dirty-tire-controls select {
+  padding: 9px;
+}
+.tire-rule-badge {
+  width: fit-content;
+  padding: 5px 8px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--gold);
+  color: var(--ink);
+}
+.tire-rule-badge.locked {
+  border-color: var(--red);
+  color: var(--red);
+}
+@media (max-width: 720px) {
+  .dirty-tire-rule,
+  .dirty-tire-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
 .field input,
 .field select,
 .field textarea,
