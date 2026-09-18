@@ -48,6 +48,14 @@ export type RaceSession = {
   karts: { name: string } | null;
   recommendations?: { recommendation: string; confidence: string }[];
 };
+export type PendingImport = {
+  id: string;
+  raw_file_name: string;
+  raw_storage_path: string;
+  size_bytes: number;
+  source: string;
+  created_at: string;
+};
 export type VoiceDebrief = {
   id: string;
   session_id: string;
