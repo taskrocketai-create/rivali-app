@@ -15,6 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type {
   Kart,
+  PendingImport,
   Racer,
   RaceSession,
   Track,
@@ -41,17 +42,22 @@ export function DashboardClient({
   karts: initialKarts,
   tracks: initialTracks,
   sessions: initialSessions,
+  pendingImports: initialPendingImports,
 }: {
   racers: Racer[];
   karts: Kart[];
   tracks: Track[];
   sessions: RaceSession[];
+  pendingImports: PendingImport[];
 }) {
   const [tab, setTab] = useState<Tab>("home");
   const [racers, setRacers] = useState(initialRacers);
   const [karts, setKarts] = useState(initialKarts);
   const [tracks, setTracks] = useState(initialTracks);
   const [sessions, setSessions] = useState(initialSessions);
+  const [pendingImports, setPendingImports] = useState(initialPendingImports);
+  const [selectedPendingId, setSelectedPendingId] = useState("");
+  const [shortcutToken, setShortcutToken] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [weatherBusy, setWeatherBusy] = useState(false);
@@ -233,24 +239,30 @@ export function DashboardClient({
     setMessage("");
     const form = new FormData(event.currentTarget);
     const file = form.get("file") as File;
+    const pending = pendingImports.find((item) => item.id === selectedPendingId);
     let uploadedPath = "";
     let createdSessionId = "";
     try {
-      if (!file?.name.toLowerCase().endsWith(".xrk"))
+      if (!pending && !file?.name.toLowerCase().endsWith(".xrk"))
         throw new Error("Choose a MyChron .xrk file.");
-      if (file.size > 100 * 1024 * 1024)
+      if (!pending && file.size > 100 * 1024 * 1024)
         throw new Error("The maximum file size is 100 MB.");
       const user_id = await ownerId();
       const id = crypto.randomUUID();
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      uploadedPath = `${user_id}/${id}/${safeName}`;
-      const { error: uploadError } = await supabase.storage
-        .from("telemetry")
-        .upload(uploadedPath, file, {
-          contentType: "application/octet-stream",
-          upsert: false,
-        });
-      if (uploadError) throw uploadError;
+      const rawFileName = pending?.raw_file_name ?? file.name;
+      if (pending) {
+        uploadedPath = pending.raw_storage_path;
+      } else {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        uploadedPath = `${user_id}/${id}/${safeName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("telemetry")
+          .upload(uploadedPath, file, {
+            contentType: "application/octet-stream",
+            upsert: false,
+          });
+        if (uploadError) throw uploadError;
+      }
       const setup = {
         class_name: form.get("class_name") || null,
         tire_set_id: form.get("tire_set_id") || null,
@@ -282,7 +294,7 @@ export function DashboardClient({
           track_id: form.get("track_id"),
           session_date: form.get("session_date"),
           session_type: form.get("session_type"),
-          raw_file_name: file.name,
+          raw_file_name: rawFileName,
           raw_storage_path: uploadedPath,
           setup,
           conditions,
@@ -298,6 +310,15 @@ export function DashboardClient({
         .from("processing_jobs")
         .insert({ user_id, session_id: id, status: "queued" });
       if (jobError) throw jobError;
+      if (pending) {
+        const { error: pendingError } = await supabase
+          .from("pending_imports")
+          .update({ status: "imported", imported_session_id: id, imported_at: new Date().toISOString() })
+          .eq("id", pending.id);
+        if (pendingError) throw pendingError;
+        setPendingImports((current) => current.filter((item) => item.id !== pending.id));
+        setSelectedPendingId("");
+      }
       setSessions([session as unknown as RaceSession, ...sessions]);
       event.currentTarget.reset();
       setDirtyTireRule(false);
@@ -306,9 +327,24 @@ export function DashboardClient({
     } catch (error) {
       if (createdSessionId)
         await supabase.from("sessions").delete().eq("id", createdSessionId);
-      if (uploadedPath)
+      if (uploadedPath && !pending)
         await supabase.storage.from("telemetry").remove([uploadedPath]);
       setMessage(error instanceof Error ? error.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function createShortcutToken() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/shortcut-token", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not create Shortcut token.");
+      setShortcutToken(result.token);
+      setMessage("Shortcut token created. Copy it now; Rivali will not show this token again.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not create Shortcut token.");
     } finally {
       setBusy(false);
     }
@@ -352,6 +388,32 @@ export function DashboardClient({
         {tab === "upload" && (
           <form className="card stack" onSubmit={uploadSession}>
             <h2>Upload a MyChron session</h2>
+            <div className="shortcut-setup">
+              <div>
+                <strong>Send from the iPhone Share Sheet</strong>
+                <p>Generate a token once, then use it in the “Send to Rivali” Shortcut as a Bearer token.</p>
+              </div>
+              <button className="button small secondary" type="button" disabled={busy} onClick={() => void createShortcutToken()}>
+                Create Shortcut token
+              </button>
+              {shortcutToken && <code className="shortcut-token">{shortcutToken}</code>}
+            </div>
+            {pendingImports.length > 0 && (
+              <div className="pending-imports">
+                <strong>Files sent from your iPhone</strong>
+                {pendingImports.map((item) => (
+                  <button
+                    key={item.id}
+                    className={selectedPendingId === item.id ? "selected" : ""}
+                    type="button"
+                    onClick={() => setSelectedPendingId(item.id)}
+                  >
+                    <span>{item.raw_file_name}</span>
+                    <small>{new Date(item.created_at).toLocaleString()}</small>
+                  </button>
+                ))}
+              </div>
+            )}
             {racers.length === 0 ||
             karts.length === 0 ||
             tracks.length === 0 ? (
@@ -416,7 +478,8 @@ export function DashboardClient({
               </div>
               <div className="field">
                 <label>.xrk file</label>
-                <input name="file" type="file" accept=".xrk" required />
+                <input name="file" type="file" accept=".xrk" required={!selectedPendingId} disabled={Boolean(selectedPendingId)} />
+                {selectedPendingId && <small>Using the selected iPhone upload.</small>}
               </div>
             </div>
             <div className="section-heading-row"><h3>Class and tire rules</h3></div>
