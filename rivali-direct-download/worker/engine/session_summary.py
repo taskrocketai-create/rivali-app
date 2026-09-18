@@ -122,12 +122,11 @@ def summarize_session(xrk_path: str) -> SessionSummary:
     # a sentinel for "no valid time" rather than being omitted. These
     # must be filtered out before computing any statistics.
     INVALID_LAP_TIME_SENTINEL = 2147483647
-    invalid_count = sum(1 for l in raw_laps if l["lap_time"] == INVALID_LAP_TIME_SENTINEL)
-    raw_laps = [l for l in raw_laps if l["lap_time"] != INVALID_LAP_TIME_SENTINEL]
+    invalid_count = sum(1 for l in raw_laps if l["lap_time"] == INVALID_LAP_TIME_SENTINEL or l["lap_time"] <= 0)
+    raw_laps = [l for l in raw_laps if l["lap_time"] != INVALID_LAP_TIME_SENTINEL and l["lap_time"] > 0]
     if invalid_count:
         warnings.append(
-            f"{invalid_count} incomplete/out-lap(s) with no valid time were "
-            "excluded (e.g. the formation/out lap before the first timed lap)."
+            f"{invalid_count} placeholder or incomplete lap record(s) with no valid time were excluded."
         )
 
     if not raw_laps:
@@ -191,6 +190,29 @@ def summarize_session(xrk_path: str) -> SessionSummary:
         consistency_stdev_sec=stdev, slowest_lap_sec=worst,
         first_half_avg_sec=first_half_avg, second_half_avg_sec=second_half_avg,
         fade_sec=fade, warnings=warnings,
+    )
+
+
+def summary_from_gps_laps(base: SessionSummary, lap_times: list[float], diagnostic: str) -> SessionSummary:
+    """Replace an empty AiM lap table with validated GPS-derived lap times."""
+    if not lap_times:
+        base.warnings.append(diagnostic)
+        return base
+    lap_objs = [LapSummary(index + 1, value) for index, value in enumerate(lap_times)]
+    best = min(lap_times)
+    for lap in lap_objs:
+        lap.is_best = lap.lap_time_sec == best
+    half = len(lap_times) // 2
+    first = statistics.mean(lap_times[:half]) if half else None
+    second = statistics.mean(lap_times[half:]) if lap_times[half:] else None
+    return SessionSummary(
+        racer=base.racer, track=base.track, date=base.date, time=base.time,
+        lap_count=len(lap_times), laps=lap_objs, best_lap_sec=best,
+        average_lap_sec=statistics.mean(lap_times), median_lap_sec=statistics.median(lap_times),
+        consistency_stdev_sec=statistics.pstdev(lap_times) if len(lap_times) > 1 else 0.0,
+        slowest_lap_sec=max(lap_times), first_half_avg_sec=first, second_half_avg_sec=second,
+        fade_sec=(second - first) if first is not None and second is not None else None,
+        warnings=[*base.warnings, diagnostic],
     )
 
 
