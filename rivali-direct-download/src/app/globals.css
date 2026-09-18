@@ -533,6 +533,35 @@ textarea {
   color: #65502b;
   margin: 12px 0;
 }
+.shortcut-setup {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: rgba(167, 42, 32, 0.04);
+}
+.shortcut-setup p { margin: 5px 0 0; color: var(--muted); }
+.shortcut-token {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.pending-imports { display: grid; gap: 8px; }
+.pending-imports button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  text-align: left;
+}
+.pending-imports button.selected { border-color: var(--red); background: #fff4ef; }
+.pending-imports small { color: var(--muted); }
 .search-row,
 .section-heading-row { display: flex; align-items: center; gap: 10px; }
 .search-row input { flex: 1; }
