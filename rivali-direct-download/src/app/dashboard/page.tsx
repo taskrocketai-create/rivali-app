@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   const isAdmin =
     (claimsData.claims.app_metadata as { role?: string } | undefined)?.role ===
     "rivali_admin";
-  const [racers, karts, tracks, sessions] = await Promise.all([
+  const [racers, karts, tracks, sessions, pendingImports] = await Promise.all([
     supabase
       .from("racers")
       .select("id,name,experience_level,driver_weight_lb")
@@ -34,6 +34,11 @@ export default async function DashboardPage() {
       )
       .order("session_date", { ascending: false })
       .limit(30),
+    supabase
+      .from("pending_imports")
+      .select("id,raw_file_name,raw_storage_path,size_bytes,source,created_at")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false }),
   ]);
   return (
     <div className="app-body">
@@ -55,6 +60,7 @@ export default async function DashboardPage() {
           karts={karts.data ?? []}
           tracks={tracks.data ?? []}
           sessions={(sessions.data ?? []) as never}
+          pendingImports={pendingImports.data ?? []}
         />
       </main>
     </div>
