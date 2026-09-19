@@ -550,6 +550,19 @@ textarea {
   background: var(--ink);
   color: var(--paper);
 }
+
+.gps-capture {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(205, 191, 170, 0.35);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+}
+.gps-capture p { margin: 4px 0 10px; color: var(--muted); }
+.gps-capture-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+.gps-capture-actions button { border: 1px solid rgba(205, 191, 170, 0.45); background: transparent; color: inherit; padding: 8px 11px; border-radius: 9px; font: inherit; cursor: pointer; }
+.gps-capture-actions button.active { background: var(--red); border-color: var(--red); color: white; }
+.gps-capture-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .pending-imports { display: grid; gap: 8px; }
 .pending-imports button {
   display: flex;
