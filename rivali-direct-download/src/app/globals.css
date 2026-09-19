@@ -1160,6 +1160,22 @@ body { background: #070809; }
 .map-controls button { border: 0; border-bottom: 1px solid #353a3c; background: #0c0e10; }
 .map-controls button.active { background: linear-gradient(90deg,var(--red),#9f070c); }
 .notice { border: 0; border-left: 3px solid var(--gold); background: #171510; }
+.doug-next-step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 22px 26px; border-top: 1px solid #353a3c; border-bottom: 1px solid #353a3c; background: linear-gradient(106deg, rgba(237,28,36,.14), rgba(13,15,17,.94) 36%, #0a0c0e); }
+.doug-next-copy small { display: block; color: #f15c61; font: 800 .66rem/1 Arial,sans-serif; letter-spacing: .16em; }
+.doug-next-copy strong { display: block; margin-top: 8px; color: #fff; font: italic 1.8rem/1 Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; letter-spacing: .025em; text-transform: uppercase; }
+.doug-next-copy p { max-width: 720px; margin: 8px 0 0; color: #a6aca8; }
+.doug-next-step .button { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+.raceday-reminders { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid #303537; }
+.raceday-reminders button { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; min-width: 0; padding: 14px 12px; color: #dce0dd; text-align: left; border: 0; border-right: 1px solid #303537; background: transparent; cursor: pointer; }
+.raceday-reminders button:first-child { padding-left: 0; }
+.raceday-reminders button:last-child { border-right: 0; }
+.raceday-reminders span { grid-row: span 2; display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid #4a5050; color: #b7bdb9; }
+.raceday-reminders span svg { width: 14px; }
+.raceday-reminders strong { overflow: hidden; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.raceday-reminders small { margin-top: 3px; color: #858b88; font-size: .62rem; text-transform: uppercase; letter-spacing: .08em; }
+.raceday-reminders .complete span { border-color: rgba(0,166,81,.75); color: #00c465; background: rgba(0,166,81,.12); }
+.raceday-reminders .complete small { color: #39b971; }
+.raceday-reminders .needed:hover { background: rgba(237,28,36,.08); }
 
 @media (max-width: 760px) {
   .app-header-inner { min-height: 92px; }
@@ -1186,6 +1202,12 @@ body { background: #070809; }
   .card { padding-inline: 12px; }
   .search-row { gap: 6px; }
   .search-row .button { width: 100%; }
+  .doug-next-step { grid-template-columns: 1fr; gap: 15px; padding: 19px 13px; }
+  .doug-next-step .button { width: fit-content; }
+  .raceday-reminders { grid-template-columns: 1fr 1fr; }
+  .raceday-reminders button, .raceday-reminders button:first-child { padding: 12px 7px; border-bottom: 1px solid #303537; }
+  .raceday-reminders button:nth-child(2n) { border-right: 0; }
+  .raceday-reminders button:last-child { border-bottom: 0; }
 }
 .doug-confirm {
   display: flex;
