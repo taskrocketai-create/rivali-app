@@ -6,6 +6,8 @@ import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 
 type Mode = "start" | "1" | "2" | "3" | "4" | null;
 type TracePoint = { lat: number; lng: number; time: number };
+type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
+type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
 type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
 const FEET_PER_METER = 3.28084;
 const feetToMeters = (feet: number) => feet / FEET_PER_METER;
@@ -37,10 +39,19 @@ export function TrackMapEditor({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [walk, setWalk] = useState<WalkLayout>({ points: {} });
+  const [walkStep, setWalkStep] = useState("");
+  const [groove, setGroove] = useState<GeoPoint[]>([]);
+  const [captureMode, setCaptureMode] = useState<"walk" | "groove" | null>(null);
+  const [latestFixes, setLatestFixes] = useState<GeoPoint[]>([]);
+  const watchRef = useRef<number | null>(null);
   const [message, setMessage] = useState(
     "Select a processed session to load its recorded GPS trace.",
   );
   const supabase = createClient();
+  useEffect(() => () => {
+    if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+  }, []);
   const drawLayout = useCallback(() => {
     const L = leafletRef.current,
       map = mapRef.current;
@@ -55,6 +66,14 @@ export function TrackMapEditor({
       layers.current.push(line);
       map.fitBounds(line.getBounds(), { padding: [20, 20] });
     }
+    if (groove.length > 1) {
+      const line = L.polyline(groove.map((x) => [x.lat, x.lng]), { color: "#22c55e", weight: 4, opacity: 0.9, dashArray: "6 5" }).addTo(map);
+      layers.current.push(line);
+    }
+    Object.entries(walk.points).forEach(([label, point]) => {
+      const marker = L.circleMarker([point.lat, point.lng], { radius: 5, color: "#22c55e", fillOpacity: 1 }).addTo(map).bindTooltip(label.replaceAll("_", " "), { permanent: false });
+      layers.current.push(marker);
+    });
     if (startFinish.length === 2) {
       const line = L.polyline(
         startFinish.map((x) => [x.lat, x.lng]),
@@ -87,7 +106,7 @@ export function TrackMapEditor({
       }).addTo(map);
       layers.current.push(marker, circle);
     });
-  }, [startFinish, trace, turns, setTurns]);
+  }, [startFinish, trace, turns, groove, walk, setTurns]);
   useEffect(() => {
     radiusRef.current = feetToMeters(radiusFeet);
   }, [radiusFeet]);
@@ -155,6 +174,9 @@ export function TrackMapEditor({
     const markers = track?.turns ?? {};
     setStartFinish(sf);
     setTurns(markers);
+    const metadata = (markers as Record<string, unknown>)._rivali as { walk?: WalkLayout; groove?: GeoPoint[] } | undefined;
+    setWalk(metadata?.walk ?? { points: {} });
+    setGroove(metadata?.groove ?? []);
     const savedRadius = Object.values(markers)[0]?.radius_m;
     if (savedRadius) setRadiusFeet(metersToFeet(savedRadius));
     if (track?.latitude != null && track?.longitude != null) mapRef.current?.setView([track.latitude, track.longitude], 17);
@@ -163,6 +185,40 @@ export function TrackMapEditor({
         ? "Loaded the saved layout. Drag or replace any marker."
         : "Load a session, then define the start/finish line and four turn centers.",
     );
+  }
+  function stopCapture() {
+    if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+    watchRef.current = null;
+    setCaptureMode(null);
+  }
+  function startCapture(next: "walk" | "groove") {
+    if (!trackId) return setMessage("Choose the track before starting GPS capture.");
+    if (!navigator.geolocation) return setMessage("Location is not supported by this device.");
+    stopCapture();
+    setCaptureMode(next);
+    setMessage(next === "walk" ? "GPS walk running. Move to a point, wait for accuracy to settle, then mark it." : "Groove capture running. Make one smooth, slow pass on the preferred line, then stop capture.");
+    watchRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const point: GeoPoint = { lat: position.coords.latitude, lng: position.coords.longitude, accuracy_ft: Math.round(position.coords.accuracy * FEET_PER_METER), captured_at: new Date(position.timestamp).toISOString() };
+        setLatestFixes((current) => [...current.slice(-7), point]);
+        if (next === "groove") setGroove((current) => [...current, point].slice(-600));
+      },
+      (error) => { stopCapture(); setMessage(error.code === 1 ? "Location permission was denied." : "GPS capture stopped because the phone could not get a location."); },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+    );
+  }
+  function markWalkPoint() {
+    if (!walkStep) return setMessage("Choose the point you are marking first.");
+    if (!latestFixes.length) return setMessage("Wait for a GPS reading before marking this point.");
+    const sample = latestFixes.slice(-5);
+    const point: GeoPoint = {
+      lat: sample.reduce((sum, item) => sum + item.lat, 0) / sample.length,
+      lng: sample.reduce((sum, item) => sum + item.lng, 0) / sample.length,
+      accuracy_ft: Math.round(sample.reduce((sum, item) => sum + item.accuracy_ft, 0) / sample.length),
+      captured_at: new Date().toISOString(),
+    };
+    setWalk((current) => ({ ...current, points: { ...current.points, [walkStep]: point } }));
+    setMessage(point.accuracy_ft > 30 ? `${walkStep.replaceAll("_", " ")} saved at about ${point.accuracy_ft} ft accuracy. Move into open sky and re-mark it if you need a tighter point.` : `${walkStep.replaceAll("_", " ")} saved at about ${point.accuracy_ft} ft accuracy.`);
   }
   async function searchTracks() {
     if (searchQuery.trim().length < 3) return setMessage("Enter at least three characters to search.");
@@ -216,22 +272,32 @@ export function TrackMapEditor({
   }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
-    if (startFinish.length !== 2 || Object.keys(turns).length !== 4)
+    const numericTurns = Object.fromEntries(Object.entries(turns).filter(([key]) => ["1", "2", "3", "4"].includes(key))) as Record<string, TurnMarker>;
+    const walkStartFinish = ["start_finish_a", "start_finish_b"].map((key) => walk.points[key]).filter(Boolean).map((point) => ({ lat: point.lat, lng: point.lng }));
+    const walkedTurns = Object.fromEntries([1, 2, 3, 4].map((turn) => {
+      const apex = walk.points[`turn_${turn}_apex`];
+      return apex ? [String(turn), { lat: apex.lat, lng: apex.lng, radius_m: feetToMeters(radiusFeet) }] : [];
+    }).filter((entry) => entry.length)) as Record<string, TurnMarker>;
+    const finalStartFinish = walkStartFinish.length === 2 ? walkStartFinish : startFinish;
+    const finalTurns = Object.keys(walkedTurns).length === 4 ? walkedTurns : numericTurns;
+    if (finalStartFinish.length !== 2 || Object.keys(finalTurns).length !== 4)
       return setMessage("Set two start/finish points and all four turns.");
     const normalized = Object.fromEntries(
-      Object.entries(turns).map(([key, value]) => [
+      Object.entries(finalTurns).map(([key, value]) => [
         key,
         { ...value, radius_m: feetToMeters(radiusFeet) },
       ]),
     );
+    const storedTurns = { ...normalized, _rivali: { walk: { ...walk, saved_at: new Date().toISOString() }, groove } };
     const { data, error } = await supabase
       .from("tracks")
-      .update({ start_finish: startFinish, turns: normalized })
+      .update({ start_finish: finalStartFinish, turns: storedTurns })
       .eq("id", trackId)
       .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
       .single();
     if (error) return setMessage(error.message);
     onTrackUpdated(data as Track);
+    setStartFinish(finalStartFinish);
     setTurns(normalized);
     setMessage("Track layout saved for future sessions.");
   }
@@ -287,6 +353,45 @@ export function TrackMapEditor({
       </div>
       <div className="notice">{message}</div>
       <div ref={container} className="map" />
+      <div className="gps-capture">
+        <div>
+          <strong>Phone track walk</strong>
+          <p>Walk the track with your phone. Rivali averages the last few GPS fixes and records accuracy in feet.</p>
+        </div>
+        <div className="gps-capture-actions">
+          <button type="button" className={captureMode === "walk" ? "active" : ""} onClick={() => startCapture("walk")}>Start track walk</button>
+          <button type="button" onClick={stopCapture} disabled={!captureMode}>Stop GPS</button>
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label>Point to mark</label>
+            <select value={walkStep} onChange={(event) => setWalkStep(event.target.value)}>
+              <option value="">Select a point</option>
+              <option value="start_finish_a">Start finish point A</option>
+              <option value="start_finish_b">Start finish point B</option>
+              {[1, 2, 3, 4].flatMap((turn) => [
+                <option key={`t${turn}e`} value={`turn_${turn}_entry`}>Turn {turn} entry</option>,
+                <option key={`t${turn}a`} value={`turn_${turn}_apex`}>Turn {turn} apex</option>,
+                <option key={`t${turn}x`} value={`turn_${turn}_exit`}>Turn {turn} exit</option>,
+              ])}
+            </select>
+          </div>
+          <button type="button" className="button" onClick={markWalkPoint} disabled={captureMode !== "walk"}>Mark my current position</button>
+        </div>
+        <small className="muted">{Object.keys(walk.points).length} walk points saved in this layout. Re-mark any point that reports more than about 30 ft accuracy.</small>
+      </div>
+      <div className="gps-capture">
+        <div>
+          <strong>Preferred groove pass</strong>
+          <p>Use one smooth, slow pass around the groove you want to remember. The green dashed line is stored with the track layout.</p>
+        </div>
+        <div className="gps-capture-actions">
+          <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>Start groove pass</button>
+          <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish groove pass</button>
+          <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
+        </div>
+        <small className="muted">{groove.length} GPS points in the current groove pass. Phone GPS can drift 10 to 30 feet; use the satellite map to review it before saving.</small>
+      </div>
       <div className="map-controls">
         <button
           className={mode === "start" ? "active" : ""}
