@@ -75,6 +75,20 @@ export function DashboardClient({
     latestSession: activeSession ? { date: activeSession.session_date, type: activeSession.session_type, driver: activeSession.racers?.name, kart: activeSession.karts?.name, track: activeSession.tracks?.name, setup: activeSession.setup, conditions: activeSession.conditions, bestLapSeconds: activeSession.best_lap_sec } : null,
     savedDrivers: racers.map((item) => item.name), savedKarts: karts.map((item) => item.name), savedTracks: tracks.map((item) => item.name),
   }), [activeSession, racers, karts, tracks]);
+  const dougGuidance = useMemo(() => {
+    const mappedTrack = tracks.find((track) => track.latitude != null && track.longitude != null);
+    const turnCount = mappedTrack?.turns ? Object.keys(mappedTrack.turns).filter((key) => /^[1-4]$/.test(key)).length : 0;
+    const layoutReady = Boolean(mappedTrack?.start_finish && mappedTrack.start_finish.length >= 2 && turnCount === 4);
+    const meta = (mappedTrack?.turns as Record<string, unknown> | null)?._rivali as { groove?: unknown[] } | undefined;
+    if (!racers.length) return "First things first: save the driver, then we can make every result mean something.";
+    if (!karts.length) return "Get the kart saved. I’ll keep its setup and results together from there.";
+    if (!tracks.length) return "Add today’s track so we do not lose the context that matters later.";
+    if (!mappedTrack) return "Pin the track on the map. That gives us weather and a home for the race-day data.";
+    if (!layoutReady) return "Before the racing gets busy, let’s walk the track and save the turn zones.";
+    if (!meta?.groove?.length) return "A slow groove pass now will give us a useful baseline when the track changes.";
+    if (!activeSession) return "When the first run comes off the track, open a session and we’ll keep the whole story together.";
+    return "Stay on the job. After each run, send the data and tell me what the kart did while it is still fresh.";
+  }, [activeSession, karts.length, racers.length, tracks]);
 
   async function confirmDougAction() {
     if (!pendingDougAction) return;
@@ -797,7 +811,8 @@ export function DashboardClient({
         racedayContext={racedayContext}
         onNavigate={(destination) => setTab(destination)}
         onRequestAction={setPendingDougAction}
-        attentionKey={pendingDougAction?.summary ?? message}
+        attentionKey={pendingDougAction?.summary || message || dougGuidance}
+        guidance={dougGuidance}
       />
     </div>
   );
