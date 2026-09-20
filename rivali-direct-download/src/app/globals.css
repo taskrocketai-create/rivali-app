@@ -563,6 +563,18 @@ textarea {
 .gps-capture-actions button { border: 1px solid rgba(205, 191, 170, 0.45); background: transparent; color: inherit; padding: 8px 11px; border-radius: 9px; font: inherit; cursor: pointer; }
 .gps-capture-actions button.active { background: var(--red); border-color: var(--red); color: white; }
 .gps-capture-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.walk-next-step { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:15px 0 10px; padding:14px 16px; border:1px solid #424b4d; border-radius:10px; background:linear-gradient(105deg,#171c1f,#0d1012); }
+.walk-next-step small { display:block; color:#aeb7b4; font:800 .62rem/1 Arial,sans-serif; letter-spacing:.14em; }
+.walk-next-step strong { display:block; margin:5px 0; color:#fff; font-size:1rem; }
+.walk-next-step span { color:#7f8987; font-size:.76rem; }
+.walk-next-step .button { white-space:nowrap; }
+.walk-progress { display:flex; gap:7px; margin:4px 0 12px; }
+.walk-progress span { width:28px; height:28px; display:grid; place-items:center; border:1px solid #465052; border-radius:50%; color:#8f9997; font:800 .72rem Arial,sans-serif; }
+.walk-progress span.current { border-color:#ef3a40; color:#fff; box-shadow:0 0 0 3px rgba(237,28,36,.16); }
+.walk-progress span.complete { border-color:#00a651; background:rgba(0,166,81,.16); color:#58df93; }
+.manual-map-tools { margin-top:16px; padding:13px 0; border-top:1px solid #333b3d; border-bottom:1px solid #333b3d; }
+.manual-map-tools summary { color:#cbd1ce; font-weight:800; cursor:pointer; }
+.manual-map-tools > p { margin:9px 0 12px; }
 .pending-imports { display: grid; gap: 8px; }
 .pending-imports button {
   display: flex;
@@ -1222,6 +1234,8 @@ body { background: #070809; }
   .raceday-reminders button, .raceday-reminders button:first-child { padding: 12px 7px; border-bottom: 1px solid #303537; }
   .raceday-reminders button:nth-child(2n) { border-right: 0; }
   .raceday-reminders button:last-child { border-bottom: 0; }
+  .walk-next-step { align-items:stretch; flex-direction:column; }
+  .walk-next-step .button { width:100%; justify-content:center; }
 }
 .doug-confirm {
   display: flex;
