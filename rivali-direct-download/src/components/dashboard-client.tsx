@@ -73,7 +73,9 @@ export function DashboardClient({
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
   const racedayContext = useMemo(() => JSON.stringify({
     latestSession: activeSession ? { date: activeSession.session_date, type: activeSession.session_type, driver: activeSession.racers?.name, kart: activeSession.karts?.name, track: activeSession.tracks?.name, setup: activeSession.setup, conditions: activeSession.conditions, bestLapSeconds: activeSession.best_lap_sec } : null,
-    savedDrivers: racers.map((item) => item.name), savedKarts: karts.map((item) => item.name), savedTracks: tracks.map((item) => item.name),
+    savedDrivers: racers.map((item) => ({ id: item.id, name: item.name })),
+    savedKarts: karts.map((item) => ({ id: item.id, racerId: item.racer_id, name: item.name })),
+    savedTracks: tracks.map((item) => ({ id: item.id, name: item.name })),
   }), [activeSession, racers, karts, tracks]);
   const dougGuidance = useMemo(() => {
     const mappedTrack = tracks.find((track) => track.latitude != null && track.longitude != null);
@@ -96,9 +98,33 @@ export function DashboardClient({
     setBusy(true);
     setMessage("");
     try {
-      if (action.kind === "start_raceday") {
+      if (action.kind === "create_voice_session") {
+        const user_id = await ownerId();
+        const id = crypto.randomUUID();
+        const { data, error } = await supabase
+          .from("sessions")
+          .insert({
+            id,
+            user_id,
+            racer_id: action.racerId,
+            kart_id: action.kartId,
+            track_id: action.trackId,
+            session_date: action.sessionDate,
+            session_type: action.sessionType,
+            raw_file_name: "Voice intake — awaiting MyChron data",
+            raw_storage_path: `${user_id}/voice-intake/${id}.pending`,
+            setup: { class_name: action.className ?? null, notes: action.setupNotes ?? null, voice_intake: true, telemetry_attached: false },
+            conditions: { voice_notes: action.conditions ?? null },
+            handling_feedback: { voice_notes: action.handlingNotes ?? null },
+            status: "queued",
+          })
+          .select("id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)")
+          .single();
+        if (error) throw error;
+        setSessions((current) => [data as unknown as RaceSession, ...current]);
+        setActiveSessionId(id);
         setTab("upload");
-        setMessage("Raceday intake opened. Doug still needs the event details before anything is saved.");
+        setMessage("Doug saved this session. Attach the MyChron file when the run is complete.");
       } else if (action.kind === "select_entry") {
         const query = action.target.toLowerCase();
         const match = sessions.find((session) =>
