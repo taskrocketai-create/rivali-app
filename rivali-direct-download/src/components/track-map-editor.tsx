@@ -9,6 +9,14 @@ type TracePoint = { lat: number; lng: number; time: number };
 type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
 type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
 type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
+const CORE_WALK_STEPS = [
+  { key: "start_finish_a", label: "Start / finish · first point" },
+  { key: "start_finish_b", label: "Start / finish · second point" },
+  { key: "turn_1_apex", label: "Turn 1 · apex" },
+  { key: "turn_2_apex", label: "Turn 2 · apex" },
+  { key: "turn_3_apex", label: "Turn 3 · apex" },
+  { key: "turn_4_apex", label: "Turn 4 · apex" },
+];
 const FEET_PER_METER = 3.28084;
 const feetToMeters = (feet: number) => feet / FEET_PER_METER;
 const metersToFeet = (meters: number) => Math.round(meters * FEET_PER_METER);
@@ -196,6 +204,10 @@ export function TrackMapEditor({
     if (!navigator.geolocation) return setMessage("Location is not supported by this device.");
     stopCapture();
     setCaptureMode(next);
+    if (next === "walk") {
+      const firstMissing = CORE_WALK_STEPS.find((step) => !walk.points[step.key]);
+      setWalkStep(firstMissing?.key ?? CORE_WALK_STEPS[0].key);
+    }
     setMessage(next === "walk" ? "GPS walk running. Move to a point, wait for accuracy to settle, then mark it." : "Groove capture running. Make one smooth, slow pass on the preferred line, then stop capture.");
     watchRef.current = navigator.geolocation.watchPosition(
       (position) => {
@@ -217,8 +229,12 @@ export function TrackMapEditor({
       accuracy_ft: Math.round(sample.reduce((sum, item) => sum + item.accuracy_ft, 0) / sample.length),
       captured_at: new Date().toISOString(),
     };
+    const currentStep = CORE_WALK_STEPS.find((step) => step.key === walkStep);
+    const nextStep = CORE_WALK_STEPS.find((step) => step.key !== walkStep && !walk.points[step.key]);
     setWalk((current) => ({ ...current, points: { ...current.points, [walkStep]: point } }));
-    setMessage(point.accuracy_ft > 30 ? `${walkStep.replaceAll("_", " ")} saved at about ${point.accuracy_ft} ft accuracy. Move into open sky and re-mark it if you need a tighter point.` : `${walkStep.replaceAll("_", " ")} saved at about ${point.accuracy_ft} ft accuracy.`);
+    setWalkStep(nextStep?.key ?? "");
+    const accuracyNote = point.accuracy_ft > 30 ? ` Accuracy is about ${point.accuracy_ft} ft—re-mark it if you can get into clearer sky.` : ` Accuracy is about ${point.accuracy_ft} ft.`;
+    setMessage(nextStep ? `${currentStep?.label ?? "Point"} saved.${accuracyNote} Next: ${nextStep.label}.` : `Core track walk complete.${accuracyNote} Tap Save track layout below.`);
   }
   async function searchTracks() {
     if (searchQuery.trim().length < 3) return setMessage("Enter at least three characters to search.");
@@ -301,6 +317,8 @@ export function TrackMapEditor({
     setTurns(normalized);
     setMessage("Track layout saved for future sessions.");
   }
+  const completedCoreSteps = CORE_WALK_STEPS.filter((step) => walk.points[step.key]).length;
+  const currentWalkLabel = CORE_WALK_STEPS.find((step) => step.key === walkStep)?.label;
   return (
     <div className="card">
       <h2>Satellite GPS layout</h2>
@@ -356,42 +374,35 @@ export function TrackMapEditor({
       <div className="gps-capture">
         <div>
           <strong>Phone track walk</strong>
-          <p>Walk the track with your phone. Rivali averages the last few GPS fixes and records accuracy in feet.</p>
+          <p>Choose the track, start the walk, then walk to each spot and tap one big button. Rivali saves the core layout in six quick stops.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" className={captureMode === "walk" ? "active" : ""} onClick={() => startCapture("walk")}>Start track walk</button>
-          <button type="button" onClick={stopCapture} disabled={!captureMode}>Stop GPS</button>
+          <button type="button" className={captureMode === "walk" ? "active" : ""} onClick={() => startCapture("walk")}>{completedCoreSteps ? "Continue track walk" : "Start track walk"}</button>
+          <button type="button" onClick={stopCapture} disabled={captureMode !== "walk"}>Pause walk</button>
+          <button type="button" onClick={() => { setWalk({ points: {} }); setWalkStep(""); }} disabled={!completedCoreSteps}>Start over</button>
         </div>
-        <div className="grid-2">
-          <div className="field">
-            <label>Point to mark</label>
-            <select value={walkStep} onChange={(event) => setWalkStep(event.target.value)}>
-              <option value="">Select a point</option>
-              <option value="start_finish_a">Start finish point A</option>
-              <option value="start_finish_b">Start finish point B</option>
-              {[1, 2, 3, 4].flatMap((turn) => [
-                <option key={`t${turn}e`} value={`turn_${turn}_entry`}>Turn {turn} entry</option>,
-                <option key={`t${turn}a`} value={`turn_${turn}_apex`}>Turn {turn} apex</option>,
-                <option key={`t${turn}x`} value={`turn_${turn}_exit`}>Turn {turn} exit</option>,
-              ])}
-            </select>
-          </div>
-          <button type="button" className="button" onClick={markWalkPoint} disabled={captureMode !== "walk"}>Mark my current position</button>
+        <div className="walk-next-step">
+          <div><small>NEXT STOP</small><strong>{currentWalkLabel ?? (completedCoreSteps === CORE_WALK_STEPS.length ? "Core track walk complete" : "Start the walk")}</strong><span>{completedCoreSteps} of {CORE_WALK_STEPS.length} saved</span></div>
+          <button type="button" className="button primary" onClick={markWalkPoint} disabled={captureMode !== "walk" || !walkStep}>{currentWalkLabel ? `Mark: ${currentWalkLabel}` : "Walk complete"}</button>
         </div>
-        <small className="muted">{Object.keys(walk.points).length} walk points saved in this layout. Re-mark any point that reports more than about 30 ft accuracy.</small>
+        <div className="walk-progress">{CORE_WALK_STEPS.map((step, index) => <span key={step.key} className={walk.points[step.key] ? "complete" : step.key === walkStep ? "current" : ""}>{index + 1}</span>)}</div>
+        <small className="muted">If a point reports more than about 30 ft accuracy, use Start over or correct it later on the map.</small>
       </div>
       <div className="gps-capture">
         <div>
           <strong>Preferred groove pass</strong>
-          <p>Use one smooth, slow pass around the groove you want to remember. The green dashed line is stored with the track layout.</p>
+          <p>Mount the phone, make one smooth slow lap in the groove you want to remember, then tap Finish. The green dashed line is saved with this track.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>Start groove pass</button>
-          <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish groove pass</button>
+          <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>{captureMode === "groove" ? "Groove pass running" : "Start groove pass"}</button>
+          <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
           <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
         </div>
         <small className="muted">{groove.length} GPS points in the current groove pass. Phone GPS can drift 10 to 30 feet; use the satellite map to review it before saving.</small>
       </div>
+      <details className="manual-map-tools">
+        <summary>Manual map corrections (optional)</summary>
+        <p className="muted">Use these only if GPS was poor or you want to fine-tune the saved layout on the satellite map.</p>
       <div className="map-controls">
         <button
           className={mode === "start" ? "active" : ""}
@@ -427,6 +438,7 @@ export function TrackMapEditor({
           Clear markers
         </button>
       </div>
+      </details>
       <div className="grid-2">
         <div className="field">
           <label>Turn-zone radius (feet)</label>
