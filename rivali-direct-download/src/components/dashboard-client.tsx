@@ -75,7 +75,7 @@ export function DashboardClient({
     latestSession: activeSession ? { date: activeSession.session_date, type: activeSession.session_type, driver: activeSession.racers?.name, kart: activeSession.karts?.name, track: activeSession.tracks?.name, setup: activeSession.setup, conditions: activeSession.conditions, bestLapSeconds: activeSession.best_lap_sec } : null,
     savedDrivers: racers.map((item) => ({ id: item.id, name: item.name })),
     savedKarts: karts.map((item) => ({ id: item.id, racerId: item.racer_id, name: item.name })),
-    savedTracks: tracks.map((item) => ({ id: item.id, name: item.name })),
+    savedTracks: tracks.map((item) => ({ id: item.id, name: item.name, latitude: item.latitude, longitude: item.longitude })),
   }), [activeSession, racers, karts, tracks]);
   const dougGuidance = useMemo(() => {
     const mappedTrack = tracks.find((track) => track.latitude != null && track.longitude != null);
@@ -101,6 +101,18 @@ export function DashboardClient({
       if (action.kind === "create_voice_session") {
         const user_id = await ownerId();
         const id = crypto.randomUUID();
+        let trackId = action.trackId;
+        if (!trackId && action.newTrack) {
+          const { data: createdTrack, error: trackError } = await supabase
+            .from("tracks")
+            .insert({ user_id, name: action.newTrack.name, location: action.newTrack.location, latitude: action.newTrack.latitude, longitude: action.newTrack.longitude })
+            .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
+            .single();
+          if (trackError) throw trackError;
+          trackId = createdTrack.id;
+          setTracks((current) => [...current, createdTrack as Track]);
+        }
+        if (!trackId) throw new Error("Doug needs a saved track before he can create this session.");
         const { data, error } = await supabase
           .from("sessions")
           .insert({
@@ -108,7 +120,7 @@ export function DashboardClient({
             user_id,
             racer_id: action.racerId,
             kart_id: action.kartId,
-            track_id: action.trackId,
+            track_id: trackId,
             session_date: action.sessionDate,
             session_type: action.sessionType,
             raw_file_name: "Voice intake — awaiting MyChron data",
