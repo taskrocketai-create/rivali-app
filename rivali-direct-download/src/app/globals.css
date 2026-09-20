@@ -1152,8 +1152,22 @@ body { background: #070809; }
 
 .card { border: 0; border-top: 1px solid #33383a; border-bottom: 1px solid #25292b; border-radius: 0; background: linear-gradient(115deg,#111416,#0b0d0f); box-shadow: none; }
 .card:before { width: 4px; height: 52px; top: 18px; transform: skewY(-22deg); }
-.field input, .field select, .field textarea, input, select, textarea { min-height: 46px; border: 0; border-bottom: 1px solid #3a4042; background: #0a0c0e; transition: border-color .15s, background .15s; }
-.field input:focus, .field select:focus, .field textarea:focus { outline: 0; border-color: var(--red); background: #101315; box-shadow: inset 3px 0 var(--red); }
+.field { gap: 8px; margin-bottom: 19px; }
+.field label { color: #dce1de; font: 800 .69rem/1.1 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.field input, .field select, .field textarea, input, select, textarea {
+  min-height: 50px;
+  border: 1px solid #4c5759;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #151a1d, #0d1012);
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 1px 0 rgba(0,0,0,.55);
+  color: #f5f7f4;
+  transition: border-color .15s, background .15s, box-shadow .15s, transform .15s;
+}
+.field textarea, textarea { min-height: 104px; }
+.field input::placeholder, .field textarea::placeholder, input::placeholder, textarea::placeholder { color: #899392; opacity: 1; }
+.field input:hover, .field select:hover, .field textarea:hover, input:hover, select:hover, textarea:hover { border-color: #768181; background: linear-gradient(135deg, #192024, #101416); }
+.field input:focus, .field select:focus, .field textarea:focus, input:focus, select:focus, textarea:focus { outline: 0; border-color: #ef3a40; background: #151a1d; box-shadow: 0 0 0 3px rgba(237,28,36,.19), inset 3px 0 #ef3a40, inset 0 1px rgba(255,255,255,.06); }
+.field select, select { cursor: pointer; }
 .button { min-height: 46px; clip-path: polygon(0 0,94% 0,100% 30%,100% 100%,6% 100%,0 70%); box-shadow: none; }
 .map { border: 0; border-top: 1px solid #3a4042; border-bottom: 1px solid #3a4042; }
 .map-controls { gap: 2px; }
