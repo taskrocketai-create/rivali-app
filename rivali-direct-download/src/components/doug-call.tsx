@@ -29,7 +29,7 @@ type DougScreen = "home" | "raceday" | "upload" | "evidence" | "track_map" | "ga
 type AppTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 
 export type DougAction =
-  | { kind: "create_voice_session"; summary: string; details: string; racerId: string; kartId: string; trackId: string; sessionDate: string; sessionType: "practice" | "hot laps" | "heat" | "feature"; className?: string; conditions?: string; setupNotes?: string; handlingNotes?: string }
+  | { kind: "create_voice_session"; summary: string; details: string; racerId: string; kartId: string; trackId?: string; newTrack?: { name: string; location: string; latitude: number; longitude: number }; sessionDate: string; sessionType: "practice" | "hot laps" | "heat" | "feature"; className?: string; conditions?: string; setupNotes?: string; handlingNotes?: string }
   | { kind: "select_entry"; summary: string; details: string; target: string }
   | { kind: "record_setup_change"; summary: string; details: string; change: string }
   | { kind: "lock_dirty_tires"; summary: string; details: string; tireSet: string };
@@ -82,6 +82,10 @@ export function DougCall({ racedayContext, onNavigate, onRequestAction }: {
           racer_id: z.string().uuid().optional(),
           kart_id: z.string().uuid().optional(),
           track_id: z.string().uuid().optional(),
+          new_track_name: z.string().max(180).optional(),
+          new_track_location: z.string().max(300).optional(),
+          new_track_latitude: z.number().min(-90).max(90).optional(),
+          new_track_longitude: z.number().min(-180).max(180).optional(),
           session_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
           session_type: z.enum(["practice", "hot laps", "heat", "feature"]).optional(),
           class_name: z.string().max(120).optional(),
@@ -92,15 +96,16 @@ export function DougCall({ racedayContext, onNavigate, onRequestAction }: {
           change: z.string().max(240).optional(),
           tire_set: z.string().max(120).optional(),
         }),
-        execute: async ({ action, summary, details, racer_id, kart_id, track_id, session_date, session_type, class_name, conditions, setup_notes, handling_notes, target, change, tire_set }) => {
-          if (action === "create_voice_session" && (!racer_id || !kart_id || !track_id || !session_date || !session_type))
-            return "Ask only for the missing driver, kart, track, date, or session type, then use the matching IDs from CURRENT RACEDAY CONTEXT.";
+        execute: async ({ action, summary, details, racer_id, kart_id, track_id, new_track_name, new_track_location, new_track_latitude, new_track_longitude, session_date, session_type, class_name, conditions, setup_notes, handling_notes, target, change, tire_set }) => {
+          const hasNewTrack = Boolean(new_track_name && new_track_location && new_track_latitude != null && new_track_longitude != null);
+          if (action === "create_voice_session" && (!racer_id || !kart_id || (!track_id && !hasNewTrack) || !session_date || !session_type))
+            return "Ask only for the missing driver, kart, track, date, or session type. For a new track, use find_track and pass its returned name, location, latitude and longitude.";
           if (action === "select_entry" && !target) return "Ask which class entry the driver wants before preparing the action.";
           if (action === "record_setup_change" && !change) return "Ask what changed before preparing the action.";
           if (action === "lock_dirty_tires" && !tire_set) return "Ask which tire set is being committed before preparing the action.";
           let prepared: DougAction;
           if (action === "create_voice_session")
-            prepared = { kind: "create_voice_session", summary, details, racerId: racer_id!, kartId: kart_id!, trackId: track_id!, sessionDate: session_date!, sessionType: session_type!, className: class_name, conditions, setupNotes: setup_notes, handlingNotes: handling_notes };
+            prepared = { kind: "create_voice_session", summary, details, racerId: racer_id!, kartId: kart_id!, trackId: track_id, newTrack: hasNewTrack ? { name: new_track_name!, location: new_track_location!, latitude: new_track_latitude!, longitude: new_track_longitude! } : undefined, sessionDate: session_date!, sessionType: session_type!, className: class_name, conditions, setupNotes: setup_notes, handlingNotes: handling_notes };
           else if (action === "select_entry")
             prepared = { kind: "select_entry", summary, details, target: target! };
           else if (action === "record_setup_change")
@@ -115,8 +120,31 @@ export function DougCall({ racedayContext, onNavigate, onRequestAction }: {
       const agent = new RealtimeAgent({
         name: "Doug",
         voice: "cedar",
-        instructions: `${DOUG_INSTRUCTIONS}\n- You can control Rivali with open_screen. When the driver asks to see or open something, call the tool instead of merely describing where it is. After navigating, say one short sentence about what is on screen.\n- A new Raceday intake must end with prepare_action action=create_voice_session. Gather the needed facts conversationally, then use the exact saved IDs from CURRENT RACEDAY CONTEXT. This creates a saved session awaiting MyChron data.\n- Use prepare_action for anything that changes race data. Never say a prepared action is complete until the driver confirms it on screen.\n- Use upload when the driver wants to add a MyChron file. Use evidence or history for prior sessions, compare for comparisons, track_map for GPS layout, and garage for saved equipment.\n\nCURRENT RACEDAY CONTEXT:\n${racedayContext}`,
-        tools: [openScreen, prepareAction],
+        instructions: `${DOUG_INSTRUCTIONS}\n- Respond quickly: one short question or one short confirmation, then stop talking.\n- Use open_screen when the driver asks to see or open something.\n- For a new Raceday, use find_track if the track is not already saved or the location is uncertain. Use get_weather whenever you have track coordinates, then include the returned weather summary in the saved session conditions.\n- End every complete new Raceday intake with prepare_action action=create_voice_session. Use the exact saved IDs from CURRENT RACEDAY CONTEXT, or the new-track fields returned by find_track. This creates a saved session awaiting MyChron data.\n- Use prepare_action for anything that changes race data. Never say it is saved until the driver confirms the on-screen card.\n\nCURRENT RACEDAY CONTEXT:\n${racedayContext}`,
+        tools: [openScreen, prepareAction,
+          tool({
+            name: "find_track",
+            description: "Find a U.S. race track by name and city/state. Use when the driver names a track that is not clearly in the saved track list, or when a saved track needs coordinates.",
+            parameters: z.object({ query: z.string().min(3).max(180) }),
+            execute: async ({ query }) => {
+              const response = await fetch(`/api/track-search?q=${encodeURIComponent(query)}`);
+              const payload = await response.json();
+              if (!response.ok) return `Track search failed: ${payload.error ?? "service unavailable"}. Ask the driver to choose from their saved tracks or try city and state.`;
+              const results = (payload.results ?? []).slice(0, 4).map((item: { label: string; latitude: number; longitude: number }) => ({ name: item.label, latitude: item.latitude, longitude: item.longitude }));
+              return results.length ? JSON.stringify(results) : "No track matches found. Ask for the track name plus city and state.";
+            },
+          }),
+          tool({
+            name: "get_weather",
+            description: "Get current weather for a known track latitude and longitude. Use before preparing a new Raceday session whenever coordinates are available.",
+            parameters: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }),
+            execute: async ({ latitude, longitude }) => {
+              const response = await fetch(`/api/weather?latitude=${latitude}&longitude=${longitude}`);
+              const weather = await response.json();
+              if (!response.ok) return `Weather lookup failed: ${weather.error ?? "service unavailable"}.`;
+              return `Current weather: ${weather.temperatureF}°F, ${weather.humidityPct}% humidity, wind ${weather.windSpeedMph} mph at ${weather.windDirectionDeg}°, gusts ${weather.windGustMph} mph, cloud cover ${weather.cloudCoverPct}%, precipitation ${weather.precipitationIn} in. Observed ${weather.observedAt} ${weather.timezone ?? ""}.`;
+            },
+          })],
       });
       const session = new RealtimeSession(agent, { model: "gpt-realtime-2.1" });
       session.on("audio_start", () => setState("speaking"));
