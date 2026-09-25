@@ -209,6 +209,30 @@ export function DashboardClient({
       setBusy(false);
     }
   }
+  async function deleteRacer(racer: Racer) {
+    if (!window.confirm(`Delete ${racer.name}? This only removes an unused driver profile.`)) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const [{ count: kartCount, error: kartError }, { count: sessionCount, error: sessionError }] = await Promise.all([
+        supabase.from("karts").select("id", { count: "exact", head: true }).eq("racer_id", racer.id),
+        supabase.from("sessions").select("id", { count: "exact", head: true }).eq("racer_id", racer.id),
+      ]);
+      if (kartError || sessionError) throw kartError ?? sessionError;
+      if (kartCount || sessionCount) {
+        setMessage(`Cannot delete ${racer.name}: it is linked to ${kartCount ?? 0} kart(s) and ${sessionCount ?? 0} session(s). This protects the race history.`);
+        return;
+      }
+      const { error } = await supabase.from("racers").delete().eq("id", racer.id);
+      if (error) throw error;
+      setRacers((current) => current.filter((item) => item.id !== racer.id));
+      setMessage(`${racer.name} deleted.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not delete this driver.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function addKart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -758,6 +782,9 @@ export function DashboardClient({
                     {x.driver_weight_lb ? `${x.driver_weight_lb} lb` : "—"}
                   </span>
                   <span>{x.experience_level ?? "—"}</span>
+                  <button className="button small secondary" type="button" disabled={busy} onClick={() => void deleteRacer(x)}>
+                    Delete
+                  </button>
                 </div>
               ))}
             </div>
