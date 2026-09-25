@@ -319,8 +319,14 @@ export function TrackMapEditor({
       const response = await fetch(`/api/track-search?q=${encodeURIComponent(searchQuery.trim())}`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Track search failed.");
-      setSearchResults(payload.results ?? []);
-      setMessage(payload.results?.length ? "Choose the correct result to center the satellite map." : "No matches found. Try the track name plus city and state.");
+      const results = (payload.results ?? []) as SearchResult[];
+      const exactRivaliTrack = results.find((result) => result.id.startsWith("rivali-"));
+      if (exactRivaliTrack) {
+        await chooseSearchResult(exactRivaliTrack);
+        return;
+      }
+      setSearchResults(results);
+      setMessage(results.length ? "Pick the correct result below, then Rivali will save and select it as your track." : "No matches found. Try the track name plus city and state.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Track search failed.");
     } finally { setSearching(false); }
@@ -439,7 +445,18 @@ export function TrackMapEditor({
           <button className="button small" type="button" disabled={searching} onClick={searchTracks}>{searching ? "Working..." : "Search"}</button>
           <button className="button small secondary" type="button" disabled={searching} onClick={useCurrentLocation}>Use my location</button>
         </div>
-        {searchResults.length > 0 && <div className="search-results">{searchResults.map((result) => <button key={result.id} type="button" onClick={() => chooseSearchResult(result)}><strong>{result.label.split(",")[0]}</strong><span>{result.label}</span></button>)}</div>}
+        {searchResults.length > 0 && (
+          <div className="search-results" aria-label="Track search results">
+            <strong>Choose the track to use</strong>
+            {searchResults.map((result) => (
+              <button key={result.id} type="button" onClick={() => chooseSearchResult(result)}>
+                <strong>{result.label.split(",")[0]}</strong>
+                <span>{result.label}</span>
+                <em>Use and save this track →</em>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className={processedSessions.length ? "grid-2" : undefined}>
         <div className="field">
