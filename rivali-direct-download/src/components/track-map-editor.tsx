@@ -170,6 +170,21 @@ export function TrackMapEditor({
         }),
       }).addTo(map);
       if (segmentAdjusting && ovalFit.nodes?.length === 8) {
+        const centerHandle = makeHandle({ ...ovalFit.center, accuracy_ft: 0, captured_at: "" }, "✥", "#ffd43b");
+        centerHandle.on("dragend", () => {
+          const point = centerHandle.getLatLng();
+          setOvalFit((current) => {
+            if (!current?.nodes) return current;
+            const deltaLat = point.lat - current.center.lat;
+            const deltaLng = point.lng - current.center.lng;
+            return {
+              ...current,
+              center: { lat: point.lat, lng: point.lng },
+              nodes: current.nodes.map((node) => ({ ...node, lat: node.lat + deltaLat, lng: node.lng + deltaLng })),
+            };
+          });
+        });
+        layers.current.push(centerHandle);
         ovalFit.nodes.forEach((node, index) => {
           const handle = makeHandle(node, String(index + 1), "#f2eadb");
           handle.on("dragend", () => {
@@ -535,17 +550,12 @@ export function TrackMapEditor({
       radiusYFt: Math.max(55, Math.min(260, mapHeightFt * 0.28)),
       angleRad: 0,
     };
+    next.nodes = ellipseNodes(next);
     setMode(null);
-    setSegmentAdjusting(false);
+    setSegmentAdjusting(true);
     setOvalFit(next);
     setGroove(ovalPoints(next));
-    setMessage("Oval placed. Drag yellow ✥ to move it, green ↔ for width and direction, and blue ↕ for height. Then approve and save it.");
-  }
-  function fineTuneOvalSegments() {
-    if (!ovalFit) return setMessage("Fit the oval first.");
-    setOvalFit((current) => current ? { ...current, nodes: current.nodes?.length === 8 ? current.nodes : ellipseNodes(current) } : current);
-    setSegmentAdjusting(true);
-    setMessage("Fine-tune mode: drag any numbered point to pull that part of the groove in or out. The green line stays smooth between points.");
+    setMessage("Oval placed with eight shape points. Drag any number to shape that part of the groove; drag yellow ✥ to move the whole oval. Then approve and save it.");
   }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
@@ -670,11 +680,10 @@ export function TrackMapEditor({
         </div>
         <div className="gps-capture-actions">
           <button type="button" disabled={!trackId} className={ovalFit ? "active" : ""} onClick={fitOvalOverTrack}>{ovalFit ? "Start fresh oval" : "Fit oval over track"}</button>
-          <button type="button" disabled={!ovalFit} className={segmentAdjusting ? "active" : ""} onClick={fineTuneOvalSegments}>{segmentAdjusting ? "Adjusting 8 segments" : "Fine-tune 8 segments"}</button>
           <button type="button" onClick={() => { setOvalFit(null); lastGroovePoint.current = null; setMode("groove"); setMessage("Manual drawing is available when the groove is not oval. Hold the mouse and trace it; finish drawing to pan or zoom again."); }}>Draw manually instead</button>
           <button type="button" onClick={() => { setOvalFit(null); setSegmentAdjusting(false); setGroove([]); }} disabled={!groove.length}>Clear groove</button>
         </div>
-        <small className="muted">{segmentAdjusting ? "Drag a numbered point at the part of the groove you want to change—such as pulling an apex down to square off a corner." : ovalFit ? "First drag yellow ✥ to move, green ↔ to set width / direction, and blue ↕ to set height. Then use Fine-tune 8 segments for corner shaping." : `${groove.length} groove points in the current draft.`} Zooming and panning are safe; save the groove when it looks right.</small>
+        <small className="muted">{segmentAdjusting ? "Drag a numbered point at the part of the groove you want to change—such as pulling an apex down to square off a corner. Drag yellow ✥ to move the entire oval." : `${groove.length} groove points in the current draft.`} Zooming and panning are safe; save the groove when it looks right.</small>
       </div>
       <details className="manual-map-tools">
         <summary>Manual map corrections (optional)</summary>
