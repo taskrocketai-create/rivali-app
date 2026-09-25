@@ -1,11 +1,11 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 import { createClient } from "@/lib/supabase/client";
 import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 
 type Mode = "start" | "1" | "2" | "3" | "4" | "groove" | null;
-type TracePoint = { lat: number; lng: number; time: number };
+type TracePoint = { lat: number; lng: number; time: number; speed_mph?: number };
 type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
 type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
 type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
@@ -20,6 +20,11 @@ const CORE_WALK_STEPS = [
 const FEET_PER_METER = 3.28084;
 const feetToMeters = (feet: number) => feet / FEET_PER_METER;
 const metersToFeet = (meters: number) => Math.round(meters * FEET_PER_METER);
+const distanceFeet = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const latitudeFeet = (a.lat - b.lat) * 364000;
+  const longitudeFeet = (a.lng - b.lng) * 364000 * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180);
+  return Math.hypot(latitudeFeet, longitudeFeet);
+};
 
 export function TrackMapEditor({
   tracks,
@@ -57,6 +62,15 @@ export function TrackMapEditor({
     "Select a processed session to load its recorded GPS trace.",
   );
   const supabase = createClient();
+  const grooveInsight = useMemo(() => {
+    const speedSamples = trace.filter((point) => typeof point.speed_mph === "number" && Number.isFinite(point.speed_mph));
+    if (!speedSamples.length) return null;
+    const slowest = [...speedSamples].sort((a, b) => (a.speed_mph ?? Infinity) - (b.speed_mph ?? Infinity)).slice(0, 4);
+    const offGroove = groove.length > 1
+      ? speedSamples.map((point) => ({ point, distance: Math.min(...groove.map((reference) => distanceFeet(point, reference))) })).filter((item) => item.distance > 35)
+      : [];
+    return { slowest, offGroove, sampleCount: speedSamples.length };
+  }, [groove, trace]);
   useEffect(() => () => {
     if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
   }, []);
@@ -73,6 +87,13 @@ export function TrackMapEditor({
       ).addTo(map);
       layers.current.push(line);
       map.fitBounds(line.getBounds(), { padding: [20, 20] });
+      const slowest = trace.filter((point) => typeof point.speed_mph === "number").sort((a, b) => (a.speed_mph ?? Infinity) - (b.speed_mph ?? Infinity)).slice(0, 4);
+      slowest.forEach((point, index) => {
+        const marker = L.circleMarker([point.lat, point.lng], { radius: 6, color: "#f59e0b", weight: 2, fillColor: "#111", fillOpacity: 0.9 })
+          .bindTooltip(`Speed dip ${index + 1}: ${point.speed_mph?.toFixed(1)} mph`, { permanent: false })
+          .addTo(map);
+        layers.current.push(marker);
+      });
     }
     if (groove.length > 1) {
       const line = L.polyline(groove.map((x) => [x.lat, x.lng]), { color: "#22c55e", weight: 4, opacity: 0.9, dashArray: "6 5" }).addTo(map);
@@ -405,6 +426,13 @@ export function TrackMapEditor({
         </div>
       </div>
       <div className="notice">{message}</div>
+      {grooveInsight && (
+        <div className="notice">
+          <strong>Speed / groove check</strong><br />
+          Lowest sampled speed: {grooveInsight.slowest.map((point) => `${point.speed_mph?.toFixed(1)} mph`).join(", ")}. Orange points on the map mark those dips.
+          {groove.length > 1 && <> {grooveInsight.offGroove.length} of {grooveInsight.sampleCount} GPS samples were more than 35 ft from the saved preferred groove.</>}
+        </div>
+      )}
       <div ref={container} className="map" />
       <div className="gps-capture">
         <div>
