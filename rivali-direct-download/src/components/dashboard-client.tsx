@@ -64,6 +64,9 @@ export function DashboardClient({
   const [weatherBusy, setWeatherBusy] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [mapTrackId, setMapTrackId] = useState("");
+  const [newTrackLocation, setNewTrackLocation] = useState("");
+  const [newTrackCoordinates, setNewTrackCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locatingTrack, setLocatingTrack] = useState(false);
   const [airTempF, setAirTempF] = useState("");
   const [humidityPct, setHumidityPct] = useState("");
   const [weatherNotes, setWeatherNotes] = useState("");
@@ -272,9 +275,9 @@ export function DashboardClient({
     const form = new FormData(event.currentTarget);
     try {
       const user_id = await ownerId();
-      const location = String(form.get("location") ?? "").trim();
-      let coordinates: { latitude: number; longitude: number; label: string } | null = null;
-      if (location) {
+      const location = newTrackLocation.trim();
+      let coordinates: { latitude: number; longitude: number; label: string } | null = newTrackCoordinates ? { ...newTrackCoordinates, label: location || "Current trackside location" } : null;
+      if (location && !coordinates) {
         const search = await fetch(`/api/track-search?q=${encodeURIComponent(location)}`);
         const result = await search.json();
         const match = result.results?.[0];
@@ -298,6 +301,8 @@ export function DashboardClient({
       setTracks((current) => [...current, data].sort((a, b) => a.name.localeCompare(b.name)));
       setMapTrackId(data.id);
       event.currentTarget.reset();
+      setNewTrackLocation("");
+      setNewTrackCoordinates(null);
       setMessage(coordinates ? "Track saved and centered on its satellite location below." : "Track saved, but the address could not be located automatically. Use the track search below to place it.");
     } catch (error) {
       setMessage(
@@ -306,6 +311,26 @@ export function DashboardClient({
     } finally {
       setBusy(false);
     }
+  }
+  function useMyLocationForNewTrack() {
+    if (!navigator.geolocation) return setMessage("Location is not supported by this device.");
+    setLocatingTrack(true);
+    setMessage("Finding your trackside location...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        setNewTrackCoordinates({ latitude, longitude });
+        setNewTrackLocation(`Current location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+        setLocatingTrack(false);
+        setMessage("Location captured. Enter the track name, then save it to open the satellite map here.");
+      },
+      (error) => {
+        setLocatingTrack(false);
+        setMessage(error.code === 1 ? "Location permission was denied." : "Could not determine your location. Enter the address instead.");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+    );
   }
   async function loadCurrentWeather(trackId: string) {
     setSelectedTrackId(trackId);
@@ -865,7 +890,10 @@ export function DashboardClient({
                 </div>
                 <div className="field">
                   <label>Location</label>
-                  <input name="location" />
+                  <div className="search-row">
+                    <input name="location" value={newTrackLocation} onChange={(event) => { setNewTrackLocation(event.target.value); setNewTrackCoordinates(null); }} placeholder="Address or current location" />
+                    <button className="button small secondary" type="button" disabled={locatingTrack || busy} onClick={useMyLocationForNewTrack}>{locatingTrack ? "Locating..." : "Use my location"}</button>
+                  </div>
                 </div>
                 <div className="field">
                   <label>Surface</label>
