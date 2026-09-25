@@ -57,6 +57,7 @@ export function DashboardClient({
   const [sessions, setSessions] = useState(initialSessions);
   const [pendingImports, setPendingImports] = useState(initialPendingImports);
   const [selectedPendingId, setSelectedPendingId] = useState("");
+  const [attachSessionId, setAttachSessionId] = useState("");
   const [shortcutToken, setShortcutToken] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,6 +72,7 @@ export function DashboardClient({
   const [pendingDougAction, setPendingDougAction] = useState<DougAction | null>(null);
   const supabase = createClient();
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
+  const attachableSessions = sessions.filter((session) => session.setup?.telemetry_attached !== true);
   const racedayContext = useMemo(() => JSON.stringify({
     latestSession: activeSession ? { date: activeSession.session_date, type: activeSession.session_type, driver: activeSession.racers?.name, kart: activeSession.karts?.name, track: activeSession.tracks?.name, setup: activeSession.setup, conditions: activeSession.conditions, bestLapSeconds: activeSession.best_lap_sec } : null,
     savedDrivers: racers.map((item) => ({ id: item.id, name: item.name })),
@@ -130,7 +132,7 @@ export function DashboardClient({
             handling_feedback: { voice_notes: action.handlingNotes ?? null },
             status: "queued",
           })
-          .select("id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)")
+          .select("id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name),racers(id,name),karts(id,name),recommendations(recommendation,confidence)")
           .single();
         if (error) throw error;
         setSessions((current) => [data as unknown as RaceSession, ...current]);
@@ -292,6 +294,7 @@ export function DashboardClient({
     const form = new FormData(event.currentTarget);
     const file = form.get("file") as File;
     const pending = pendingImports.find((item) => item.id === selectedPendingId);
+    const existingSession = sessions.find((item) => item.id === attachSessionId);
     let uploadedPath = "";
     let createdSessionId = "";
     try {
@@ -300,7 +303,7 @@ export function DashboardClient({
       if (!pending && file.size > 100 * 1024 * 1024)
         throw new Error("The maximum file size is 100 MB.");
       const user_id = await ownerId();
-      const id = crypto.randomUUID();
+      const id = existingSession?.id ?? crypto.randomUUID();
       const rawFileName = pending?.raw_file_name ?? file.name;
       if (pending) {
         uploadedPath = pending.raw_storage_path;
@@ -315,30 +318,34 @@ export function DashboardClient({
           });
         if (uploadError) throw uploadError;
       }
+      const existingSetup = existingSession?.setup ?? {};
+      const existingConditions = existingSession?.conditions ?? {};
+      const baseLapValue = Number(form.get("base_lap_sec"));
       const setup = {
-        class_name: form.get("class_name") || null,
-        tire_set_id: form.get("tire_set_id") || null,
-        dirty_tire_rule: dirtyTireRule,
-        dirty_tire_cutoff: dirtyTireRule
-          ? form.get("dirty_tire_cutoff") || null
-          : null,
-        tire_locked: dirtyTireRule && tireLocked,
-        lf_pressure_psi: Number(form.get("lf_pressure_psi")) || null,
-        rf_pressure_psi: Number(form.get("rf_pressure_psi")) || null,
-        lr_pressure_psi: Number(form.get("lr_pressure_psi")) || null,
-        rr_pressure_psi: Number(form.get("rr_pressure_psi")) || null,
-        rear_sprocket: Number(form.get("rear_sprocket")) || null,
-        notes: form.get("setup_notes") || null,
+        ...(existingSession?.setup ?? {}),
+        class_name: form.get("class_name") || existingSetup.class_name || null,
+        base_lap_sec: Number.isFinite(baseLapValue) && baseLapValue > 0 ? baseLapValue : existingSetup.base_lap_sec || null,
+        tire_set_id: form.get("tire_set_id") || existingSetup.tire_set_id || null,
+        dirty_tire_rule: dirtyTireRule || Boolean(existingSetup.dirty_tire_rule),
+        dirty_tire_cutoff: dirtyTireRule ? form.get("dirty_tire_cutoff") || null : existingSetup.dirty_tire_cutoff || null,
+        tire_locked: (dirtyTireRule && tireLocked) || Boolean(existingSetup.tire_locked),
+        lf_pressure_psi: Number(form.get("lf_pressure_psi")) || existingSetup.lf_pressure_psi || null,
+        rf_pressure_psi: Number(form.get("rf_pressure_psi")) || existingSetup.rf_pressure_psi || null,
+        lr_pressure_psi: Number(form.get("lr_pressure_psi")) || existingSetup.lr_pressure_psi || null,
+        rr_pressure_psi: Number(form.get("rr_pressure_psi")) || existingSetup.rr_pressure_psi || null,
+        rear_sprocket: Number(form.get("rear_sprocket")) || existingSetup.rear_sprocket || null,
+        notes: form.get("setup_notes") || existingSetup.notes || null,
+        telemetry_attached: true,
       };
       const conditions = {
-        air_temp_f: Number(form.get("air_temp_f")) || null,
-        humidity_pct: Number(form.get("humidity_pct")) || null,
-        track_condition: form.get("track_condition") || null,
-        weather_notes: form.get("weather_notes") || null,
+        ...(existingSession?.conditions ?? {}),
+        air_temp_f: Number(form.get("air_temp_f")) || existingConditions.air_temp_f || null,
+        humidity_pct: Number(form.get("humidity_pct")) || existingConditions.humidity_pct || null,
+        track_condition: form.get("track_condition") || existingConditions.track_condition || null,
+        weather_notes: form.get("weather_notes") || existingConditions.weather_notes || null,
       };
-      const { data: session, error: sessionError } = await supabase
-        .from("sessions")
-        .insert({
+      const sessionPayload = {
+        ...(existingSession ? {} : {
           id,
           user_id,
           racer_id: form.get("racer_id"),
@@ -346,21 +353,24 @@ export function DashboardClient({
           track_id: form.get("track_id"),
           session_date: form.get("session_date"),
           session_type: form.get("session_type"),
-          raw_file_name: rawFileName,
-          raw_storage_path: uploadedPath,
-          setup,
-          conditions,
-          status: "queued",
-        })
-        .select(
-          "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)",
-        )
+        }),
+        raw_file_name: rawFileName,
+        raw_storage_path: uploadedPath,
+        setup,
+        conditions,
+        status: "queued",
+      };
+      const sessionQuery = existingSession
+        ? supabase.from("sessions").update(sessionPayload).eq("id", id)
+        : supabase.from("sessions").insert(sessionPayload);
+      const { data: session, error: sessionError } = await sessionQuery
+        .select("id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name),racers(id,name),karts(id,name),recommendations(recommendation,confidence)")
         .single();
       if (sessionError) throw sessionError;
-      createdSessionId = id;
+      if (!existingSession) createdSessionId = id;
       const { error: jobError } = await supabase
         .from("processing_jobs")
-        .insert({ user_id, session_id: id, status: "queued" });
+        .upsert({ user_id, session_id: id, status: "queued", error: null, locked_at: null }, { onConflict: "session_id" });
       if (jobError) throw jobError;
       if (pending) {
         const { error: pendingError } = await supabase
@@ -371,11 +381,15 @@ export function DashboardClient({
         setPendingImports((current) => current.filter((item) => item.id !== pending.id));
         setSelectedPendingId("");
       }
-      setSessions([session as unknown as RaceSession, ...sessions]);
+      setSessions((current) => existingSession
+        ? current.map((item) => item.id === id ? session as unknown as RaceSession : item)
+        : [session as unknown as RaceSession, ...current]);
+      setActiveSessionId(id);
+      setAttachSessionId("");
       event.currentTarget.reset();
       setDirtyTireRule(false);
       setTireLocked(false);
-      setMessage("Session uploaded and queued for analysis.");
+      setMessage(existingSession ? "MyChron data attached to the pre-race session and queued for analysis." : "Session uploaded and queued for analysis.");
     } catch (error) {
       if (createdSessionId)
         await supabase.from("sessions").delete().eq("id", createdSessionId);
@@ -440,6 +454,16 @@ export function DashboardClient({
         {tab === "upload" && (
           <form className="card stack" onSubmit={uploadSession}>
             <h2>Upload a MyChron session</h2>
+            {attachableSessions.length > 0 && (
+              <div className="field">
+                <label>Attach data to a saved pre-race baseline</label>
+                <select value={attachSessionId} onChange={(event) => setAttachSessionId(event.target.value)}>
+                  <option value="">Create a separate session instead</option>
+                  {attachableSessions.map((session) => <option key={session.id} value={session.id}>{session.session_date} · {session.tracks?.name ?? "Track"} · {session.setup.class_name ?? session.session_type} · {session.racers?.name ?? "Driver"}</option>)}
+                </select>
+                {attachSessionId && <small className="muted">Rivali will preserve the baseline setup, class, goal lap, conditions, and driver notes already saved for this session.</small>}
+              </div>
+            )}
             <div className="shortcut-setup">
               <div>
                 <strong>Send from the iPhone Share Sheet</strong>
@@ -477,7 +501,7 @@ export function DashboardClient({
             <div className="grid-3">
               <div className="field">
                 <label>Driver</label>
-                <select name="racer_id" required>
+                <select name="racer_id" required disabled={Boolean(attachSessionId)}>
                   <option value="">Select</option>
                   {racers.map((x) => (
                     <option key={x.id} value={x.id}>
@@ -488,7 +512,7 @@ export function DashboardClient({
               </div>
               <div className="field">
                 <label>Kart</label>
-                <select name="kart_id" required>
+                <select name="kart_id" required disabled={Boolean(attachSessionId)}>
                   <option value="">Select</option>
                   {karts.map((x) => (
                     <option key={x.id} value={x.id}>
@@ -499,7 +523,7 @@ export function DashboardClient({
               </div>
               <div className="field">
                 <label>Track</label>
-                <select name="track_id" required value={selectedTrackId} onChange={(event) => void loadCurrentWeather(event.target.value)}>
+                <select name="track_id" required value={selectedTrackId} disabled={Boolean(attachSessionId)} onChange={(event) => void loadCurrentWeather(event.target.value)}>
                   <option value="">Select</option>
                   {tracks.map((x) => (
                     <option key={x.id} value={x.id}>
@@ -517,11 +541,12 @@ export function DashboardClient({
                   type="date"
                   defaultValue={new Date().toISOString().slice(0, 10)}
                   required
+                  disabled={Boolean(attachSessionId)}
                 />
               </div>
               <div className="field">
                 <label>Session type</label>
-                <select name="session_type">
+                <select name="session_type" disabled={Boolean(attachSessionId)}>
                   <option>practice</option>
                   <option>hot laps</option>
                   <option>heat</option>
@@ -539,6 +564,11 @@ export function DashboardClient({
               <div className="field">
                 <label>Class</label>
                 <input name="class_name" placeholder="Clone Heavy" />
+              </div>
+              <div className="field">
+                <label>Base lap goal (seconds)</label>
+                <input name="base_lap_sec" type="number" min="1" step="0.001" placeholder="12.300" />
+                <small className="muted">Your off-the-trailer target for this class.</small>
               </div>
               <div className="field">
                 <label>Tire set</label>
