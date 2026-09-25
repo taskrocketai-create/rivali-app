@@ -1202,6 +1202,12 @@ body { background: #070809; }
 .raceday-reminders .complete span { border-color: rgba(0,166,81,.75); color: #00c465; background: rgba(0,166,81,.12); }
 .raceday-reminders .complete small { color: #39b971; }
 .raceday-reminders .needed:hover { background: rgba(237,28,36,.08); }
+.base-goal-editor { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 22px; border-top:1px solid #343a3c; border-bottom:1px solid #252a2c; background:linear-gradient(100deg,rgba(0,166,81,.08),transparent 45%); }
+.base-goal-editor small { display:block; color:#7f9690; font:800 .64rem/1 Arial,sans-serif; letter-spacing:.14em; }
+.base-goal-editor strong { display:block; margin-top:7px; color:#fff; font:italic 1.25rem Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; text-transform:uppercase; }
+.base-goal-editor p { margin:5px 0 0; color:#8e9794; font-size:.8rem; }
+.base-goal-actions { display:flex; align-items:center; gap:8px; }
+.base-goal-actions input { width:112px; }
 
 @media (max-width: 760px) {
   .app-header-inner { min-height: 92px; }
@@ -1236,6 +1242,8 @@ body { background: #070809; }
   .raceday-reminders button:last-child { border-bottom: 0; }
   .walk-next-step { align-items:stretch; flex-direction:column; }
   .walk-next-step .button { width:100%; justify-content:center; }
+  .base-goal-editor { align-items:stretch; flex-direction:column; padding:17px 13px; }
+  .base-goal-actions { flex-wrap:wrap; }
 }
 .doug-confirm {
   display: flex;
