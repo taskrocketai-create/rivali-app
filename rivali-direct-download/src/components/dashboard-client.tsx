@@ -866,9 +866,12 @@ export function DashboardClient({
               tracks={tracks}
               sessions={sessions}
               onTrackUpdated={(updated) =>
-                setTracks(
-                  tracks.map((x) => (x.id === updated.id ? updated : x)),
-                )
+                setTracks((current) => {
+                  const exists = current.some((track) => track.id === updated.id);
+                  return exists
+                    ? current.map((track) => (track.id === updated.id ? updated : track))
+                    : [...current, updated].sort((a, b) => a.name.localeCompare(b.name));
+                })
               }
             />
           </div>
