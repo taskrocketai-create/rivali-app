@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     supabase
       .from("sessions")
       .select(
-        "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(name),racers(name),karts(name),recommendations(recommendation,confidence)",
+        "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name),racers(id,name),karts(id,name),recommendations(recommendation,confidence)",
       )
       .order("session_date", { ascending: false })
       .limit(30),
