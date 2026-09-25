@@ -64,7 +64,7 @@ export function TrackMapEditor({
   const freehandGroove = useRef(false);
   const lastGroovePoint = useRef<GeoPoint | null>(null);
   const [message, setMessage] = useState(
-    "Select a processed session to load its recorded GPS trace.",
+    "Find or add a track to begin. A processed MyChron session is optional and only used later to overlay a completed lap.",
   );
   const supabase = createClient();
   const grooveInsight = useMemo(() => {
@@ -259,7 +259,7 @@ export function TrackMapEditor({
     setMessage(
       track?.start_finish
         ? "Loaded the saved layout. Drag or replace any marker."
-        : "Load a session, then define the start/finish line and four turn centers.",
+        : "Track selected. Set the start/finish line and draw the preferred groove. No processed session is needed to save either one.",
     );
   }
   useEffect(() => {
@@ -473,6 +473,7 @@ export function TrackMapEditor({
         </div>
       </div>
       <div className="notice">{message}</div>
+      <small className="muted">Pre-race map setup does not require a MyChron file: select a track, set start/finish, draw the groove, then approve and save.</small>
       {grooveInsight && (
         <div className="notice">
           <strong>Speed / groove check</strong><br />
