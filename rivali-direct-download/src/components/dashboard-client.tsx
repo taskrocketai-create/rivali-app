@@ -63,6 +63,7 @@ export function DashboardClient({
   const [busy, setBusy] = useState(false);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState("");
+  const [mapTrackId, setMapTrackId] = useState("");
   const [airTempF, setAirTempF] = useState("");
   const [humidityPct, setHumidityPct] = useState("");
   const [weatherNotes, setWeatherNotes] = useState("");
@@ -271,20 +272,33 @@ export function DashboardClient({
     const form = new FormData(event.currentTarget);
     try {
       const user_id = await ownerId();
+      const location = String(form.get("location") ?? "").trim();
+      let coordinates: { latitude: number; longitude: number; label: string } | null = null;
+      if (location) {
+        const search = await fetch(`/api/track-search?q=${encodeURIComponent(location)}`);
+        const result = await search.json();
+        const match = result.results?.[0];
+        if (search.ok && match && Number.isFinite(match.latitude) && Number.isFinite(match.longitude)) {
+          coordinates = { latitude: match.latitude, longitude: match.longitude, label: match.label };
+        }
+      }
       const { data, error } = await supabase
         .from("tracks")
         .insert({
           user_id,
           name: form.get("name"),
-          location: form.get("location") || null,
+          location: coordinates?.label ?? (location || null),
           surface_type: form.get("surface_type") || null,
+          latitude: coordinates?.latitude ?? null,
+          longitude: coordinates?.longitude ?? null,
         })
         .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
         .single();
       if (error) throw error;
-      setTracks([...tracks, data]);
+      setTracks((current) => [...current, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setMapTrackId(data.id);
       event.currentTarget.reset();
-      setMessage("Track saved. Use GPS Track Map to mark the racing surface.");
+      setMessage(coordinates ? "Track saved and centered on its satellite location below." : "Track saved, but the address could not be located automatically. Use the track search below to place it.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Could not save track.",
@@ -865,6 +879,7 @@ export function DashboardClient({
             <TrackMapEditor
               tracks={tracks}
               sessions={sessions}
+              selectedTrackId={mapTrackId}
               onTrackUpdated={(updated) =>
                 setTracks((current) => {
                   const exists = current.some((track) => track.id === updated.id);
