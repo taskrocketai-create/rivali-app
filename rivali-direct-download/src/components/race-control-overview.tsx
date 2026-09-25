@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, CloudSun, Footprints, Gauge, MapPinned, Route, Timer, Upload, Wrench } from "lucide-react";
 import type { Kart, Racer, RaceSession, Track } from "@/types/domain";
 
@@ -18,17 +19,34 @@ function racedayQuote(seed: string) {
   return dougQuotes[value % dougQuotes.length];
 }
 
-export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigate }: {
+export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigate, onUpdateBaseLapGoal }: {
   racers: Racer[]; karts: Kart[]; tracks: Track[]; sessions: RaceSession[];
   onNavigate: (tab: OverviewTab) => void;
+  onUpdateBaseLapGoal: (sessionId: string, baseLapSec: number) => Promise<void>;
 }) {
   const latest = sessions[0];
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalDraft, setGoalDraft] = useState("");
+  const [savingGoal, setSavingGoal] = useState(false);
+  const [goalError, setGoalError] = useState("");
   const conditions = latest?.conditions ?? {};
   const temp = typeof conditions.air_temp_f === "number" ? `${conditions.air_temp_f}°F` : "—";
   const trackCondition = typeof conditions.track_condition === "string" && conditions.track_condition ? conditions.track_condition : "Not recorded";
   const gap = latest?.best_lap_sec && latest.average_lap_sec ? latest.average_lap_sec - latest.best_lap_sec : null;
   const baseLap = typeof latest?.setup?.base_lap_sec === "number" ? latest.setup.base_lap_sec : null;
   const goalGap = latest?.best_lap_sec && baseLap ? latest.best_lap_sec - baseLap : null;
+  useEffect(() => setGoalDraft(baseLap?.toFixed(3) ?? "12.300"), [baseLap, latest?.id]);
+  async function saveGoal() {
+    if (!latest) return;
+    setSavingGoal(true);
+    setGoalError("");
+    try {
+      await onUpdateBaseLapGoal(latest.id, Number(goalDraft));
+      setEditingGoal(false);
+    } catch (error) {
+      setGoalError(error instanceof Error ? error.message : "Could not update the base lap goal.");
+    } finally { setSavingGoal(false); }
+  }
   const quote = racedayQuote(latest?.session_date ?? new Date().toISOString().slice(0, 10));
   const activeTrack = latest?.tracks?.name ? tracks.find((track) => track.name === latest.tracks?.name) : tracks[0];
   const numericTurns = activeTrack?.turns ? Object.keys(activeTrack.turns).filter((key) => /^[1-4]$/.test(key)).length : 0;
@@ -104,6 +122,10 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
         <div><small>BEST-TO-AVG</small><strong>{gap == null ? "—" : `+${gap.toFixed(3)}`}</strong><span>consistency gap</span></div>
         <div><small>LATEST RUN</small><strong>{latest.session_type}</strong><span>{latest.session_date}</span></div>
         <button onClick={() => onNavigate("upload")}><Upload /><strong>UPLOAD DATA</strong><ArrowRight /></button>
+      </section>}
+      {latest && <section className="base-goal-editor">
+        <div><small>CLASS BASE LAP GOAL</small><strong>{latest.setup.class_name ?? latest.session_type}</strong><p>Update this between sessions as the benchmark improves. MyLaps can automate it later.</p></div>
+        {editingGoal ? <div className="base-goal-actions"><input aria-label="Base lap goal in seconds" type="number" min="1" step="0.001" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} /><button className="button primary" disabled={savingGoal} onClick={() => void saveGoal()}>{savingGoal ? "Saving…" : "Save goal"}</button><button className="button" disabled={savingGoal} onClick={() => { setGoalDraft(baseLap?.toFixed(3) ?? "12.300"); setGoalError(""); setEditingGoal(false); }}>Cancel</button>{goalError && <small className="form-error">{goalError}</small>}</div> : <button className="button" onClick={() => setEditingGoal(true)}>Update base goal</button>}
       </section>}
     </div>
   );
