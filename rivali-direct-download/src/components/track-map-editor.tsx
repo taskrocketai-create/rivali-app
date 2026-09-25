@@ -61,6 +61,8 @@ export function TrackMapEditor({
   const [latestFixes, setLatestFixes] = useState<GeoPoint[]>([]);
   const watchRef = useRef<number | null>(null);
   const traceFitted = useRef(false);
+  const freehandGroove = useRef(false);
+  const lastGroovePoint = useRef<GeoPoint | null>(null);
   const [message, setMessage] = useState(
     "Select a processed session to load its recorded GPS trace.",
   );
@@ -163,12 +165,34 @@ export function TrackMapEditor({
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         { maxZoom: 20, attribution: "Imagery © Esri and contributors" },
       ).addTo(map);
+      const addFreehandGroovePoint = (lat: number, lng: number) => {
+        const point = { lat, lng, accuracy_ft: 0, captured_at: new Date().toISOString() };
+        if (lastGroovePoint.current && distanceFeet(lastGroovePoint.current, point) < 6) return;
+        lastGroovePoint.current = point;
+        setGroove((previous) => [...previous, point].slice(-1000));
+      };
+      map.on("mousedown", (event) => {
+        setMode((current) => {
+          if (current !== "groove") return current;
+          freehandGroove.current = true;
+          map.dragging.disable();
+          addFreehandGroovePoint(event.latlng.lat, event.latlng.lng);
+          return current;
+        });
+      });
+      map.on("mousemove", (event) => {
+        if (freehandGroove.current) addFreehandGroovePoint(event.latlng.lat, event.latlng.lng);
+      });
+      map.on("mouseup", () => {
+        freehandGroove.current = false;
+        map.dragging.enable();
+      });
       map.on("click", (event) => {
         setMode((current) => {
           if (!current) return current;
           const point = { lat: event.latlng.lat, lng: event.latlng.lng };
           if (current === "groove") {
-            setGroove((previous) => [...previous, { ...point, accuracy_ft: 0, captured_at: new Date().toISOString() }]);
+            addFreehandGroovePoint(point.lat, point.lng);
             return current;
           }
           if (current === "start") {
@@ -373,9 +397,10 @@ export function TrackMapEditor({
     }).filter((entry) => entry.length)) as Record<string, TurnMarker>;
     const finalStartFinish = walkStartFinish.length === 2 ? walkStartFinish : startFinish;
     const finalTurns = Object.keys(walkedTurns).length === 4 ? walkedTurns : numericTurns;
-    const hasLayout = finalStartFinish.length === 2 && Object.keys(finalTurns).length === 4;
-    if (!hasLayout && groove.length < 2)
-      return setMessage("Draw at least two preferred-groove points, or set the complete start/finish and turn layout.");
+    const hasStartFinish = finalStartFinish.length === 2;
+    const hasLayout = hasStartFinish && Object.keys(finalTurns).length === 4;
+    if (!hasStartFinish && groove.length < 2)
+      return setMessage("Set the two-point start/finish line, or draw at least two preferred-groove points.");
     const normalized = Object.fromEntries(
       Object.entries(finalTurns).map(([key, value]) => [
         key,
@@ -385,15 +410,15 @@ export function TrackMapEditor({
     const storedTurns = { ...normalized, _rivali: { walk: { ...walk, saved_at: new Date().toISOString() }, groove } };
     const { data, error } = await supabase
       .from("tracks")
-      .update({ start_finish: hasLayout ? finalStartFinish : startFinish, turns: storedTurns })
+      .update({ start_finish: hasStartFinish ? finalStartFinish : startFinish, turns: storedTurns })
       .eq("id", trackId)
       .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
       .single();
     if (error) return setMessage(error.message);
     onTrackUpdated(data as Track);
-    if (hasLayout) setStartFinish(finalStartFinish);
+    if (hasStartFinish) setStartFinish(finalStartFinish);
     setTurns(normalized);
-    setMessage(hasLayout ? "Track layout and preferred groove saved for future sessions." : "Preferred groove saved for future sessions.");
+    setMessage(hasLayout ? "Track layout and preferred groove saved for future sessions." : hasStartFinish ? "Start/finish line and preferred groove saved for future sessions." : "Preferred groove saved for future sessions.");
   }
   const completedCoreSteps = CORE_WALK_STEPS.filter((step) => walk.points[step.key]).length;
   const currentWalkLabel = CORE_WALK_STEPS.find((step) => step.key === walkStep)?.label;
@@ -459,6 +484,15 @@ export function TrackMapEditor({
       <div ref={container} className="map" />
       <div className="gps-capture">
         <div>
+          <strong>Start / finish line</strong>
+          <p>Set this as a short line across the racing surface. Rivali uses it to identify each lap from MyChron GPS. Turns are optional for this October test.</p>
+        </div>
+        <div className="gps-capture-actions">
+          <button type="button" className={mode === "start" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); setStartFinish([]); setMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
+        </div>
+      </div>
+      <div className="gps-capture">
+        <div>
           <strong>Phone track walk</strong>
           <p>Choose the track, start the walk, then walk to each spot and tap one big button. Rivali saves the core layout in six quick stops.</p>
         </div>
@@ -477,11 +511,11 @@ export function TrackMapEditor({
       <div className="gps-capture">
         <div>
           <strong>Preferred groove</strong>
-          <p>On desktop, click along the preferred line directly on the satellite image. You can zoom and pan while drawing—your line stays in place and is kept as a browser draft until you save it. A phone GPS pass is optional.</p>
+          <p>On desktop, hold the mouse button and trace a smooth curved line around the preferred groove. Rivali stores the curve as many real coordinates. Zoom and pan before drawing; your line stays in place and is kept as a browser draft until you save it.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" className={mode === "groove" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); setMode("groove"); setMessage("Click along the preferred groove on the satellite image. Click Finish drawing when the line is complete."); }}>{mode === "groove" ? "Drawing on map" : "Draw on satellite map"}</button>
-          <button type="button" onClick={() => { setMode(null); setMessage("Preferred groove drawing finished. Save it when it looks right."); }} disabled={mode !== "groove"}>Finish drawing</button>
+          <button type="button" className={mode === "groove" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); lastGroovePoint.current = null; setMode("groove"); setMessage("Hold the mouse button and trace the preferred groove. Panning pauses while tracing; finish drawing to pan or zoom again."); }}>{mode === "groove" ? "Drawing on map" : "Draw curved groove"}</button>
+          <button type="button" onClick={() => { freehandGroove.current = false; mapRef.current?.dragging.enable(); setMode(null); setMessage("Preferred groove drawing finished. Save it when it looks right."); }} disabled={mode !== "groove"}>Finish drawing</button>
           <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>{captureMode === "groove" ? "Groove pass running" : "Start groove pass"}</button>
           <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
           <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
