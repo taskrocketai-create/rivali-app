@@ -596,6 +596,7 @@ textarea {
 .search-results button { display: grid; gap: 2px; width: 100%; padding: 10px; border: 1px solid transparent; background: transparent; text-align: left; }
 .search-results button:hover { border-color: var(--red); background: #fff8f5; }
 .search-results span { color: var(--muted); font-size: 0.86rem; }
+.search-results em { color: var(--red); font-size: 0.8rem; font-style: normal; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
 .admin-knowledge-layout { display: grid; gap: 18px; }
 .knowledge-row { border-bottom: 1px solid var(--line); padding: 18px 0; }
 .knowledge-row-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
@@ -930,6 +931,7 @@ body:before {
 .map-controls button, .search-results { background: #111; color: var(--paper); border-color: #383632; }
 .notice { background: #201c14; border-color: var(--gold); color: #e0c78e; }
 .search-results button { color: var(--paper); }
+.search-results em { color: #ff5b51; }
 .search-results button:hover { background: #281416; }
 
 @media (max-width: 900px) {
