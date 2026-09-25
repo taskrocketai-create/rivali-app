@@ -13,7 +13,7 @@ const asText = (value: unknown): string => {
   if (Array.isArray(value)) return value.map(asText).filter(Boolean).join(", ");
   if (value && typeof value === "object") {
     const object = value as Record<string, unknown>;
-    return asText(object.value ?? object.text ?? object.label ?? object.name ?? "");
+    return asText(object.value ?? object.text ?? object.label ?? object.name ?? object.title ?? object.answer ?? "");
   }
   return "";
 };
@@ -29,7 +29,48 @@ function collectFields(input: unknown, fields: FieldMap, depth = 0) {
   const label = asText(object.name ?? object.label ?? object.question ?? object.title ?? object.fieldName);
   const value = asText(object.value ?? object.answer ?? object.response ?? object.text ?? object.answers);
   if (label && value) fields[normalize(label)] = value;
-  ["questions", "responses", "fields", "data", "submission", "answers"].forEach((key) => collectFields(object[key], fields, depth + 1));
+
+  // Fillout webhooks normally contain questions, but Zite/automation requests can
+  // wrap answers in a plain object such as { fields: { Driver: "Stephen" } }.
+  // Treat those property names as labels as well, while ignoring webhook metadata.
+  const metadataKeys = new Set([
+    "id", "submissionid", "submissiontime", "lastupdatedat", "formid",
+    "totalresponses", "pagecount", "type", "status", "url", "urlparameters",
+    "calculations", "questions", "responses", "fields", "data", "submission",
+    "answers", "formdata", "submissiondata", "body", "payload",
+  ]);
+  Object.entries(object).forEach(([key, child]) => {
+    const text = asText(child);
+    if (!metadataKeys.has(normalize(key)) && text) fields[normalize(key)] = text;
+    if (typeof child === "string" && (child.startsWith("{") || child.startsWith("["))) {
+      try { collectFields(JSON.parse(child), fields, depth + 1); } catch { /* not embedded JSON */ }
+    } else {
+      collectFields(child, fields, depth + 1);
+    }
+  });
+}
+
+async function readPayload(request: Request): Promise<unknown> {
+  const raw = await request.text();
+  if (!raw.trim()) return null;
+  try { return JSON.parse(raw); } catch { /* continue with form-encoded request */ }
+  const values = new URLSearchParams(raw);
+  const form: Record<string, string> = {};
+  values.forEach((value, key) => { form[key] = value; });
+  return Object.keys(form).length ? form : null;
+}
+
+function payloadSummary(payload: unknown) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return { kind: Array.isArray(payload) ? "array" : typeof payload };
+  const object = payload as Record<string, unknown>;
+  return {
+    kind: "object",
+    topLevelKeys: Object.keys(object).slice(0, 20),
+    nestedKeys: Object.entries(object)
+      .filter(([, value]) => value && typeof value === "object")
+      .slice(0, 8)
+      .map(([key, value]) => `${key}:${Array.isArray(value) ? "array" : "object"}`),
+  };
 }
 
 function first(fields: FieldMap, ...aliases: string[]) {
@@ -81,7 +122,7 @@ export async function POST(request: Request) {
   if (!validSecret(expectedSecret, suppliedSecret))
     return NextResponse.json({ error: "Unauthorized Fillout intake." }, { status: 401 });
 
-  const payload = await request.json().catch(() => null);
+  const payload = await readPayload(request);
   if (!payload) return NextResponse.json({ error: "Fillout sent an invalid JSON payload." }, { status: 400 });
   const fields: FieldMap = {};
   collectFields(payload, fields);
@@ -89,7 +130,11 @@ export async function POST(request: Request) {
   const kartName = first(fields, "kart", "kart name", "chassis");
   const trackName = first(fields, "track", "track name");
   if (!driverName || !kartName || !trackName)
-    return NextResponse.json({ error: "The form must include Driver, Kart, and Track fields.", receivedFields: Object.keys(fields) }, { status: 422 });
+    return NextResponse.json({
+      error: "The form must include Driver, Kart, and Track fields.",
+      receivedFields: Object.keys(fields),
+      receivedStructure: payloadSummary(payload),
+    }, { status: 422 });
 
   const admin = createAdminClient();
   const [racers, karts, tracks] = await Promise.all([
