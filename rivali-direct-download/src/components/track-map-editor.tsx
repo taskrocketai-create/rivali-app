@@ -473,6 +473,7 @@ export function TrackMapEditor({
         </div>
       </div>
       <div className="notice">{message}</div>
+      {!trackId && <div className="notice"><strong>Choose the track first.</strong> Search above, then click the correct result. Rivali will create and select it before the map tools unlock.</div>}
       <small className="muted">Pre-race map setup does not require a MyChron file: select a track, set start/finish, draw the groove, then approve and save.</small>
       {grooveInsight && (
         <div className="notice">
@@ -488,7 +489,7 @@ export function TrackMapEditor({
           <p>Set this as a short line across the racing surface. Rivali uses it to identify each lap from MyChron GPS. Turns are optional for this October test.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" className={mode === "start" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); setStartFinish([]); setMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
+          <button type="button" disabled={!trackId} className={mode === "start" ? "active" : ""} onClick={() => { setStartFinish([]); setMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
         </div>
       </div>
       <div className="gps-capture">
@@ -497,7 +498,7 @@ export function TrackMapEditor({
           <p>On desktop, hold the mouse button and trace a smooth curved line around the preferred groove. Rivali stores the curve as many real coordinates. Zoom and pan before drawing; your line stays in place and is kept as a browser draft until you save it.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" className={mode === "groove" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); lastGroovePoint.current = null; setMode("groove"); setMessage("Hold the mouse button and trace the preferred groove. Panning pauses while tracing; finish drawing to pan or zoom again."); }}>{mode === "groove" ? "Drawing on map" : "Draw curved groove"}</button>
+          <button type="button" disabled={!trackId} className={mode === "groove" ? "active" : ""} onClick={() => { lastGroovePoint.current = null; setMode("groove"); setMessage("Hold the mouse button and trace the preferred groove. Panning pauses while tracing; finish drawing to pan or zoom again."); }}>{mode === "groove" ? "Drawing on map" : "Draw curved groove"}</button>
           <button type="button" onClick={() => { freehandGroove.current = false; mapRef.current?.dragging.enable(); setMode(null); setMessage("Groove draft paused. Reposition the map or approve and save it when it looks right."); }} disabled={mode !== "groove"}>Pause / reposition map</button>
           <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>{captureMode === "groove" ? "Groove pass running" : "Start groove pass"}</button>
           <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
@@ -557,7 +558,7 @@ export function TrackMapEditor({
           />
           <small className="muted">Start near 60 ft. Increase it until the circle covers the full corner without reaching the straightaways.</small>
         </div>
-        <button className="button" type="button" onClick={save}>
+        <button className="button" type="button" disabled={!trackId} onClick={save}>
           Approve & save groove
         </button>
       </div>
