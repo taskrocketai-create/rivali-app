@@ -18,6 +18,7 @@ from engine.video_knowledge import distill_transcript, extract_audio_chunks, tra
 
 GPS_LAT_NAMES=("GPS Latitude","GPS Lat","Latitude","Lat","GPS_Latitude")
 GPS_LON_NAMES=("GPS Longitude","GPS Long","GPS Lon","Longitude","Lon","GPS_Longitude")
+GPS_SPEED_NAMES=("GPS Speed","GPS_Speed","Speed GPS")
 
 def plain(series):
     if hasattr(series,"pint"):
@@ -31,13 +32,20 @@ def find_column(data,names):
     return next((lookup[name.lower()] for name in names if name.lower() in lookup),None)
 
 def gps_trace(data,maximum=5000):
-    lat_name,lon_name=find_column(data,GPS_LAT_NAMES),find_column(data,GPS_LON_NAMES)
+    lat_name,lon_name,speed_name=find_column(data,GPS_LAT_NAMES),find_column(data,GPS_LON_NAMES),find_column(data,GPS_SPEED_NAMES)
     if lat_name is None or lon_name is None:return []
     rows=[]
-    for when,lat_raw,lon_raw in zip(data.index,plain(data[lat_name]),plain(data[lon_name])):
+    speeds=plain(data[speed_name]) if speed_name is not None else [None]*len(data)
+    for when,lat_raw,lon_raw,speed_raw in zip(data.index,plain(data[lat_name]),plain(data[lon_name]),speeds):
         try:lat,lon,when=float(lat_raw),float(lon_raw),float(when)
         except (TypeError,ValueError):continue
-        if all(math.isfinite(value) for value in (lat,lon,when)) and -90<=lat<=90 and -180<=lon<=180 and (lat or lon):rows.append({"lat":lat,"lng":lon,"time":when})
+        if all(math.isfinite(value) for value in (lat,lon,when)) and -90<=lat<=90 and -180<=lon<=180 and (lat or lon):
+            point={"lat":lat,"lng":lon,"time":when}
+            try:
+                speed_kmh=float(speed_raw)
+                if math.isfinite(speed_kmh) and speed_kmh>=0:point["speed_mph"]=round(speed_kmh*0.621371,2)
+            except (TypeError,ValueError):pass
+            rows.append(point)
     if len(rows)>maximum:rows=rows[::math.ceil(len(rows)/maximum)]
     return rows
 
