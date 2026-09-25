@@ -111,10 +111,10 @@ export async function POST(request: Request) {
   if (existing.data) return NextResponse.json({ ok: true, duplicate: true, sessionId: existing.data.id });
   if (existing.error) return NextResponse.json({ error: existing.error.message }, { status: 500 });
 
-  const baseLap = Number(first(fields, "base lap goal", "base lap time", "target lap", "off the trailer goal"));
+  const baseLap = Number(first(fields, "base lap goal", "base lap time", "target lap", "off the trailer goal")) || 12.3;
   const setup = {
     class_name: first(fields, "class", "racing class") || null,
-    base_lap_sec: Number.isFinite(baseLap) && baseLap > 0 ? baseLap : null,
+    base_lap_sec: baseLap,
     tire_set_id: first(fields, "tire set", "tire id") || null,
     fillout_intake: true,
     fillout_submission_id: submissionId,
