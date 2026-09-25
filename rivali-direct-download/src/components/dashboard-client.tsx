@@ -430,6 +430,20 @@ export function DashboardClient({
       setBusy(false);
     }
   }
+  async function importStephenIntake() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/fillout/stephen-intake/import", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not import Stephen's intake.");
+      setMessage(result.duplicate ? "Stephen's intake is already in Rivali." : "Stephen's pre-race baseline is now in Rivali. Refreshing the race shop…");
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not import Stephen's intake.");
+      setBusy(false);
+    }
+  }
   return (
     <div className="workspace">
       <aside className="tabs">
@@ -470,6 +484,15 @@ export function DashboardClient({
         {tab === "upload" && (
           <form className="card stack" onSubmit={uploadSession}>
             <h2>Upload a MyChron session</h2>
+            <div className="shortcut-setup">
+              <div>
+                <strong>Stephen’s saved pre-race intake</strong>
+                <p>Pull the latest completed Fillout response into Rivali once, then attach his MyChron file to that baseline.</p>
+              </div>
+              <button className="button small secondary" type="button" disabled={busy} onClick={() => void importStephenIntake()}>
+                Import Stephen’s intake
+              </button>
+            </div>
             {attachableSessions.length > 0 && (
               <div className="field">
                 <label>Attach data to a saved pre-race baseline</label>
@@ -735,169 +758,3 @@ export function DashboardClient({
                     {x.driver_weight_lb ? `${x.driver_weight_lb} lb` : "—"}
                   </span>
                   <span>{x.experience_level ?? "—"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {tab === "debrief" && <VoiceDebriefRecorder sessions={sessions} />}
-        {tab === "karts" && (
-          <div className="grid-2">
-            <form className="card" onSubmit={addKart}>
-              <h2>Add kart</h2>
-              <div className="field">
-                <label>Driver</label>
-                <select name="racer_id" required>
-                  <option value="">Select</option>
-                  {racers.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Kart name</label>
-                <input name="name" placeholder="Primary kart" required />
-              </div>
-              <div className="grid-2">
-                <div className="field">
-                  <label>Chassis make</label>
-                  <input name="chassis_make" />
-                </div>
-                <div className="field">
-                  <label>Model</label>
-                  <input name="chassis_model" />
-                </div>
-              </div>
-              <div className="field">
-                <label>Tire compound</label>
-                <input name="tire_compound" />
-              </div>
-              <button className="button" disabled={busy}>
-                Save kart
-              </button>
-            </form>
-            <div className="card">
-              <h2>Karts</h2>
-              {karts.map((x) => (
-                <div className="session-row" key={x.id}>
-                  <strong>{x.name}</strong>
-                  <span>{x.chassis_make ?? "—"}</span>
-                  <span>{x.chassis_model ?? "—"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {tab === "tracks" && (
-          <div className="stack">
-            <form className="card" onSubmit={addTrack}>
-              <h2>Add track</h2>
-              <div className="grid-3">
-                <div className="field">
-                  <label>Name</label>
-                  <input name="name" required />
-                </div>
-                <div className="field">
-                  <label>Location</label>
-                  <input name="location" />
-                </div>
-                <div className="field">
-                  <label>Surface</label>
-                  <input name="surface_type" placeholder="Red clay" />
-                </div>
-              </div>
-              <button className="button" disabled={busy}>
-                Save track
-              </button>
-            </form>
-            <TrackMapEditor
-              tracks={tracks}
-              sessions={sessions}
-              onTrackUpdated={(updated) =>
-                setTracks(
-                  tracks.map((x) => (x.id === updated.id ? updated : x)),
-                )
-              }
-            />
-          </div>
-        )}
-        {tab === "sessions" && (
-          <div className="card">
-            <h2>Session history</h2>
-            {sessions.length === 0 ? (
-              <p className="muted">No sessions uploaded yet.</p>
-            ) : (
-              sessions.map((x) => (
-                <div className="session-row" key={x.id}>
-                  <div>
-                    <strong>{x.tracks?.name ?? "Track"}</strong>
-                    <br />
-                    <small>{x.racers?.name ?? "Driver"}</small>
-                  </div>
-                  <span>{x.session_date}</span>
-                  <span>{x.session_type}</span>
-                  <span className={`status ${x.status}`}>
-                    {x.status}
-                    {x.best_lap_sec ? ` · ${x.best_lap_sec.toFixed(3)}s` : ""}
-                  </span>
-                  {x.setup?.dirty_tire_rule && (
-                    <span className={`tire-rule-badge ${x.setup.tire_locked ? "locked" : "armed"}`}>
-                      {x.setup.tire_locked ? "DIRTY TIRE LOCKED" : "DIRTY TIRE"}
-                      {x.setup.tire_set_id ? ` · ${x.setup.tire_set_id}` : ""}
-                    </span>
-                  )}
-                  {x.recommendations?.[0] && (
-                    <small style={{ gridColumn: "1 / -1" }}>
-                      <strong>
-                        {x.recommendations[0].confidence} confidence:
-                      </strong>{" "}
-                      {x.recommendations[0].recommendation}
-                    </small>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-        {tab === "compare" && (
-          <div className="card compare-panel">
-            <div className="eyebrow">SESSION ANALYSIS</div>
-            <h2>Compare laps</h2>
-            <p className="muted">Select two processed sessions to compare best lap, average pace, consistency, setup, and conditions.</p>
-            <div className="grid-2">
-              <div className="field"><label>Baseline session</label><select><option>Select session</option>{sessions.map((x) => <option key={`a-${x.id}`}>{x.session_date} · {x.tracks?.name} · {x.session_type}</option>)}</select></div>
-              <div className="field"><label>Comparison session</label><select><option>Select session</option>{sessions.map((x) => <option key={`b-${x.id}`}>{x.session_date} · {x.tracks?.name} · {x.session_type}</option>)}</select></div>
-            </div>
-            <div className="notice">Detailed overlay comparison will activate when two processed sessions are selected.</div>
-          </div>
-        )}
-        {tab === "profile" && (
-          <div className="profile-hub">
-            <div className="card"><div className="eyebrow">RIVALI GARAGE</div><h2>Race profile</h2><p className="muted">Manage the drivers, karts, and tracks that feed every session analysis.</p></div>
-            <div className="profile-grid">
-              <button className="card" onClick={() => setTab("drivers")}><Users /><strong>Drivers</strong><span>{racers.length} saved</span></button>
-              <button className="card" onClick={() => setTab("karts")}><Wrench /><strong>Karts</strong><span>{karts.length} saved</span></button>
-              <button className="card" onClick={() => setTab("tracks")}><MapPinned /><strong>Tracks</strong><span>{tracks.length} saved</span></button>
-              <button className="card" onClick={() => setTab("debrief")}><Mic /><strong>Debriefs</strong><span>Trackside notes</span></button>
-            </div>
-          </div>
-        )}
-      </section>
-      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-        {[["home", "Home", Home], ["sessions", "Sessions", History], ["compare", "Compare", BarChart3], ["profile", "Profile", UserRound]].map(([id, label, Icon]) => {
-          const NavIcon = Icon as typeof Home;
-          return <button key={id as string} className={tab === id ? "active" : ""} onClick={() => { setTab(id as Tab); setMessage(""); }}><NavIcon /><span>{label as string}</span></button>;
-        })}
-      </nav>
-      <FloatingDoug
-        racedayContext={racedayContext}
-        onNavigate={(destination) => setTab(destination)}
-        onRequestAction={setPendingDougAction}
-        attentionKey={pendingDougAction?.summary || message || dougGuidance}
-        guidance={dougGuidance}
-      />
-    </div>
-  );
-}
