@@ -111,7 +111,7 @@ function validSecret(actual: string, supplied: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function processFilloutSubmission(payload: unknown) {
+async function processFilloutSubmission(payload: unknown) {
   const fields: FieldMap = {};
   collectFields(payload, fields);
   const driverName = first(fields, "driver", "driver name", "racer");
