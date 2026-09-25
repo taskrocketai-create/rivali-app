@@ -424,15 +424,14 @@ export function TrackMapEditor({
   const currentWalkLabel = CORE_WALK_STEPS.find((step) => step.key === walkStep)?.label;
   return (
     <div className="card">
-      <h2>Satellite GPS layout</h2>
+      <h2>Track map and preferred groove</h2>
       <p className="muted">
-        Use MyChron GPS data as the racing line. Draw the start/finish line
-        across the track, then place the center of Turns 1–4.
+        Find a track by name or address, or use your current location. Rivali saves and selects it when you choose the result—there is no separate Add Track step.
       </p>
       <div className="field">
-        <label>Find a track on the satellite map</label>
+        <label>Find or add a track</label>
         <div className="search-row">
-          <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchTracks(); } }} placeholder="Track name, city, and state" />
+          <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchTracks(); } }} placeholder="Track name or street address" />
           <button className="button small" type="button" disabled={searching} onClick={searchTracks}>{searching ? "Working..." : "Search"}</button>
           <button className="button small secondary" type="button" disabled={searching} onClick={useCurrentLocation}>Use my location</button>
         </div>
@@ -490,23 +489,6 @@ export function TrackMapEditor({
         <div className="gps-capture-actions">
           <button type="button" className={mode === "start" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); setStartFinish([]); setMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
         </div>
-      </div>
-      <div className="gps-capture">
-        <div>
-          <strong>Phone track walk</strong>
-          <p>Choose the track, start the walk, then walk to each spot and tap one big button. Rivali saves the core layout in six quick stops.</p>
-        </div>
-        <div className="gps-capture-actions">
-          <button type="button" className={captureMode === "walk" ? "active" : ""} onClick={() => startCapture("walk")}>{completedCoreSteps ? "Continue track walk" : "Start track walk"}</button>
-          <button type="button" onClick={stopCapture} disabled={captureMode !== "walk"}>Pause walk</button>
-          <button type="button" onClick={() => { setWalk({ points: {} }); setWalkStep(""); }} disabled={!completedCoreSteps}>Start over</button>
-        </div>
-        <div className="walk-next-step">
-          <div><small>NEXT STOP</small><strong>{currentWalkLabel ?? (completedCoreSteps === CORE_WALK_STEPS.length ? "Core track walk complete" : "Start the walk")}</strong><span>{completedCoreSteps} of {CORE_WALK_STEPS.length} saved</span></div>
-          <button type="button" className="button primary" onClick={markWalkPoint} disabled={captureMode !== "walk" || !walkStep}>{currentWalkLabel ? `Mark: ${currentWalkLabel}` : "Walk complete"}</button>
-        </div>
-        <div className="walk-progress">{CORE_WALK_STEPS.map((step, index) => <span key={step.key} className={walk.points[step.key] ? "complete" : step.key === walkStep ? "current" : ""}>{index + 1}</span>)}</div>
-        <small className="muted">If a point reports more than about 30 ft accuracy, use Start over or correct it later on the map.</small>
       </div>
       <div className="gps-capture">
         <div>
