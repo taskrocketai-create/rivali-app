@@ -29,10 +29,12 @@ const distanceFeet = (a: { lat: number; lng: number }, b: { lat: number; lng: nu
 export function TrackMapEditor({
   tracks,
   sessions,
+  selectedTrackId,
   onTrackUpdated,
 }: {
   tracks: Track[];
   sessions: RaceSession[];
+  selectedTrackId?: string;
   onTrackUpdated: (track: Track) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -236,6 +238,9 @@ export function TrackMapEditor({
         : "Load a session, then define the start/finish line and four turn centers.",
     );
   }
+  useEffect(() => {
+    if (selectedTrackId && selectedTrackId !== trackId && mapReady) chooseTrack(selectedTrackId);
+  }, [mapReady, selectedTrackId, tracks]);
   function stopCapture() {
     if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
     watchRef.current = null;
