@@ -134,11 +134,24 @@ async function processFilloutSubmission(payload: unknown) {
   ]);
   if (racers.error || karts.error || tracks.error)
     return NextResponse.json({ error: racers.error?.message ?? karts.error?.message ?? tracks.error?.message ?? "Could not load Rivali profiles." }, { status: 500 });
-  const racer = matchingRow((racers.data ?? []) as Row[], driverName);
-  const kart = matchingRow((karts.data ?? []) as Row[], kartName);
-  const track = matchingRow((tracks.data ?? []) as Row[], trackName);
-  if (!racer || !kart || !track)
-    return NextResponse.json({ error: "Match Stephen's Driver, Kart, and Track names to saved Rivali profiles before submitting.", missing: { driver: !racer, kart: !kart, track: !track } }, { status: 422 });
+  let racer = matchingRow((racers.data ?? []) as Row[], driverName);
+  if (!racer) {
+    const created = await admin.from("racers").insert({ user_id: userId, name: driverName }).select("id,name").single();
+    if (created.error) return NextResponse.json({ error: created.error.message }, { status: 500 });
+    racer = created.data as Row;
+  }
+  let kart = matchingRow((karts.data ?? []) as Row[], kartName);
+  if (!kart) {
+    const created = await admin.from("karts").insert({ user_id: userId, racer_id: racer.id, name: kartName }).select("id,name").single();
+    if (created.error) return NextResponse.json({ error: created.error.message }, { status: 500 });
+    kart = created.data as Row;
+  }
+  let track = matchingRow((tracks.data ?? []) as Row[], trackName);
+  if (!track) {
+    const created = await admin.from("tracks").insert({ user_id: userId, name: trackName, surface_type: "dirt" }).select("id,name").single();
+    if (created.error) return NextResponse.json({ error: created.error.message }, { status: 500 });
+    track = created.data as Row;
+  }
 
   const submissionId = asText((payload as Record<string, unknown>).submissionId ?? (payload as Record<string, unknown>).submission_id ?? (payload as Record<string, unknown>).id) || randomUUID();
   const rawStoragePath = `${userId}/fillout-baseline/${submissionId}.pending`;
