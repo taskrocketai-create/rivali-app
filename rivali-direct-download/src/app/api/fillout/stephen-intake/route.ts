@@ -111,19 +111,7 @@ function validSecret(actual: string, supplied: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function POST(request: Request) {
-  const expectedSecret = process.env.FILLOUT_WEBHOOK_SECRET;
-  const userId = process.env.FILLOUT_RIVALI_USER_ID;
-  if (!expectedSecret || !userId)
-    return NextResponse.json({ error: "Fillout intake is not configured on the server." }, { status: 503 });
-
-  const authorization = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const suppliedSecret = request.headers.get("x-rivali-fillout-secret") ?? authorization ?? new URL(request.url).searchParams.get("secret") ?? "";
-  if (!validSecret(expectedSecret, suppliedSecret))
-    return NextResponse.json({ error: "Unauthorized Fillout intake." }, { status: 401 });
-
-  const payload = await readPayload(request);
-  if (!payload) return NextResponse.json({ error: "Fillout sent an invalid JSON payload." }, { status: 400 });
+export async function processFilloutSubmission(payload: unknown) {
   const fields: FieldMap = {};
   collectFields(payload, fields);
   const driverName = first(fields, "driver", "driver name", "racer");
@@ -136,6 +124,8 @@ export async function POST(request: Request) {
       receivedStructure: payloadSummary(payload),
     }, { status: 422 });
 
+  const userId = process.env.FILLOUT_RIVALI_USER_ID;
+  if (!userId) return NextResponse.json({ error: "Fillout intake is not configured on the server." }, { status: 503 });
   const admin = createAdminClient();
   const [racers, karts, tracks] = await Promise.all([
     admin.from("racers").select("id,name").eq("user_id", userId),
@@ -189,4 +179,20 @@ export async function POST(request: Request) {
   }).select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, sessionId: session.id });
+}
+
+export async function POST(request: Request) {
+  const expectedSecret = process.env.FILLOUT_WEBHOOK_SECRET;
+  const userId = process.env.FILLOUT_RIVALI_USER_ID;
+  if (!expectedSecret || !userId)
+    return NextResponse.json({ error: "Fillout intake is not configured on the server." }, { status: 503 });
+
+  const authorization = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const suppliedSecret = request.headers.get("x-rivali-fillout-secret") ?? authorization ?? new URL(request.url).searchParams.get("secret") ?? "";
+  if (!validSecret(expectedSecret, suppliedSecret))
+    return NextResponse.json({ error: "Unauthorized Fillout intake." }, { status: 401 });
+
+  const payload = await readPayload(request);
+  if (!payload) return NextResponse.json({ error: "Fillout sent an invalid JSON payload." }, { status: 400 });
+  return processFilloutSubmission(payload);
 }
