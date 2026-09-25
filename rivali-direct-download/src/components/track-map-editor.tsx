@@ -58,6 +58,7 @@ export function TrackMapEditor({
   const [captureMode, setCaptureMode] = useState<"walk" | "groove" | null>(null);
   const [latestFixes, setLatestFixes] = useState<GeoPoint[]>([]);
   const watchRef = useRef<number | null>(null);
+  const traceFitted = useRef(false);
   const [message, setMessage] = useState(
     "Select a processed session to load its recorded GPS trace.",
   );
@@ -74,6 +75,12 @@ export function TrackMapEditor({
   useEffect(() => () => {
     if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
   }, []);
+  useEffect(() => {
+    if (!trackId || typeof window === "undefined") return;
+    const key = `rivali-groove-draft:${trackId}`;
+    if (groove.length) window.localStorage.setItem(key, JSON.stringify(groove));
+    else window.localStorage.removeItem(key);
+  }, [groove, trackId]);
   const drawLayout = useCallback(() => {
     const L = leafletRef.current,
       map = mapRef.current;
@@ -86,7 +93,10 @@ export function TrackMapEditor({
         { color: "#e03426", weight: 3, opacity: 0.9 },
       ).addTo(map);
       layers.current.push(line);
-      map.fitBounds(line.getBounds(), { padding: [20, 20] });
+      if (!traceFitted.current) {
+        map.fitBounds(line.getBounds(), { padding: [20, 20] });
+        traceFitted.current = true;
+      }
       const slowest = trace.filter((point) => typeof point.speed_mph === "number").sort((a, b) => (a.speed_mph ?? Infinity) - (b.speed_mph ?? Infinity)).slice(0, 4);
       slowest.forEach((point, index) => {
         const marker = L.circleMarker([point.lat, point.lng], { radius: 6, color: "#f59e0b", weight: 2, fillColor: "#111", fillOpacity: 0.9 })
@@ -197,6 +207,7 @@ export function TrackMapEditor({
       return setMessage(
         "That session has no GPS trace yet. Wait for processing or use another file.",
       );
+    traceFitted.current = false;
     setTrace(trace);
     setMessage(`Loaded ${trace.length} GPS points.`);
   }
@@ -209,7 +220,13 @@ export function TrackMapEditor({
     setTurns(markers);
     const metadata = (markers as Record<string, unknown>)._rivali as { walk?: WalkLayout; groove?: GeoPoint[] } | undefined;
     setWalk(metadata?.walk ?? { points: {} });
-    setGroove(metadata?.groove ?? []);
+    const savedGroove = metadata?.groove ?? [];
+    try {
+      const draft = JSON.parse(window.localStorage.getItem(`rivali-groove-draft:${id}`) ?? "[]") as GeoPoint[];
+      setGroove(draft.length ? draft : savedGroove);
+    } catch {
+      setGroove(savedGroove);
+    }
     const savedRadius = Object.values(markers)[0]?.radius_m;
     if (savedRadius) setRadiusFeet(metersToFeet(savedRadius));
     if (track?.latitude != null && track?.longitude != null) mapRef.current?.setView([track.latitude, track.longitude], 17);
@@ -455,7 +472,7 @@ export function TrackMapEditor({
       <div className="gps-capture">
         <div>
           <strong>Preferred groove</strong>
-          <p>On desktop, click along the preferred line directly on the satellite image. The green dashed line is what Rivali will use later to compare where the kart slows. A phone GPS pass is optional.</p>
+          <p>On desktop, click along the preferred line directly on the satellite image. You can zoom and pan while drawing—your line stays in place and is kept as a browser draft until you save it. A phone GPS pass is optional.</p>
         </div>
         <div className="gps-capture-actions">
           <button type="button" className={mode === "groove" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); setMode("groove"); setMessage("Click along the preferred groove on the satellite image. Click Finish drawing when the line is complete."); }}>{mode === "groove" ? "Drawing on map" : "Draw on satellite map"}</button>
@@ -464,7 +481,7 @@ export function TrackMapEditor({
           <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
           <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
         </div>
-        <small className="muted">{groove.length} GPS points in the current groove pass. Phone GPS can drift 10 to 30 feet; use the satellite map to review it before saving.</small>
+        <small className="muted">{groove.length} groove points in the current draft. Zooming and panning are safe; save the groove when it looks right.</small>
       </div>
       <details className="manual-map-tools">
         <summary>Manual map corrections (optional)</summary>
