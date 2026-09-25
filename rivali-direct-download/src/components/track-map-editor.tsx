@@ -404,7 +404,7 @@ export function TrackMapEditor({
           </select>
         </div>
         <div className="field">
-          <label>Processed session</label>
+          <label>Optional processed MyChron session</label>
           <div style={{ display: "flex", gap: 8 }}>
             <select
               value={sessionId}
@@ -423,6 +423,7 @@ export function TrackMapEditor({
               Load
             </button>
           </div>
+          <small className="muted">Not needed to save the track or preferred groove. Select one only after a MyChron file has finished processing to view its lap and speed-dip overlay.</small>
         </div>
       </div>
       <div className="notice">{message}</div>
