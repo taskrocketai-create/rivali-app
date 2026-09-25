@@ -27,6 +27,8 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
   const temp = typeof conditions.air_temp_f === "number" ? `${conditions.air_temp_f}°F` : "—";
   const trackCondition = typeof conditions.track_condition === "string" && conditions.track_condition ? conditions.track_condition : "Not recorded";
   const gap = latest?.best_lap_sec && latest.average_lap_sec ? latest.average_lap_sec - latest.best_lap_sec : null;
+  const baseLap = typeof latest?.setup?.base_lap_sec === "number" ? latest.setup.base_lap_sec : null;
+  const goalGap = latest?.best_lap_sec && baseLap ? latest.best_lap_sec - baseLap : null;
   const quote = racedayQuote(latest?.session_date ?? new Date().toISOString().slice(0, 10));
   const activeTrack = latest?.tracks?.name ? tracks.find((track) => track.name === latest.tracks?.name) : tracks[0];
   const numericTurns = activeTrack?.turns ? Object.keys(activeTrack.turns).filter((key) => /^[1-4]$/.test(key)).length : 0;
@@ -98,6 +100,7 @@ export function RaceControlOverview({ racers, karts, tracks, sessions, onNavigat
       </section>
       {latest && <section className="doug-evidence">
         <div><small>BEST LAP</small><strong>{latest.best_lap_sec?.toFixed(3) ?? "—"}</strong><span>seconds</span></div>
+        <div><small>BASE LAP GOAL</small><strong>{baseLap?.toFixed(3) ?? "—"}</strong><span>{goalGap == null ? "set before first run" : goalGap <= 0 ? `${Math.abs(goalGap).toFixed(3)} under goal` : `+${goalGap.toFixed(3)} to goal`}</span></div>
         <div><small>BEST-TO-AVG</small><strong>{gap == null ? "—" : `+${gap.toFixed(3)}`}</strong><span>consistency gap</span></div>
         <div><small>LATEST RUN</small><strong>{latest.session_type}</strong><span>{latest.session_date}</span></div>
         <button onClick={() => onNavigate("upload")}><Upload /><strong>UPLOAD DATA</strong><ArrowRight /></button>
