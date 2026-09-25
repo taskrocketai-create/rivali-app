@@ -73,6 +73,7 @@ export function DashboardClient({
   const supabase = createClient();
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
   const attachableSessions = sessions.filter((session) => session.setup?.telemetry_attached !== true);
+  const selectedAttachSession = sessions.find((session) => session.id === attachSessionId);
   const racedayContext = useMemo(() => JSON.stringify({
     latestSession: activeSession ? { date: activeSession.session_date, type: activeSession.session_type, driver: activeSession.racers?.name, kart: activeSession.karts?.name, track: activeSession.tracks?.name, setup: activeSession.setup, conditions: activeSession.conditions, bestLapSeconds: activeSession.best_lap_sec } : null,
     savedDrivers: racers.map((item) => ({ id: item.id, name: item.name })),
@@ -287,6 +288,20 @@ export function DashboardClient({
       setMessage(error instanceof Error ? error.message : "Current weather lookup failed.");
     } finally { setWeatherBusy(false); }
   }
+  async function updateBaseLapGoal(sessionId: string, baseLapSec: number) {
+    if (!Number.isFinite(baseLapSec) || baseLapSec <= 0) throw new Error("Enter a lap goal greater than zero.");
+    const session = sessions.find((item) => item.id === sessionId);
+    if (!session) throw new Error("Session not found.");
+    const setup = { ...session.setup, base_lap_sec: baseLapSec };
+    const { data, error } = await supabase.from("sessions")
+      .update({ setup })
+      .eq("id", sessionId)
+      .select("id,setup")
+      .single();
+    if (error) throw error;
+    setSessions((current) => current.map((item) => item.id === data.id ? { ...item, setup: data.setup } : item));
+    setMessage(`Base lap goal updated to ${baseLapSec.toFixed(3)} seconds.`);
+  }
   async function uploadSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -449,6 +464,7 @@ export function DashboardClient({
             tracks={tracks}
             sessions={activeSession ? [activeSession, ...sessions.filter((session) => session.id !== activeSession.id)] : sessions}
             onNavigate={(destination) => setTab(destination)}
+            onUpdateBaseLapGoal={updateBaseLapGoal}
           />
         )}
         {tab === "upload" && (
@@ -567,7 +583,7 @@ export function DashboardClient({
               </div>
               <div className="field">
                 <label>Base lap goal (seconds)</label>
-                <input name="base_lap_sec" type="number" min="1" step="0.001" placeholder="12.300" />
+                <input key={attachSessionId} name="base_lap_sec" type="number" min="1" step="0.001" defaultValue={selectedAttachSession?.setup.base_lap_sec ?? 12.3} placeholder="12.300" />
                 <small className="muted">Your off-the-trailer target for this class.</small>
               </div>
               <div className="field">
