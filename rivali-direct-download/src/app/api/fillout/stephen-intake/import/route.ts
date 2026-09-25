@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { processFilloutSubmission } from "../route";
 
 export const runtime = "nodejs";
 
 type FilloutList = { responses?: unknown[] };
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   const signedInUserId = claimsData?.claims?.sub;
@@ -16,8 +15,9 @@ export async function POST() {
 
   const apiKey = process.env.FILLOUT_API_KEY;
   const formId = process.env.FILLOUT_FORM_ID ?? "6F1XYFGZiius";
-  if (!apiKey)
-    return NextResponse.json({ error: "Add FILLOUT_API_KEY in Vercel before importing the existing response." }, { status: 503 });
+  const webhookSecret = process.env.FILLOUT_WEBHOOK_SECRET;
+  if (!apiKey || !webhookSecret)
+    return NextResponse.json({ error: "Add FILLOUT_API_KEY and FILLOUT_WEBHOOK_SECRET in Vercel before importing the existing response." }, { status: 503 });
 
   const response = await fetch(`https://api.fillout.com/v1/api/forms/${encodeURIComponent(formId)}/submissions?limit=1&sort=desc`, {
     headers: { Authorization: `Bearer ${apiKey}` },
@@ -29,5 +29,14 @@ export async function POST() {
   const data = await response.json() as FilloutList;
   const latest = data.responses?.[0];
   if (!latest) return NextResponse.json({ error: "No completed responses were found for the Stephen intake form." }, { status: 404 });
-  return processFilloutSubmission(latest);
+  const ingestUrl = new URL("/api/fillout/stephen-intake", request.url);
+  ingestUrl.searchParams.set("secret", webhookSecret);
+  const ingest = await fetch(ingestUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(latest),
+    cache: "no-store",
+  });
+  const result = await ingest.json().catch(() => ({ error: "Rivali could not read the saved intake." }));
+  return NextResponse.json(result, { status: ingest.status });
 }
