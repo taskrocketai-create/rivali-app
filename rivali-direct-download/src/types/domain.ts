@@ -35,6 +35,7 @@ export type RaceSession = {
   lap_count: number | null;
   setup: {
     class_name?: string | null;
+    base_lap_sec?: number | null;
     tire_set_id?: string | null;
     dirty_tire_rule?: boolean;
     dirty_tire_cutoff?: string | null;
@@ -43,9 +44,9 @@ export type RaceSession = {
   };
   conditions: Record<string, string | number | null>;
   raw_file_name: string;
-  tracks: { name: string } | null;
-  racers: { name: string } | null;
-  karts: { name: string } | null;
+  tracks: { id: string; name: string } | null;
+  racers: { id: string; name: string } | null;
+  karts: { id: string; name: string } | null;
   recommendations?: { recommendation: string; confidence: string }[];
 };
 export type PendingImport = {
