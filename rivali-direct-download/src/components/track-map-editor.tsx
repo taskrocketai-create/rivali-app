@@ -7,7 +7,7 @@ import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 type Mode = "start" | "1" | "2" | "3" | "4" | "groove" | null;
 type TracePoint = { lat: number; lng: number; time: number; speed_mph?: number };
 type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
-type OvalFit = { center: { lat: number; lng: number }; radiusXFt: number; radiusYFt: number; angleRad: number };
+type OvalFit = { center: { lat: number; lng: number }; radiusXFt: number; radiusYFt: number; angleRad: number; nodes?: GeoPoint[] };
 type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
 type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
 const CORE_WALK_STEPS = [
@@ -38,7 +38,27 @@ const ovalPoint = (oval: OvalFit, theta: number): GeoPoint => {
     captured_at: new Date().toISOString(),
   };
 };
-const ovalPoints = (oval: OvalFit) => Array.from({ length: 73 }, (_, index) => ovalPoint(oval, (index / 72) * Math.PI * 2));
+const ellipseNodes = (oval: OvalFit) => Array.from({ length: 8 }, (_, index) => ovalPoint(oval, (index / 8) * Math.PI * 2));
+const smoothClosedPoints = (nodes: GeoPoint[]) => nodes.flatMap((point, index) => {
+  const before = nodes[(index - 1 + nodes.length) % nodes.length];
+  const next = nodes[(index + 1) % nodes.length];
+  const after = nodes[(index + 2) % nodes.length];
+  return Array.from({ length: 10 }, (_, step) => {
+    const t = step / 10;
+    const t2 = t * t;
+    const t3 = t2 * t;
+    const lat = 0.5 * ((2 * point.lat) + (-before.lat + next.lat) * t + (2 * before.lat - 5 * point.lat + 4 * next.lat - after.lat) * t2 + (-before.lat + 3 * point.lat - 3 * next.lat + after.lat) * t3);
+    const lng = 0.5 * ((2 * point.lng) + (-before.lng + next.lng) * t + (2 * before.lng - 5 * point.lng + 4 * next.lng - after.lng) * t2 + (-before.lng + 3 * point.lng - 3 * next.lng + after.lng) * t3);
+    return { lat, lng, accuracy_ft: 0, captured_at: new Date().toISOString() };
+  });
+});
+const ovalPoints = (oval: OvalFit) => {
+  if (oval.nodes?.length === 8) {
+    const points = smoothClosedPoints(oval.nodes);
+    return [...points, points[0]];
+  }
+  return Array.from({ length: 73 }, (_, index) => ovalPoint(oval, (index / 72) * Math.PI * 2));
+};
 const feetVector = (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => ({
   east: (to.lng - from.lng) * 364000 * Math.cos(((from.lat + to.lat) / 2) * Math.PI / 180),
   north: (to.lat - from.lat) * 364000,
@@ -76,6 +96,7 @@ export function TrackMapEditor({
   const [walkStep, setWalkStep] = useState("");
   const [groove, setGroove] = useState<GeoPoint[]>([]);
   const [ovalFit, setOvalFit] = useState<OvalFit | null>(null);
+  const [segmentAdjusting, setSegmentAdjusting] = useState(false);
   const [captureMode, setCaptureMode] = useState<"walk" | "groove" | null>(null);
   const [latestFixes, setLatestFixes] = useState<GeoPoint[]>([]);
   const watchRef = useRef<number | null>(null);
@@ -148,31 +169,48 @@ export function TrackMapEditor({
           iconSize: [30, 30], iconAnchor: [15, 15],
         }),
       }).addTo(map);
-      const centerHandle = makeHandle({ ...ovalFit.center, accuracy_ft: 0, captured_at: "" }, "✥", "#ffd43b");
-      centerHandle.on("dragend", () => {
-        const point = centerHandle.getLatLng();
-        setOvalFit((current) => current ? { ...current, center: { lat: point.lat, lng: point.lng } } : current);
-      });
-      const widthHandle = makeHandle(ovalPoint(ovalFit, 0), "↔", "#22c55e");
-      widthHandle.on("dragend", () => {
-        const point = widthHandle.getLatLng();
-        setOvalFit((current) => {
-          if (!current) return current;
-          const vector = feetVector(current.center, point);
-          return { ...current, radiusXFt: Math.max(25, Math.hypot(vector.east, vector.north)), angleRad: Math.atan2(vector.north, vector.east) };
+      if (segmentAdjusting && ovalFit.nodes?.length === 8) {
+        ovalFit.nodes.forEach((node, index) => {
+          const handle = makeHandle(node, String(index + 1), "#f2eadb");
+          handle.on("dragend", () => {
+            const point = handle.getLatLng();
+            setOvalFit((current) => {
+              if (!current?.nodes) return current;
+              const nodes = current.nodes.map((item, nodeIndex) => nodeIndex === index
+                ? { ...item, lat: point.lat, lng: point.lng, captured_at: new Date().toISOString() }
+                : item);
+              return { ...current, nodes };
+            });
+          });
+          layers.current.push(handle);
         });
-      });
-      const heightHandle = makeHandle(ovalPoint(ovalFit, Math.PI / 2), "↕", "#60a5fa");
-      heightHandle.on("dragend", () => {
-        const point = heightHandle.getLatLng();
-        setOvalFit((current) => {
-          if (!current) return current;
-          const vector = feetVector(current.center, point);
-          const perpendicular = -vector.east * Math.sin(current.angleRad) + vector.north * Math.cos(current.angleRad);
-          return { ...current, radiusYFt: Math.max(25, Math.abs(perpendicular)) };
+      } else {
+        const centerHandle = makeHandle({ ...ovalFit.center, accuracy_ft: 0, captured_at: "" }, "✥", "#ffd43b");
+        centerHandle.on("dragend", () => {
+          const point = centerHandle.getLatLng();
+          setOvalFit((current) => current ? { ...current, center: { lat: point.lat, lng: point.lng } } : current);
         });
-      });
-      layers.current.push(centerHandle, widthHandle, heightHandle);
+        const widthHandle = makeHandle(ovalPoint(ovalFit, 0), "↔", "#22c55e");
+        widthHandle.on("dragend", () => {
+          const point = widthHandle.getLatLng();
+          setOvalFit((current) => {
+            if (!current) return current;
+            const vector = feetVector(current.center, point);
+            return { ...current, radiusXFt: Math.max(25, Math.hypot(vector.east, vector.north)), angleRad: Math.atan2(vector.north, vector.east) };
+          });
+        });
+        const heightHandle = makeHandle(ovalPoint(ovalFit, Math.PI / 2), "↕", "#60a5fa");
+        heightHandle.on("dragend", () => {
+          const point = heightHandle.getLatLng();
+          setOvalFit((current) => {
+            if (!current) return current;
+            const vector = feetVector(current.center, point);
+            const perpendicular = -vector.east * Math.sin(current.angleRad) + vector.north * Math.cos(current.angleRad);
+            return { ...current, radiusYFt: Math.max(25, Math.abs(perpendicular)) };
+          });
+        });
+        layers.current.push(centerHandle, widthHandle, heightHandle);
+      }
     }
     Object.entries(walk.points).forEach(([label, point]) => {
       const marker = L.circleMarker([point.lat, point.lng], { radius: 5, color: "#22c55e", fillOpacity: 1 }).addTo(map).bindTooltip(label.replaceAll("_", " "), { permanent: false });
@@ -210,7 +248,7 @@ export function TrackMapEditor({
       }).addTo(map);
       layers.current.push(marker, circle);
     });
-  }, [startFinish, trace, turns, groove, walk, ovalFit, setTurns]);
+  }, [startFinish, trace, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
   useEffect(() => {
     radiusRef.current = feetToMeters(radiusFeet);
   }, [radiusFeet]);
@@ -440,6 +478,7 @@ export function TrackMapEditor({
         setTurns(saved.turns ?? {});
         setGroove([]);
         setOvalFit(null);
+        setSegmentAdjusting(false);
         onTrackUpdated(saved);
         return setMessage(`${saved.name} already existed, so Rivali selected it and saved its map location.`);
       }
@@ -451,6 +490,7 @@ export function TrackMapEditor({
       setWalk({ points: {} });
       setGroove([]);
       setOvalFit(null);
+      setSegmentAdjusting(false);
       onTrackUpdated(created);
       return setMessage(`${created.name} was added and selected. Draw the preferred groove right on the satellite image, then save it.`);
     }
@@ -496,9 +536,16 @@ export function TrackMapEditor({
       angleRad: 0,
     };
     setMode(null);
+    setSegmentAdjusting(false);
     setOvalFit(next);
     setGroove(ovalPoints(next));
     setMessage("Oval placed. Drag yellow ✥ to move it, green ↔ for width and direction, and blue ↕ for height. Then approve and save it.");
+  }
+  function fineTuneOvalSegments() {
+    if (!ovalFit) return setMessage("Fit the oval first.");
+    setOvalFit((current) => current ? { ...current, nodes: current.nodes?.length === 8 ? current.nodes : ellipseNodes(current) } : current);
+    setSegmentAdjusting(true);
+    setMessage("Fine-tune mode: drag any numbered point to pull that part of the groove in or out. The green line stays smooth between points.");
   }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
@@ -622,11 +669,12 @@ export function TrackMapEditor({
           <p>Fit an oval over the satellite image, then drag its three handles until it follows the preferred groove. Rivali saves the fitted oval as real map coordinates.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" disabled={!trackId} className={ovalFit ? "active" : ""} onClick={fitOvalOverTrack}>{ovalFit ? "Adjust fitted oval" : "Fit oval over track"}</button>
+          <button type="button" disabled={!trackId} className={ovalFit ? "active" : ""} onClick={fitOvalOverTrack}>{ovalFit ? "Start fresh oval" : "Fit oval over track"}</button>
+          <button type="button" disabled={!ovalFit} className={segmentAdjusting ? "active" : ""} onClick={fineTuneOvalSegments}>{segmentAdjusting ? "Adjusting 8 segments" : "Fine-tune 8 segments"}</button>
           <button type="button" onClick={() => { setOvalFit(null); lastGroovePoint.current = null; setMode("groove"); setMessage("Manual drawing is available when the groove is not oval. Hold the mouse and trace it; finish drawing to pan or zoom again."); }}>Draw manually instead</button>
-          <button type="button" onClick={() => { setOvalFit(null); setGroove([]); }} disabled={!groove.length}>Clear groove</button>
+          <button type="button" onClick={() => { setOvalFit(null); setSegmentAdjusting(false); setGroove([]); }} disabled={!groove.length}>Clear groove</button>
         </div>
-        <small className="muted">{ovalFit ? "Drag yellow ✥ to move, green ↔ to set width / direction, and blue ↕ to set height." : `${groove.length} groove points in the current draft.`} Zooming and panning are safe; save the groove when it looks right.</small>
+        <small className="muted">{segmentAdjusting ? "Drag a numbered point at the part of the groove you want to change—such as pulling an apex down to square off a corner." : ovalFit ? "First drag yellow ✥ to move, green ↔ to set width / direction, and blue ↕ to set height. Then use Fine-tune 8 segments for corner shaping." : `${groove.length} groove points in the current draft.`} Zooming and panning are safe; save the groove when it looks right.</small>
       </div>
       <details className="manual-map-tools">
         <summary>Manual map corrections (optional)</summary>
