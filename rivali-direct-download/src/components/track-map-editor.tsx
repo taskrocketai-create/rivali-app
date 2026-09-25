@@ -7,6 +7,7 @@ import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 type Mode = "start" | "1" | "2" | "3" | "4" | "groove" | null;
 type TracePoint = { lat: number; lng: number; time: number; speed_mph?: number };
 type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
+type OvalFit = { center: { lat: number; lng: number }; radiusXFt: number; radiusYFt: number; angleRad: number };
 type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
 type SearchResult = { id: string; label: string; latitude: number; longitude: number; type: string };
 const CORE_WALK_STEPS = [
@@ -25,6 +26,23 @@ const distanceFeet = (a: { lat: number; lng: number }, b: { lat: number; lng: nu
   const longitudeFeet = (a.lng - b.lng) * 364000 * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180);
   return Math.hypot(latitudeFeet, longitudeFeet);
 };
+const ovalPoint = (oval: OvalFit, theta: number): GeoPoint => {
+  const x = oval.radiusXFt * Math.cos(theta);
+  const y = oval.radiusYFt * Math.sin(theta);
+  const eastFt = x * Math.cos(oval.angleRad) - y * Math.sin(oval.angleRad);
+  const northFt = x * Math.sin(oval.angleRad) + y * Math.cos(oval.angleRad);
+  return {
+    lat: oval.center.lat + northFt / 364000,
+    lng: oval.center.lng + eastFt / (364000 * Math.cos(oval.center.lat * Math.PI / 180)),
+    accuracy_ft: 0,
+    captured_at: new Date().toISOString(),
+  };
+};
+const ovalPoints = (oval: OvalFit) => Array.from({ length: 73 }, (_, index) => ovalPoint(oval, (index / 72) * Math.PI * 2));
+const feetVector = (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => ({
+  east: (to.lng - from.lng) * 364000 * Math.cos(((from.lat + to.lat) / 2) * Math.PI / 180),
+  north: (to.lat - from.lat) * 364000,
+});
 
 export function TrackMapEditor({
   tracks,
@@ -57,6 +75,7 @@ export function TrackMapEditor({
   const [walk, setWalk] = useState<WalkLayout>({ points: {} });
   const [walkStep, setWalkStep] = useState("");
   const [groove, setGroove] = useState<GeoPoint[]>([]);
+  const [ovalFit, setOvalFit] = useState<OvalFit | null>(null);
   const [captureMode, setCaptureMode] = useState<"walk" | "groove" | null>(null);
   const [latestFixes, setLatestFixes] = useState<GeoPoint[]>([]);
   const watchRef = useRef<number | null>(null);
@@ -89,6 +108,9 @@ export function TrackMapEditor({
     if (groove.length) window.localStorage.setItem(key, JSON.stringify(groove));
     else window.localStorage.removeItem(key);
   }, [groove, trackId]);
+  useEffect(() => {
+    if (ovalFit) setGroove(ovalPoints(ovalFit));
+  }, [ovalFit]);
   const drawLayout = useCallback(() => {
     const L = leafletRef.current,
       map = mapRef.current;
@@ -116,6 +138,41 @@ export function TrackMapEditor({
     if (groove.length > 1) {
       const line = L.polyline(groove.map((x) => [x.lat, x.lng]), { color: "#22c55e", weight: 4, opacity: 0.9, dashArray: "6 5" }).addTo(map);
       layers.current.push(line);
+    }
+    if (ovalFit) {
+      const makeHandle = (point: GeoPoint, label: string, color: string) => L.marker([point.lat, point.lng], {
+        draggable: true,
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};color:#111;border:2px solid #fff;display:grid;place-items:center;font-weight:900;font-size:15px;box-shadow:0 1px 5px #000">${label}</div>`,
+          iconSize: [30, 30], iconAnchor: [15, 15],
+        }),
+      }).addTo(map);
+      const centerHandle = makeHandle({ ...ovalFit.center, accuracy_ft: 0, captured_at: "" }, "✥", "#ffd43b");
+      centerHandle.on("dragend", () => {
+        const point = centerHandle.getLatLng();
+        setOvalFit((current) => current ? { ...current, center: { lat: point.lat, lng: point.lng } } : current);
+      });
+      const widthHandle = makeHandle(ovalPoint(ovalFit, 0), "↔", "#22c55e");
+      widthHandle.on("dragend", () => {
+        const point = widthHandle.getLatLng();
+        setOvalFit((current) => {
+          if (!current) return current;
+          const vector = feetVector(current.center, point);
+          return { ...current, radiusXFt: Math.max(25, Math.hypot(vector.east, vector.north)), angleRad: Math.atan2(vector.north, vector.east) };
+        });
+      });
+      const heightHandle = makeHandle(ovalPoint(ovalFit, Math.PI / 2), "↕", "#60a5fa");
+      heightHandle.on("dragend", () => {
+        const point = heightHandle.getLatLng();
+        setOvalFit((current) => {
+          if (!current) return current;
+          const vector = feetVector(current.center, point);
+          const perpendicular = -vector.east * Math.sin(current.angleRad) + vector.north * Math.cos(current.angleRad);
+          return { ...current, radiusYFt: Math.max(25, Math.abs(perpendicular)) };
+        });
+      });
+      layers.current.push(centerHandle, widthHandle, heightHandle);
     }
     Object.entries(walk.points).forEach(([label, point]) => {
       const marker = L.circleMarker([point.lat, point.lng], { radius: 5, color: "#22c55e", fillOpacity: 1 }).addTo(map).bindTooltip(label.replaceAll("_", " "), { permanent: false });
@@ -153,7 +210,7 @@ export function TrackMapEditor({
       }).addTo(map);
       layers.current.push(marker, circle);
     });
-  }, [startFinish, trace, turns, groove, walk, setTurns]);
+  }, [startFinish, trace, turns, groove, walk, ovalFit, setTurns]);
   useEffect(() => {
     radiusRef.current = feetToMeters(radiusFeet);
   }, [radiusFeet]);
@@ -382,6 +439,7 @@ export function TrackMapEditor({
         setStartFinish(saved.start_finish ?? []);
         setTurns(saved.turns ?? {});
         setGroove([]);
+        setOvalFit(null);
         onTrackUpdated(saved);
         return setMessage(`${saved.name} already existed, so Rivali selected it and saved its map location.`);
       }
@@ -392,6 +450,7 @@ export function TrackMapEditor({
       setTurns({});
       setWalk({ points: {} });
       setGroove([]);
+      setOvalFit(null);
       onTrackUpdated(created);
       return setMessage(`${created.name} was added and selected. Draw the preferred groove right on the satellite image, then save it.`);
     }
@@ -421,6 +480,25 @@ export function TrackMapEditor({
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
+  }
+  function fitOvalOverTrack() {
+    if (!trackId) return setMessage("Choose the track before fitting the oval.");
+    const map = mapRef.current;
+    if (!map) return setMessage("The satellite map is still loading.");
+    const bounds = map.getBounds();
+    const center = map.getCenter();
+    const mapWidthFt = distanceFeet({ lat: center.lat, lng: bounds.getWest() }, { lat: center.lat, lng: bounds.getEast() });
+    const mapHeightFt = distanceFeet({ lat: bounds.getNorth(), lng: center.lng }, { lat: bounds.getSouth(), lng: center.lng });
+    const next: OvalFit = {
+      center: { lat: center.lat, lng: center.lng },
+      radiusXFt: Math.max(100, Math.min(450, mapWidthFt * 0.24)),
+      radiusYFt: Math.max(55, Math.min(260, mapHeightFt * 0.28)),
+      angleRad: 0,
+    };
+    setMode(null);
+    setOvalFit(next);
+    setGroove(ovalPoints(next));
+    setMessage("Oval placed. Drag yellow ✥ to move it, green ↔ for width and direction, and blue ↕ for height. Then approve and save it.");
   }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
@@ -541,16 +619,14 @@ export function TrackMapEditor({
       <div className="gps-capture">
         <div>
           <strong>Preferred groove</strong>
-          <p>On desktop, hold the mouse button and trace a smooth curved line around the preferred groove. Rivali stores the curve as many real coordinates. Zoom and pan before drawing; your line stays in place and is kept as a browser draft until you save it.</p>
+          <p>Fit an oval over the satellite image, then drag its three handles until it follows the preferred groove. Rivali saves the fitted oval as real map coordinates.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" disabled={!trackId} className={mode === "groove" ? "active" : ""} onClick={() => { lastGroovePoint.current = null; setMode("groove"); setMessage("Hold the mouse button and trace the preferred groove. Panning pauses while tracing; finish drawing to pan or zoom again."); }}>{mode === "groove" ? "Drawing on map" : "Draw curved groove"}</button>
-          <button type="button" onClick={() => { freehandGroove.current = false; mapRef.current?.dragging.enable(); setMode(null); setMessage("Groove draft paused. Reposition the map or approve and save it when it looks right."); }} disabled={mode !== "groove"}>Pause / reposition map</button>
-          <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>{captureMode === "groove" ? "Groove pass running" : "Start groove pass"}</button>
-          <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
-          <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
+          <button type="button" disabled={!trackId} className={ovalFit ? "active" : ""} onClick={fitOvalOverTrack}>{ovalFit ? "Adjust fitted oval" : "Fit oval over track"}</button>
+          <button type="button" onClick={() => { setOvalFit(null); lastGroovePoint.current = null; setMode("groove"); setMessage("Manual drawing is available when the groove is not oval. Hold the mouse and trace it; finish drawing to pan or zoom again."); }}>Draw manually instead</button>
+          <button type="button" onClick={() => { setOvalFit(null); setGroove([]); }} disabled={!groove.length}>Clear groove</button>
         </div>
-        <small className="muted">{groove.length} groove points in the current draft. Zooming and panning are safe; save the groove when it looks right.</small>
+        <small className="muted">{ovalFit ? "Drag yellow ✥ to move, green ↔ to set width / direction, and blue ↕ to set height." : `${groove.length} groove points in the current draft.`} Zooming and panning are safe; save the groove when it looks right.</small>
       </div>
       <details className="manual-map-tools">
         <summary>Manual map corrections (optional)</summary>
