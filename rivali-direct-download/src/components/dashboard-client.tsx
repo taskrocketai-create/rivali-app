@@ -881,29 +881,6 @@ export function DashboardClient({
         )}
         {tab === "tracks" && (
           <div className="stack">
-            <form className="card" onSubmit={addTrack}>
-              <h2>Add track</h2>
-              <div className="grid-3">
-                <div className="field">
-                  <label>Name</label>
-                  <input name="name" required />
-                </div>
-                <div className="field">
-                  <label>Location</label>
-                  <div className="search-row">
-                    <input name="location" value={newTrackLocation} onChange={(event) => { setNewTrackLocation(event.target.value); setNewTrackCoordinates(null); }} placeholder="Address or current location" />
-                    <button className="button small secondary" type="button" disabled={locatingTrack || busy} onClick={useMyLocationForNewTrack}>{locatingTrack ? "Locating..." : "Use my location"}</button>
-                  </div>
-                </div>
-                <div className="field">
-                  <label>Surface</label>
-                  <input name="surface_type" placeholder="Red clay" />
-                </div>
-              </div>
-              <button className="button" disabled={busy}>
-                Save track
-              </button>
-            </form>
             <TrackMapEditor
               tracks={tracks}
               sessions={sessions}
