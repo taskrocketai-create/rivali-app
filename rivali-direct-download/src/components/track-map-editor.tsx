@@ -67,6 +67,10 @@ export function TrackMapEditor({
     "Find or add a track to begin. A processed MyChron session is optional and only used later to overlay a completed lap.",
   );
   const supabase = createClient();
+  const processedSessions = useMemo(
+    () => sessions.filter((session) => session.status === "completed"),
+    [sessions],
+  );
   const grooveInsight = useMemo(() => {
     const speedSamples = trace.filter((point) => typeof point.speed_mph === "number" && Number.isFinite(point.speed_mph));
     if (!speedSamples.length) return null;
@@ -437,7 +441,7 @@ export function TrackMapEditor({
         </div>
         {searchResults.length > 0 && <div className="search-results">{searchResults.map((result) => <button key={result.id} type="button" onClick={() => chooseSearchResult(result)}><strong>{result.label.split(",")[0]}</strong><span>{result.label}</span></button>)}</div>}
       </div>
-      <div className="grid-2">
+      <div className={processedSessions.length ? "grid-2" : undefined}>
         <div className="field">
           <label>Track</label>
           <select value={trackId} onChange={(e) => chooseTrack(e.target.value)}>
@@ -449,32 +453,32 @@ export function TrackMapEditor({
             ))}
           </select>
         </div>
-        <div className="field">
-          <label>Optional processed MyChron session</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <select
-              value={sessionId}
-              onChange={(e) => setSessionId(e.target.value)}
-            >
-              <option value="">Select session</option>
-              {sessions
-                .filter((x) => x.status === "completed")
-                .map((x) => (
+        {processedSessions.length > 0 && (
+          <div className="field">
+            <label>View a processed MyChron lap (optional)</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <select
+                value={sessionId}
+                onChange={(e) => setSessionId(e.target.value)}
+              >
+                <option value="">Select session</option>
+                {processedSessions.map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.session_date} · {x.tracks?.name}
                   </option>
                 ))}
-            </select>
-            <button className="button small" type="button" onClick={loadTrace}>
-              Load
-            </button>
+              </select>
+              <button className="button small" type="button" onClick={loadTrace}>
+                Load
+              </button>
+            </div>
+            <small className="muted">This only overlays a finished lap and its speed dips. It is not part of saving the track or preferred groove.</small>
           </div>
-          <small className="muted">Not needed to save the track or preferred groove. Select one only after a MyChron file has finished processing to view its lap and speed-dip overlay.</small>
-        </div>
+        )}
       </div>
       <div className="notice">{message}</div>
       {!trackId && <div className="notice"><strong>Choose the track first.</strong> Search above, then click the correct result. Rivali will create and select it before the map tools unlock.</div>}
-      <small className="muted">Pre-race map setup does not require a MyChron file: select a track, set start/finish, draw the groove, then approve and save.</small>
+      <small className="muted">Pre-race map setup does not require a MyChron file: select a track, set start/finish, draw the groove, then approve and save. The lap overlay appears here only after the first MyChron upload has finished processing.</small>
       {grooveInsight && (
         <div className="notice">
           <strong>Speed / groove check</strong><br />
