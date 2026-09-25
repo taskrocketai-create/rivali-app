@@ -515,7 +515,7 @@ export function TrackMapEditor({
         </div>
         <div className="gps-capture-actions">
           <button type="button" className={mode === "groove" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); lastGroovePoint.current = null; setMode("groove"); setMessage("Hold the mouse button and trace the preferred groove. Panning pauses while tracing; finish drawing to pan or zoom again."); }}>{mode === "groove" ? "Drawing on map" : "Draw curved groove"}</button>
-          <button type="button" onClick={() => { freehandGroove.current = false; mapRef.current?.dragging.enable(); setMode(null); setMessage("Preferred groove drawing finished. Save it when it looks right."); }} disabled={mode !== "groove"}>Finish drawing</button>
+          <button type="button" onClick={() => { freehandGroove.current = false; mapRef.current?.dragging.enable(); setMode(null); setMessage("Groove draft paused. Reposition the map or approve and save it when it looks right."); }} disabled={mode !== "groove"}>Pause / reposition map</button>
           <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>{captureMode === "groove" ? "Groove pass running" : "Start groove pass"}</button>
           <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
           <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
@@ -575,7 +575,7 @@ export function TrackMapEditor({
           <small className="muted">Start near 60 ft. Increase it until the circle covers the full corner without reaching the straightaways.</small>
         </div>
         <button className="button" type="button" onClick={save}>
-          Save groove / layout
+          Approve & save groove
         </button>
       </div>
     </div>
