@@ -360,6 +360,31 @@ export function TrackMapEditor({
         latitude: result.latitude,
         longitude: result.longitude,
       }).select("id,name,location,surface_type,latitude,longitude,start_finish,turns").single();
+      if (error?.code === "23505") {
+        // The track may have been created in an earlier screen load. Reuse it
+        // instead of making the driver resolve a duplicate-name database error.
+        const { data: existing, error: findError } = await supabase
+          .from("tracks")
+          .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
+          .eq("user_id", userId)
+          .eq("name", name)
+          .maybeSingle();
+        if (findError || !existing) return setMessage(findError?.message ?? "That track already exists, but Rivali could not load it.");
+        const { data: updated, error: updateError } = await supabase
+          .from("tracks")
+          .update({ location: result.label, latitude: result.latitude, longitude: result.longitude })
+          .eq("id", existing.id)
+          .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
+          .single();
+        if (updateError) return setMessage(updateError.message);
+        const saved = updated as Track;
+        setTrackId(saved.id);
+        setStartFinish(saved.start_finish ?? []);
+        setTurns(saved.turns ?? {});
+        setGroove([]);
+        onTrackUpdated(saved);
+        return setMessage(`${saved.name} already existed, so Rivali selected it and saved its map location.`);
+      }
       if (error) return setMessage(error.message);
       const created = data as Track;
       setTrackId(created.id);
