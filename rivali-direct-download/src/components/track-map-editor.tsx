@@ -4,7 +4,7 @@ import type * as Leaflet from "leaflet";
 import { createClient } from "@/lib/supabase/client";
 import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 
-type Mode = "start" | "1" | "2" | "3" | "4" | null;
+type Mode = "start" | "1" | "2" | "3" | "4" | "groove" | null;
 type TracePoint = { lat: number; lng: number; time: number };
 type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
 type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
@@ -134,6 +134,10 @@ export function TrackMapEditor({
         setMode((current) => {
           if (!current) return current;
           const point = { lat: event.latlng.lat, lng: event.latlng.lng };
+          if (current === "groove") {
+            setGroove((previous) => [...previous, { ...point, accuracy_ft: 0, captured_at: new Date().toISOString() }]);
+            return current;
+          }
           if (current === "start") {
             setStartFinish((previous) =>
               previous.length >= 1 ? [previous[0], point] : [point],
@@ -258,7 +262,37 @@ export function TrackMapEditor({
       searchMarker.current = L.marker([result.latitude, result.longitude]).addTo(map).bindPopup(result.label).openPopup();
     }
     setSearchResults([]);
-    if (!trackId) return setMessage("Map centered. Select the saved track above to attach this location to it.");
+    if (!trackId) {
+      const existing = tracks.find((track) =>
+        [track.name, track.location].filter(Boolean).some((value) => value!.toLowerCase().includes(result.label.split(",")[0].toLowerCase())),
+      );
+      if (existing) {
+        chooseTrack(existing.id);
+        setMessage("That saved track is now selected on the map.");
+        return;
+      }
+      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+      const userId = claimsData?.claims?.sub;
+      if (claimsError || !userId) return setMessage("Sign in again before saving this track.");
+      const name = result.label.split(",")[0].trim() || "Saved track";
+      const { data, error } = await supabase.from("tracks").insert({
+        user_id: userId,
+        name,
+        location: result.label,
+        surface_type: "dirt",
+        latitude: result.latitude,
+        longitude: result.longitude,
+      }).select("id,name,location,surface_type,latitude,longitude,start_finish,turns").single();
+      if (error) return setMessage(error.message);
+      const created = data as Track;
+      setTrackId(created.id);
+      setStartFinish([]);
+      setTurns({});
+      setWalk({ points: {} });
+      setGroove([]);
+      onTrackUpdated(created);
+      return setMessage(`${created.name} was added and selected. Draw the preferred groove right on the satellite image, then save it.`);
+    }
     const { data, error } = await supabase.from("tracks").update({ location: result.label, latitude: result.latitude, longitude: result.longitude }).eq("id", trackId).select("id,name,location,surface_type,latitude,longitude,start_finish,turns").single();
     if (error) return setMessage(error.message);
     onTrackUpdated(data as Track);
@@ -296,8 +330,9 @@ export function TrackMapEditor({
     }).filter((entry) => entry.length)) as Record<string, TurnMarker>;
     const finalStartFinish = walkStartFinish.length === 2 ? walkStartFinish : startFinish;
     const finalTurns = Object.keys(walkedTurns).length === 4 ? walkedTurns : numericTurns;
-    if (finalStartFinish.length !== 2 || Object.keys(finalTurns).length !== 4)
-      return setMessage("Set two start/finish points and all four turns.");
+    const hasLayout = finalStartFinish.length === 2 && Object.keys(finalTurns).length === 4;
+    if (!hasLayout && groove.length < 2)
+      return setMessage("Draw at least two preferred-groove points, or set the complete start/finish and turn layout.");
     const normalized = Object.fromEntries(
       Object.entries(finalTurns).map(([key, value]) => [
         key,
@@ -307,15 +342,15 @@ export function TrackMapEditor({
     const storedTurns = { ...normalized, _rivali: { walk: { ...walk, saved_at: new Date().toISOString() }, groove } };
     const { data, error } = await supabase
       .from("tracks")
-      .update({ start_finish: finalStartFinish, turns: storedTurns })
+      .update({ start_finish: hasLayout ? finalStartFinish : startFinish, turns: storedTurns })
       .eq("id", trackId)
       .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
       .single();
     if (error) return setMessage(error.message);
     onTrackUpdated(data as Track);
-    setStartFinish(finalStartFinish);
+    if (hasLayout) setStartFinish(finalStartFinish);
     setTurns(normalized);
-    setMessage("Track layout saved for future sessions.");
+    setMessage(hasLayout ? "Track layout and preferred groove saved for future sessions." : "Preferred groove saved for future sessions.");
   }
   const completedCoreSteps = CORE_WALK_STEPS.filter((step) => walk.points[step.key]).length;
   const currentWalkLabel = CORE_WALK_STEPS.find((step) => step.key === walkStep)?.label;
@@ -390,10 +425,12 @@ export function TrackMapEditor({
       </div>
       <div className="gps-capture">
         <div>
-          <strong>Preferred groove pass</strong>
-          <p>Mount the phone, make one smooth slow lap in the groove you want to remember, then tap Finish. The green dashed line is saved with this track.</p>
+          <strong>Preferred groove</strong>
+          <p>On desktop, click along the preferred line directly on the satellite image. The green dashed line is what Rivali will use later to compare where the kart slows. A phone GPS pass is optional.</p>
         </div>
         <div className="gps-capture-actions">
+          <button type="button" className={mode === "groove" ? "active" : ""} onClick={() => { if (!trackId) return setMessage("Find or select the track first."); setMode("groove"); setMessage("Click along the preferred groove on the satellite image. Click Finish drawing when the line is complete."); }}>{mode === "groove" ? "Drawing on map" : "Draw on satellite map"}</button>
+          <button type="button" onClick={() => { setMode(null); setMessage("Preferred groove drawing finished. Save it when it looks right."); }} disabled={mode !== "groove"}>Finish drawing</button>
           <button type="button" className={captureMode === "groove" ? "active" : ""} onClick={() => { setGroove([]); startCapture("groove"); }}>{captureMode === "groove" ? "Groove pass running" : "Start groove pass"}</button>
           <button type="button" onClick={stopCapture} disabled={captureMode !== "groove"}>Finish & preview groove</button>
           <button type="button" onClick={() => setGroove([])} disabled={!groove.length}>Clear groove</button>
@@ -453,7 +490,7 @@ export function TrackMapEditor({
           <small className="muted">Start near 60 ft. Increase it until the circle covers the full corner without reaching the straightaways.</small>
         </div>
         <button className="button" type="button" onClick={save}>
-          Save track layout
+          Save groove / layout
         </button>
       </div>
     </div>
