@@ -4,4 +4,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ffmpeg && r
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-CMD ["python", "run_worker.py"]
+CMD ["python", "trackside_worker.py"]
