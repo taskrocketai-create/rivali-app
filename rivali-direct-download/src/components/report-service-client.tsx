@@ -4,11 +4,33 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, AlertTriangle, FileText, Send, ShieldCheck } from "lucide-react";
 import type { RaceSession } from "@/types/domain";
 
+type ReportAnalysis = {
+  engine_version?: string;
+  data_quality?: { score?: number; label?: string };
+  interpretation_confidence?: { score?: number; label?: string };
+  publish_mode?: "observation_only" | "weighted_interpretation" | string;
+  recommendation_safe_to_publish?: boolean;
+  measured_facts?: string[];
+  primary_observation?: {
+    segment?: string;
+    entry_speed_spread_mph?: number;
+    exit_speed_spread_mph?: number;
+  } | null;
+  interpretation?: string;
+  likely_contributors?: Array<{ category: string; weight_pct: number }>;
+  common_areas_to_check?: string[];
+  missing_evidence?: string[];
+  driver_debrief_present?: boolean;
+  setup_included?: boolean;
+  guardrail?: string;
+};
+
 type TelemetryRow = {
   session_id: string;
   laps?: Array<Record<string, unknown>> | null;
   channel_manifest?: string[] | null;
   corner_analysis?: Record<string, unknown> | null;
+  report_analysis?: ReportAnalysis | null;
 };
 
 type DebriefRow = {
@@ -48,6 +70,28 @@ export function ReportServiceClient({
 
   const review = useMemo(() => {
     if (!selected) return null;
+
+    const engine = selectedTelemetry?.report_analysis;
+    if (engine?.data_quality?.score != null && engine?.interpretation_confidence?.score != null) {
+      return {
+        lapCount: selected.lap_count ?? selectedTelemetry?.laps?.length ?? 0,
+        hasDebrief: engine.driver_debrief_present ?? Boolean(selectedDebrief?.transcript?.trim()),
+        setupIncluded: engine.setup_included ?? false,
+        dataScore: Number(engine.data_quality.score),
+        interpretationScore: Number(engine.interpretation_confidence.score),
+        missing: engine.missing_evidence ?? [],
+        lowConfidence: engine.publish_mode === "observation_only" || engine.recommendation_safe_to_publish === false,
+        recommendation: selected.recommendations?.[0]?.recommendation ?? null,
+        recommendationConfidence: selected.recommendations?.[0]?.confidence ?? null,
+        measuredFacts: engine.measured_facts ?? [],
+        interpretation: engine.interpretation ?? null,
+        likelyContributors: engine.likely_contributors ?? [],
+        commonAreas: engine.common_areas_to_check ?? [],
+        engineVersion: engine.engine_version ?? "trackside-v1",
+      };
+    }
+
+    // Fallback for older sessions processed before the report engine existed.
     const manifest = selectedTelemetry?.channel_manifest ?? [];
     const lapCount = selected.lap_count ?? selectedTelemetry?.laps?.length ?? 0;
     const hasGps = hasAny(manifest, ["gps latitude", "gps longitude", "gps speed"]);
@@ -85,10 +129,6 @@ export function ReportServiceClient({
       !hasTireTemp ? "tire temperature" : null,
     ].filter(Boolean) as string[];
 
-    const lowConfidence = interpretationScore < 55;
-    const recommendation = selected.recommendations?.[0]?.recommendation ?? null;
-    const recommendationConfidence = selected.recommendations?.[0]?.confidence ?? null;
-
     return {
       lapCount,
       hasDebrief,
@@ -96,9 +136,14 @@ export function ReportServiceClient({
       dataScore,
       interpretationScore,
       missing,
-      lowConfidence,
-      recommendation,
-      recommendationConfidence,
+      lowConfidence: interpretationScore < 55,
+      recommendation: selected.recommendations?.[0]?.recommendation ?? null,
+      recommendationConfidence: selected.recommendations?.[0]?.confidence ?? null,
+      measuredFacts: [] as string[],
+      interpretation: null as string | null,
+      likelyContributors: [] as Array<{ category: string; weight_pct: number }>,
+      commonAreas: [] as string[],
+      engineVersion: "legacy",
     };
   }, [selected, selectedDebrief, selectedTelemetry]);
 
@@ -111,9 +156,9 @@ export function ReportServiceClient({
   return (
     <div className="stack" style={{ gap: 18 }}>
       <div className="card stack">
-        <div className="eyebrow">TRACKSIDE REPORT SERVICE</div>
+        <div className="eyebrow">$40 TRACKSIDE REPORT</div>
         <h1>Rivali Report Ready</h1>
-        <p className="muted">Review the interpretation confidence before anything reaches the racer.</p>
+        <p className="muted">Engine: {review.engineVersion}. Review the facts and confidence before anything reaches the racer.</p>
         <div className="field">
           <label>Session</label>
           <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
@@ -135,33 +180,40 @@ export function ReportServiceClient({
         <div className="card">
           <div className="eyebrow">DATA QUALITY</div>
           <h2>{review.dataScore}% · {confidenceLabel(review.dataScore)}</h2>
-          <p className="muted">Measures completeness and reliability of the underlying run data.</p>
+          <p className="muted">Completeness and reliability of the recorded run.</p>
         </div>
         <div className="card">
           <div className="eyebrow">INTERPRETATION CONFIDENCE</div>
           <h2>{review.interpretationScore}% · {confidenceLabel(review.interpretationScore)}</h2>
-          <p className="muted">Measures how strongly the available evidence supports a cause-oriented interpretation.</p>
+          <p className="muted">How strongly the evidence supports going beyond observation.</p>
         </div>
       </div>
 
       <div className="card stack">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {canPublishInterpretation ? <ShieldCheck size={22} /> : <AlertTriangle size={22} />}
-          <h2>{canPublishInterpretation ? "Interpretation may be published" : "Observation only"}</h2>
+          <h2>{canPublishInterpretation ? "Weighted interpretation allowed" : "Observation only"}</h2>
         </div>
         {canPublishInterpretation ? (
-          <p>Rivali has enough supporting data to publish a weighted interpretation, provided you agree with the summary below.</p>
+          <p>Rivali has enough supporting evidence to rank likely contributors. The percentages are evidence weights, not proof of cause.</p>
         ) : (
           <div className="notice">
-            Rivali found usable observations, but the available channels do not support a reliable setup diagnosis. The client report should describe what happened and what additional data would be needed. It should not invent a likely fix.
+            The data is not clear enough for a reliable cause-oriented diagnosis. The report should state only what Rivali measured and what additional evidence would help. No made-up fix.
           </div>
         )}
         <div className="grid-3">
           <div><strong>Driver debrief</strong><p className="muted">{review.hasDebrief ? "Included" : "Not recorded"}</p></div>
           <div><strong>Setup details</strong><p className="muted">{review.setupIncluded ? "Included" : "Not provided"}</p></div>
-          <div><strong>Missing useful channels</strong><p className="muted">{review.missing.length ? review.missing.join(", ") : "None of the core channels"}</p></div>
+          <div><strong>Missing evidence</strong><p className="muted">{review.missing.length ? review.missing.join(", ") : "No major gaps flagged"}</p></div>
         </div>
       </div>
+
+      {review.measuredFacts.length > 0 && (
+        <div className="card stack">
+          <div className="eyebrow">MEASURED / OBSERVED</div>
+          {review.measuredFacts.map((fact) => <p key={fact}>{fact}</p>)}
+        </div>
+      )}
 
       {selectedDebrief?.transcript && (
         <div className="card stack">
@@ -170,23 +222,49 @@ export function ReportServiceClient({
         </div>
       )}
 
+      {review.interpretation && (
+        <div className="card stack">
+          <div className="eyebrow">INTERPRETATION</div>
+          <p>{review.interpretation}</p>
+        </div>
+      )}
+
+      {canPublishInterpretation && review.likelyContributors.length > 0 && (
+        <div className="card stack">
+          <div className="eyebrow">LIKELY CONTRIBUTORS</div>
+          {review.likelyContributors.map((item) => (
+            <div key={item.category} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <strong>{item.category}</strong><span>{item.weight_pct}%</span>
+            </div>
+          ))}
+          <small className="muted">Relative evidence weights only. They are not statistically proven causal probabilities.</small>
+        </div>
+      )}
+
+      {canPublishInterpretation && review.commonAreas.length > 0 && (
+        <div className="card stack">
+          <div className="eyebrow">COMMON AREAS RACERS CHECK</div>
+          <p>{review.commonAreas.join(" · ")}</p>
+        </div>
+      )}
+
       <div className="card stack">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><FileText size={22} /><h2>Interpretation summary</h2></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><FileText size={22} /><h2>Archived comparison</h2></div>
         {review.recommendation ? (
           <>
             <p>{review.recommendation}</p>
-            <small className="muted">Recommendation engine confidence: {review.recommendationConfidence ?? "not rated"}</small>
+            <small className="muted">Historical comparison confidence: {review.recommendationConfidence ?? "not rated"}</small>
           </>
         ) : (
-          <p className="muted">No grounded recommendation has been generated for this session yet.</p>
+          <p className="muted">No previous condition-matched comparison is available yet.</p>
         )}
       </div>
 
       <div className="card stack">
         <h2>Approval</h2>
-        <p className="muted">Nothing is sent to the customer until you approve it.</p>
+        <p className="muted">Nothing goes to the customer until you approve it.</p>
         {approved[selected.id] ? (
-          <div className="notice"><CheckCircle2 size={18} /> Approved. Delivery integration is the next step.</div>
+          <div className="notice"><CheckCircle2 size={18} /> Approved. Payment/unlock and delivery come after the engine is validated.</div>
         ) : (
           <button
             className="button primary"
