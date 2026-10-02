@@ -22,7 +22,7 @@ export default async function ReportsPage() {
       .limit(30),
     supabase
       .from("session_telemetry")
-      .select("session_id,laps,channel_manifest,corner_analysis")
+      .select("session_id,laps,channel_manifest,corner_analysis,report_analysis")
       .limit(30),
     supabase
       .from("voice_debriefs")
