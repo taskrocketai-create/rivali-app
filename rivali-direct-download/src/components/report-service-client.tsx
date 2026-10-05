@@ -36,7 +36,7 @@ type Telemetry = {
   laps: Lap[] | null;
   gps_trace: TracePoint[] | null;
   channel_manifest: string[] | null;
-  corner_analysis: { diagnostic?: string; turns?: Record<string, unknown>; lap_timing?: { source?: string; diagnostic?: string } } | null;
+  corner_analysis: { diagnostic?: string; turns?: Record<string, unknown>; alignment?: { confidence?: string; score?: number; track_coverage_pct?: number; median_groove_distance_m?: number | null; reason?: string }; groove?: { median_deviation_m?: number | null; samples_within_reference_band_pct?: number }; lap_timing?: { source?: string; diagnostic?: string } } | null;
 };
 type Debrief = { session_id: string; transcript: string | null; created_at: string };
 type ConfidenceBand = "high" | "medium" | "low";
@@ -84,6 +84,7 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
   const debrief = debriefs.find((item) => item.session_id === session?.id);
   const recommendation = session?.recommendations?.[0];
   const manifest = sessionTelemetry?.channel_manifest ?? [];
+  const alignmentScore = Number(sessionTelemetry?.corner_analysis?.alignment?.score ?? 0);
 
   const dataScore = useMemo(() => {
     if (!session) return 0;
@@ -91,12 +92,13 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
     if (session.status === "completed") score += 25;
     if ((session.lap_count ?? 0) >= 5) score += 20;
     if ((session.lap_count ?? 0) >= 8) score += 5;
-    if (hasChannel(manifest, ["gps latitude", "latitude"]) && hasChannel(manifest, ["gps longitude", "longitude"])) score += 20;
+    if (hasChannel(manifest, ["gps latitude", "latitude"]) && hasChannel(manifest, ["gps longitude", "longitude"])) score += 10;
+    if (Number.isFinite(alignmentScore)) score += Math.round(Math.max(0, Math.min(100, alignmentScore)) * 0.15);
     if (hasChannel(manifest, ["speed"])) score += 10;
     if (hasChannel(manifest, ["rpm"])) score += 10;
     if (hasChannel(manifest, ["lateral g", "latacc", "lat accel", "gps lateral"])) score += 10;
     return Math.min(100, score);
-  }, [manifest, session]);
+  }, [alignmentScore, manifest, session]);
 
   const interpretationScore = useMemo(() => {
     if (!session) return 0;
@@ -113,7 +115,7 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
 
   const dataBand = scoreBand(dataScore);
   const interpretationBand = scoreBand(interpretationScore);
-  const safeToPublish = dataScore >= 50 && interpretationScore >= 50 && Boolean(recommendation?.recommendation);
+  const safeToPublish = dataScore >= 50 && interpretationScore >= 50 && alignmentScore >= 55 && Boolean(recommendation?.recommendation);
   const missingChannels = importantChannels.filter(([, needles]) => !hasChannel(manifest, needles)).map(([label]) => label);
   const issue = session ? summarizeIssue(session, sessionTelemetry) : "No session selected";
 
@@ -169,6 +171,8 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
               <div className={styles.facts}>
                 <div className={styles.fact}><span>Driver debrief</span><strong>{debrief?.transcript ? "Included" : "Missing"}</strong></div>
                 <div className={styles.fact}><span>Corner driving style</span><strong>{String(session.setup?.driving_style ?? "Not recorded").replaceAll("_", " ")}</strong></div>
+                <div className={styles.fact}><span>GPS / track alignment</span><strong>{sessionTelemetry?.corner_analysis?.alignment?.confidence ?? "Unknown"} · {alignmentScore || 0}%</strong></div>
+                <div className={styles.fact}><span>Median groove deviation</span><strong>{sessionTelemetry?.corner_analysis?.alignment?.median_groove_distance_m == null ? "Unknown" : `${sessionTelemetry.corner_analysis.alignment.median_groove_distance_m.toFixed(1)} m`}</strong></div>
                 <div className={styles.fact}><span>Missing channels</span><strong>{missingChannels.length ? missingChannels.join(", ") : "None critical"}</strong></div>
                 <div className={styles.fact}><span>Timing source</span><strong>{sessionTelemetry?.corner_analysis?.lap_timing?.source ?? "Unknown"}</strong></div>
               </div>

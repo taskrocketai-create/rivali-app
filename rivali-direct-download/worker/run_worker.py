@@ -11,7 +11,7 @@ import requests
 
 from daq_tools.readers import XRKReader
 from supabase import create_client
-from engine.corner_analysis import segment_oval, summarize_by_turn
+from engine.mapped_track_analysis import analyze_mapped_track
 from engine.session_summary import summarize_session, summary_from_gps_laps
 from engine.gps_laps import reconstruct_lap_times
 from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
@@ -122,15 +122,17 @@ def process_one(client):
         payload=client.storage.from_("telemetry").download(job["raw_storage_path"])
         with tempfile.NamedTemporaryFile(suffix=".xrk",delete=False) as handle:path=handle.name;handle.write(payload)
         summary=summarize_session(path);_header,data=XRKReader.read(path,header_only=False)
+        session=client.table("sessions").select("track_id").eq("id",session_id).single().execute().data
+        track=client.table("tracks").select("start_finish,turns").eq("id",session["track_id"]).single().execute().data
         timing_source="aim_lap_table";timing_diagnostic="Lap times read from the XRK lap table."
         if not summary.laps:
-            session=client.table("sessions").select("track_id").eq("id",session_id).single().execute().data
-            track=client.table("tracks").select("start_finish").eq("id",session["track_id"]).single().execute().data
             gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"))
             summary=summary_from_gps_laps(summary,gps_times,timing_diagnostic)
             timing_source="gps_start_finish" if gps_times else "unavailable"
-        oval=segment_oval(data)
-        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":oval.get("note"),"turns":summarize_by_turn(oval),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic}},"channel_manifest":[str(column) for column in data.columns]}
+        mapped=analyze_mapped_track(data,track)
+        if not mapped.get("analysis_ready"):
+            raise RuntimeError(mapped.get("diagnostic") or "Track mapping is not ready for analysis.")
+        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic}},"channel_manifest":[str(column) for column in data.columns]}
         client.table("session_telemetry").upsert(telemetry).execute()
         client.table("sessions").update({"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}).eq("id",session_id).execute()
         try:
