@@ -402,8 +402,10 @@ export function DashboardClient({
       const trackIdForAnalysis = existingSession?.tracks?.id ?? String(form.get("track_id") || "");
       const mappedTrack = tracks.find((track) => track.id === trackIdForAnalysis);
       const mappedTurns = mappedTrack?.turns ? Object.keys(mappedTrack.turns).filter((key) => /^[1-4]$/.test(key)) : [];
-      if (!mappedTrack?.start_finish || mappedTrack.start_finish.length < 2 || mappedTurns.length < 4)
-        throw new Error("Map Start/Finish and Turns 1-4 for this track before Rivali analyzes the MyChron data.");
+      const mappedMeta = (mappedTrack?.turns as Record<string, unknown> | null)?._rivali as { groove?: unknown[] } | undefined;
+      const hasMappedGroove = Boolean(mappedMeta?.groove && mappedMeta.groove.length > 1);
+      if (!mappedTrack?.start_finish || mappedTrack.start_finish.length < 2 || mappedTurns.length < 4 || !hasMappedGroove)
+        throw new Error("Finish Race Day Track Setup first: map Start/Finish, Turns 1-4, and the preferred groove before Rivali analyzes MyChron data.");
       const setup = {
         ...(existingSession?.setup ?? {}),
         class_name: form.get("class_name") || existingSetup.class_name || null,

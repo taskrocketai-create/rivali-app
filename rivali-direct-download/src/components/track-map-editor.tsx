@@ -568,9 +568,11 @@ export function TrackMapEditor({
     const finalStartFinish = walkStartFinish.length === 2 ? walkStartFinish : startFinish;
     const finalTurns = Object.keys(walkedTurns).length === 4 ? walkedTurns : numericTurns;
     const hasStartFinish = finalStartFinish.length === 2;
-    const hasLayout = hasStartFinish && Object.keys(finalTurns).length === 4;
-    if (!hasStartFinish && groove.length < 2)
-      return setMessage("Set the two-point start/finish line, or draw at least two preferred-groove points.");
+    const hasTurns = Object.keys(finalTurns).length === 4;
+    const hasGroove = groove.length > 1;
+    const hasLayout = hasStartFinish && hasTurns && hasGroove;
+    if (!hasStartFinish || !hasTurns || !hasGroove)
+      return setMessage("Race Day Track Setup is not complete. Save Start/Finish, Turns 1-4, and the preferred groove before Rivali can analyze a run.");
     const normalized = Object.fromEntries(
       Object.entries(finalTurns).map(([key, value]) => [
         key,
@@ -592,6 +594,8 @@ export function TrackMapEditor({
   }
   const completedCoreSteps = CORE_WALK_STEPS.filter((step) => walk.points[step.key]).length;
   const currentWalkLabel = CORE_WALK_STEPS.find((step) => step.key === walkStep)?.label;
+  const currentTurnCount = Object.keys(turns).filter((key) => /^[1-4]$/.test(key)).length;
+  const setupReady = startFinish.length === 2 && currentTurnCount === 4 && groove.length > 1;
   return (
     <div className="card">
       <h2>Track map and preferred groove</h2>
@@ -654,8 +658,9 @@ export function TrackMapEditor({
         )}
       </div>
       <div className="notice">{message}</div>
+      {trackId && <div className="notice"><strong>{setupReady ? "Track analysis ready." : "Track analysis not ready."}</strong> Start/Finish: {startFinish.length === 2 ? "saved" : "needed"} · Turns: {currentTurnCount}/4 · Groove: {groove.length > 1 ? "saved" : "needed"}. {setupReady ? "Rivali can use this geometry to interpret the next MyChron run." : "Finish all three before uploading telemetry."}</div>}
       {!trackId && <div className="notice"><strong>Choose the track first.</strong> Search above, then click the correct result. Rivali will create and select it before the map tools unlock.</div>}
-      <small className="muted">Pre-race map setup does not require a MyChron file: select a track, set start/finish, draw the groove, then approve and save. The lap overlay appears here only after the first MyChron upload has finished processing.</small>
+      <small className="muted">Race Day Track Setup does not require a MyChron file: select the track, set Start/Finish, set Turns 1-4, fit the preferred groove, then approve and save. The lap overlay appears only after a MyChron upload has finished processing.</small>
       {grooveInsight && (
         <div className="notice">
           <strong>Speed / groove check</strong><br />
@@ -666,11 +671,16 @@ export function TrackMapEditor({
       <div ref={container} className="map" />
       <div className="gps-capture">
         <div>
-          <strong>Start / finish line</strong>
-          <p>Set this as a short line across the racing surface. Rivali uses it to identify each lap from MyChron GPS. Turns are optional for this October test.</p>
+          <strong>Race Day Track Setup</strong>
+          <p>Complete this before the first MyChron analysis. Rivali needs the start/finish line, Turns 1-4, and the preferred groove so telemetry is interpreted in the correct part of the track.</p>
         </div>
         <div className="gps-capture-actions">
           <button type="button" disabled={!trackId} className={mode === "start" ? "active" : ""} onClick={() => { setStartFinish([]); setMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
+          {[1, 2, 3, 4].map((number) => (
+            <button key={number} type="button" disabled={!trackId} className={mode === String(number) ? "active" : ""} onClick={() => { setMode(String(number) as Mode); setMessage(`Click the center of Turn ${number}.`); }}>
+              Set Turn {number}
+            </button>
+          ))}
         </div>
       </div>
       <div className="gps-capture">
