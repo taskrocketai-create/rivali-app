@@ -399,9 +399,15 @@ export function DashboardClient({
       const existingSetup = existingSession?.setup ?? {};
       const existingConditions = existingSession?.conditions ?? {};
       const baseLapValue = Number(form.get("base_lap_sec"));
+      const trackIdForAnalysis = existingSession?.tracks?.id ?? String(form.get("track_id") || "");
+      const mappedTrack = tracks.find((track) => track.id === trackIdForAnalysis);
+      const mappedTurns = mappedTrack?.turns ? Object.keys(mappedTrack.turns).filter((key) => /^[1-4]$/.test(key)) : [];
+      if (!mappedTrack?.start_finish || mappedTrack.start_finish.length < 2 || mappedTurns.length < 4)
+        throw new Error("Map Start/Finish and Turns 1-4 for this track before Rivali analyzes the MyChron data.");
       const setup = {
         ...(existingSession?.setup ?? {}),
         class_name: form.get("class_name") || existingSetup.class_name || null,
+        driving_style: form.get("driving_style") || existingSetup.driving_style || null,
         base_lap_sec: Number.isFinite(baseLapValue) && baseLapValue > 0 ? baseLapValue : existingSetup.base_lap_sec || null,
         tire_set_id: form.get("tire_set_id") || existingSetup.tire_set_id || null,
         dirty_tire_rule: dirtyTireRule || Boolean(existingSetup.dirty_tire_rule),
@@ -661,11 +667,22 @@ export function DashboardClient({
                 {selectedPendingId && <small>Using the selected iPhone upload.</small>}
               </div>
             </div>
-            <div className="section-heading-row"><h3>Class and tire rules</h3></div>
+            <div className="section-heading-row"><h3>Class, driving style and tire rules</h3></div>
             <div className="grid-3">
               <div className="field">
                 <label>Class</label>
                 <input name="class_name" placeholder="Clone Heavy" />
+              </div>
+              <div className="field">
+                <label>Corner driving style</label>
+                <select name="driving_style" defaultValue={String(selectedAttachSession?.setup.driving_style ?? "")}>
+                  <option value="">Select how this class is normally driven</option>
+                  <option value="lift">Lift</option>
+                  <option value="burp_throttle">Burp the throttle</option>
+                  <option value="full_throttle_brake_drag">Full throttle + drag the brake</option>
+                  <option value="other">Other / varies</option>
+                </select>
+                <small className="muted">Rivali uses this before judging RPM drop, brake use, or throttle timing.</small>
               </div>
               <div className="field">
                 <label>Base lap goal (seconds)</label>

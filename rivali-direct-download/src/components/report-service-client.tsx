@@ -106,7 +106,8 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
     else if (recommendation?.confidence === "medium") score += 10;
     else if (recommendation?.confidence === "low") score += 2;
     if (!hasChannel(manifest, ["steering"])) score -= 5;
-    if (!hasChannel(manifest, ["brake"])) score -= 4;
+    const drivingStyle = String(session.setup?.driving_style ?? "");
+    if (!hasChannel(manifest, ["brake"])) score -= drivingStyle === "full_throttle_brake_drag" ? 10 : 4;
     return Math.max(0, Math.min(100, score));
   }, [dataScore, debrief?.transcript, manifest, recommendation?.confidence, session]);
 
@@ -167,6 +168,7 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
               <h3>Factors affecting confidence</h3>
               <div className={styles.facts}>
                 <div className={styles.fact}><span>Driver debrief</span><strong>{debrief?.transcript ? "Included" : "Missing"}</strong></div>
+                <div className={styles.fact}><span>Corner driving style</span><strong>{String(session.setup?.driving_style ?? "Not recorded").replaceAll("_", " ")}</strong></div>
                 <div className={styles.fact}><span>Missing channels</span><strong>{missingChannels.length ? missingChannels.join(", ") : "None critical"}</strong></div>
                 <div className={styles.fact}><span>Timing source</span><strong>{sessionTelemetry?.corner_analysis?.lap_timing?.source ?? "Unknown"}</strong></div>
               </div>

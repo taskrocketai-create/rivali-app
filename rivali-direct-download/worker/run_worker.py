@@ -90,6 +90,19 @@ def save_grounded_recommendation(client, session_id, owner_id):
         text += " Knowledge to review before changing the kart: " + "; ".join(item["title"] for item in selected) + "."
         evidence.extend({"knowledge_item_id": item["id"], "title": item["title"], "evidence_level": item["evidence_level"], "confidence": item["confidence"]} for item in selected)
     setup = current.get("setup") or {}
+    driving_style = setup.get("driving_style")
+    if driving_style == "full_throttle_brake_drag":
+        text += " Driver reports full throttle with brake drag through the corner. Do not treat throttle pickup timing by itself as a fault; prioritize minimum RPM, total RPM drop, RPM recovery, speed loss, and whether the available data supports changing the amount of brake drag."
+        evidence.append({"driving_style": driving_style, "interpretation_rule": "preserve_engine_momentum_before_judging_throttle_pickup"})
+    elif driving_style == "burp_throttle":
+        text += " Driver reports burping the throttle through the corner. Interpret throttle timing against RPM drop, recovery, and lap outcome rather than assuming a later pickup is automatically worse."
+        evidence.append({"driving_style": driving_style, "interpretation_rule": "evaluate_burp_against_rpm_and_lap_outcome"})
+    elif driving_style == "lift":
+        text += " Driver reports lifting through the corner. Compare lift duration and resulting RPM loss with the better laps before suggesting a technique change."
+        evidence.append({"driving_style": driving_style, "interpretation_rule": "evaluate_lift_against_rpm_loss_and_lap_outcome"})
+    elif driving_style:
+        text += " Driving style is marked as variable or other. Avoid making a throttle-technique claim unless the telemetry and driver debrief agree."
+        evidence.append({"driving_style": driving_style, "interpretation_rule": "no_assumed_throttle_model"})
     if setup.get("dirty_tire_rule") and setup.get("tire_locked"):
         tire_set = setup.get("tire_set_id") or "the committed tire set"
         text += f" Dirty Tire lock is active for {tire_set}: do not recommend tire changes; use class-legal chassis adjustments only."
