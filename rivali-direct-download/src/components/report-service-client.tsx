@@ -19,6 +19,8 @@ type Session = {
   session_date: string;
   session_type: string;
   status: string;
+  report_status?: string;
+  race_day_pass_id?: string | null;
   best_lap_sec: number | null;
   average_lap_sec: number | null;
   consistency_stdev_sec: number | null;
@@ -79,6 +81,7 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
   const completed = useMemo(() => sessions.filter((session) => session.status === "completed"), [sessions]);
   const [sessionId, setSessionId] = useState(completed[0]?.id ?? sessions[0]?.id ?? "");
   const [message, setMessage] = useState("");
+  const [approving, setApproving] = useState(false);
   const session = sessions.find((item) => item.id === sessionId) ?? completed[0] ?? sessions[0];
   const sessionTelemetry = telemetry.find((item) => item.session_id === session?.id);
   const debrief = debriefs.find((item) => item.session_id === session?.id);
@@ -116,8 +119,29 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
   const dataBand = scoreBand(dataScore);
   const interpretationBand = scoreBand(interpretationScore);
   const safeToPublish = dataScore >= 50 && interpretationScore >= 50 && alignmentScore >= 55 && Boolean(recommendation?.recommendation);
+  const debriefReady = !session?.race_day_pass_id || Boolean(debrief?.transcript);
+  const canApprove = safeToPublish && debriefReady && session?.report_status === "pending_approval";
   const missingChannels = importantChannels.filter(([, needles]) => !hasChannel(manifest, needles)).map(([label]) => label);
   const issue = session ? summarizeIssue(session, sessionTelemetry) : "No session selected";
+
+  async function approveReport() {
+    if (!session) return;
+    setApproving(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/reports/${session.id}/approve`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not approve this report.");
+      session.report_status = result.report?.report_status ?? "approved";
+      setMessage(result.delivery?.sent
+        ? `Report approved and texted to ${result.driverName ?? "the driver"}.`
+        : `Report approved for delivery. ${result.delivery?.reason ?? "The driver can view it in Race Day now."}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not approve this report.");
+    } finally {
+      setApproving(false);
+    }
+  }
 
   if (!session) return <div className={`${styles.card} ${styles.empty}`}>Upload and process a MyChron session to build the first Rivali report.</div>;
 
@@ -180,8 +204,14 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
             <div className={styles.actions}>
               <button className="button" type="button" onClick={() => setMessage("Edit workflow is next. No report has been sent.")}><Pencil size={17}/> Edit</button>
               <button className="button" type="button" onClick={() => setMessage("Re-analysis requested in preview only. The current worker has not been re-queued.")}><RotateCcw size={17}/> Re-run</button>
-              <button className={`button primary ${styles.primary}`} type="button" disabled={!safeToPublish} onClick={() => setMessage("Approval UI is working. Racer delivery is intentionally not faked until phone/email delivery fields and the send endpoint are connected.")}>
-                {safeToPublish ? <><Send size={18}/> Approve & Send</> : <><CheckCircle2 size={18}/> More data required</>}
+              <button className={`button primary ${styles.primary}`} type="button" disabled={!canApprove || approving} onClick={() => void approveReport()}>
+                {session.report_status === "sent"
+                  ? <><CheckCircle2 size={18}/> Sent to driver</>
+                  : session.report_status === "approved"
+                    ? <><CheckCircle2 size={18}/> Approved for delivery</>
+                    : canApprove
+                    ? <><Send size={18}/> {approving ? "Approving..." : "Approve for delivery"}</>
+                    : <><CheckCircle2 size={18}/> {!debriefReady ? "Driver debrief required" : safeToPublish ? "Not in approval queue" : "More data required"}</>}
               </button>
             </div>
             <div className={styles.note}>The confidence score is an evidence score, not a statistical probability. Low-confidence reports suppress setup advice instead of filling the page with guesses.</div>

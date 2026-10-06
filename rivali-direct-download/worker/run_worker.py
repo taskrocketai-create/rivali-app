@@ -122,7 +122,7 @@ def process_one(client):
         payload=client.storage.from_("telemetry").download(job["raw_storage_path"])
         with tempfile.NamedTemporaryFile(suffix=".xrk",delete=False) as handle:path=handle.name;handle.write(payload)
         summary=summarize_session(path);_header,data=XRKReader.read(path,header_only=False)
-        session=client.table("sessions").select("track_id").eq("id",session_id).single().execute().data
+        session=client.table("sessions").select("track_id,race_day_pass_id").eq("id",session_id).single().execute().data
         track=client.table("tracks").select("start_finish,turns").eq("id",session["track_id"]).single().execute().data
         timing_source="aim_lap_table";timing_diagnostic="Lap times read from the XRK lap table."
         if not summary.laps:
@@ -134,11 +134,14 @@ def process_one(client):
             raise RuntimeError(mapped.get("diagnostic") or "Track mapping is not ready for analysis.")
         telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic}},"channel_manifest":[str(column) for column in data.columns]}
         client.table("session_telemetry").upsert(telemetry).execute()
-        client.table("sessions").update({"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}).eq("id",session_id).execute()
+        session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
+        client.table("sessions").update(session_update).eq("id",session_id).execute()
         try:
             save_grounded_recommendation(client, session_id, owner_id)
         except Exception as recommendation_error:
             print(f"recommendation skipped for {session_id}: {recommendation_error}", flush=True)
+        if session.get("race_day_pass_id"):
+            client.table("sessions").update({"report_status":"pending_approval"}).eq("id",session_id).execute()
         client.table("processing_jobs").update({"status":"completed","error":None}).eq("id",job_id).execute();print(f"completed session {session_id}",flush=True)
     except Exception as exc:
         message=str(exc)[:2000];client.table("sessions").update({"status":"failed","parse_error":message}).eq("id",session_id).execute();client.table("processing_jobs").update({"status":"failed","error":message}).eq("id",job_id).execute();print(f"failed session {session_id}: {message}",flush=True)

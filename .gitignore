@@ -1,0 +1,4 @@
+rivali-direct-download/node_modules/
+rivali-direct-download/.next/
+**/__pycache__/
+*.pyc

@@ -48,6 +48,7 @@ export default async function DashboardPage() {
           <nav className="app-nav">
             <Link href="/dashboard">Race shop</Link>
             <Link href="/reports">Report service</Link>
+            <Link href="/race-day/admin">Race Day passes</Link>
             {isAdmin && <Link href="/admin/knowledge">Knowledge admin</Link>}
             <form action={logout}>
               <button className="button small">Sign out</button>

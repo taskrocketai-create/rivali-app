@@ -16,7 +16,7 @@ export default async function ReportsPage() {
     supabase
       .from("sessions")
       .select(
-        "id,session_date,session_type,status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name,start_finish,turns),racers(id,name),karts(id,name),recommendations(recommendation,confidence,evidence)",
+        "id,session_date,session_type,status,report_status,race_day_pass_id,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name,start_finish,turns),racers(id,name),karts(id,name),recommendations(recommendation,confidence,evidence)",
       )
       .order("session_date", { ascending: false })
       .limit(30),
@@ -40,6 +40,7 @@ export default async function ReportsPage() {
           <nav className="app-nav">
             <Link href="/reports">Report service</Link>
             <Link href="/dashboard">Race shop</Link>
+            <Link href="/race-day/admin">Race Day passes</Link>
             <form action={logout}>
               <button className="button small">Sign out</button>
             </form>
