@@ -14,6 +14,7 @@ from supabase import create_client
 from engine.mapped_track_analysis import analyze_mapped_track
 from engine.session_summary import summarize_session, summary_from_gps_laps
 from engine.gps_laps import reconstruct_lap_times
+from engine.knowledge_selection import select_knowledge
 from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
 
 GPS_LAT_NAMES=("GPS Latitude","GPS Lat","Latitude","Lat","GPS_Latitude")
@@ -82,13 +83,15 @@ def save_grounded_recommendation(client, session_id, owner_id):
         evidence = [{"session_id": session_id, "role": "current", "best_lap_sec": current["best_lap_sec"]}, {"session_id": reference["id"], "role": "condition_matched_reference", "best_lap_sec": reference["best_lap_sec"]}, {"matched_session_count": len(matches)}]
     # Knowledge is globally curated by the Rivali administrator. The worker's
     # server credential reads active items; racer accounts cannot edit them.
-    knowledge = client.table("knowledge_items").select("id,title,evidence_level,confidence,track_id,kart_id").eq("status", "active").order("updated_at", desc=True).limit(200).execute().data or []
-    applicable = [item for item in knowledge if (item.get("track_id") is None or item.get("track_id") == current["track_id"]) and (item.get("kart_id") is None or item.get("kart_id") == current["kart_id"])]
-    applicable.sort(key=lambda item: (item.get("track_id") is None, item.get("kart_id") is None, item.get("confidence") != "high"))
+    knowledge = client.table("knowledge_items").select("id,title,body,source_url,evidence_level,confidence,track_id,kart_id,class_name,status,retrieval_weight,verification_status,review_metadata").eq("status", "active").order("retrieval_weight", desc=True).limit(1000).execute().data or []
+    kart = client.table("karts").select("chassis_make,chassis_model,tire_brand,tire_compound").eq("id", current["kart_id"]).single().execute().data or {}
+    track = client.table("tracks").select("surface_type").eq("id", current["track_id"]).single().execute().data or {}
+    knowledge_session = {**current, "conditions": {**(current.get("conditions") or {}), "surface_type": track.get("surface_type")}}
+    applicable = select_knowledge(knowledge, knowledge_session, kart)
     if applicable:
         selected = applicable[:3]
         text += " Knowledge to review before changing the kart: " + "; ".join(item["title"] for item in selected) + "."
-        evidence.extend({"knowledge_item_id": item["id"], "title": item["title"], "evidence_level": item["evidence_level"], "confidence": item["confidence"]} for item in selected)
+        evidence.extend({"knowledge_item_id": item["id"], "title": item["title"], "source_url": item.get("source_url"), "evidence_level": item["evidence_level"], "confidence": item["confidence"], "retrieval_weight": item.get("retrieval_weight"), "verification_status": item.get("verification_status"), "review_metadata": item.get("review_metadata")} for item in selected)
     setup = current.get("setup") or {}
     driving_style = setup.get("driving_style")
     if driving_style == "full_throttle_brake_drag":

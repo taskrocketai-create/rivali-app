@@ -1,0 +1,2699 @@
+{
+  "batch": "web-vetting-20261006",
+  "records": [
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: baseline is conditional",
+      "body": "Elevate factory settings are starting references; track, tire, driver size and driving style can require changes.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF pp.2,7",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          },
+          {
+            "url": "https://www.phantomchassis.com/set-up-sheets",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: avoid seat mounting bind",
+      "body": "A bound seat can make the Elevate inconsistent. Mounting should barely compress the supplied rubber washers.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.5",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: inspect rear bumper bind",
+      "body": "A bent rear bumper can bind the chassis; the Elevate guide recommends its bumper float on the sleeve.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.4",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: dirt cassette ride-height position",
+      "body": "The guide specifies bottom cassette holes for dirt, with pin positions differing for junior, adult and super-heavy applications.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.4",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: dirt stagger baseline",
+      "body": "Factory dirt baseline: front stagger 1.5 inches; rear stagger 1–1.5 inches.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.6",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: senior dirt scale baseline",
+      "body": "Senior dirt baseline: nose 45–46%, left 58–60%, cross 63–67%.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.6",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": "Senior"
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: senior dirt camber baseline",
+      "body": "Senior dirt baseline: RF −2.25° to −2.75°; LF +0.25° to +0.75°.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.6",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": "Senior"
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: dirt toe and caster baseline",
+      "body": "Factory alignment: RF toe zero; LF toe-out 1/16 inch. Dirt caster: RF 12°, LF 9°.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.3,
+      "verification_status": "conflicting",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.6",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b67b36ad5d0f4dd6a52d992bd4b99c74.pdf",
+            "note": "Phantom uses LF zero and RF toe-out; preserve chassis-specific reference convention."
+          }
+        ],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: entry push has opposite crossweight possibilities",
+      "body": "Entry push can require less cross for an overloaded RF, or more cross for an underloaded RF.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.8",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_fe13b158d2bf428c8e65d8fc0171aba1.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Slack Elevate: exit push requires loading diagnosis",
+      "body": "For exit push, the guide distinguishes RR overload needing more cross from LR overload needing less cross.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Performance Manufacturing / Slack",
+      "source_url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.8",
+        "applicability": {
+          "chassis_make": [
+            "Slack"
+          ],
+          "chassis_model": [
+            "Elevate"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_fe13b158d2bf428c8e65d8fc0171aba1.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "elevate",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: recheck toe after geometry changes",
+      "body": "Recheck toe on the adjusted side after camber, caster or Ackermann changes; impacts also warrant alignment inspection.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Sections 2 and 6",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_017d0db4e0e645e9a47b0c731382fc50.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          },
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b191dac09054436fb054650b5e3b0ce1.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: repeat camber measurement conditions",
+      "body": "Driver-in and driver-out camber readings should not be mixed; use the same measurement condition each time.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.7,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 6, Step 2",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: seat position depends on driver and track",
+      "body": "Seat height guidance varies with driver build, speed and grip; no single seat position applies universally.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 4",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: legacy caster baseline",
+      "body": "The legacy guide starts at RF 10° and LF 8°; verify chassis generation before applying.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.45,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 2, Step 3",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: legacy caster response is conditional",
+      "body": "Ultramax emphasizes caster-related weight transfer; Phantom emphasizes steering effort and camber gain at small steering angles. Do not universalize either.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "disputed_or_opinion",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.3,
+      "verification_status": "conflicting",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 2, Step 3",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [],
+        "conflicts": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b191dac09054436fb054650b5e3b0ce1.pdf",
+            "note": "Different emphasis and steering-angle context; model-specific, not a universal contradiction."
+          }
+        ],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: tread width uses tire contact edges",
+      "body": "Rear tread width is measured outside-to-outside at tread contact; recheck it when changing LR tires.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 6, Step 1",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_3a365cc5a28b456ca00c3e0a0de0948b.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: larger drivers and higher bite influence left weight",
+      "body": "The guide associates greater driver size and track bite with greater left-side percentage; retain chassis context.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 6, Step 3",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_f3657e377f5943e9b56cc0e28ac93429.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Ultramax: check brake rotor centering",
+      "body": "Center the rotor between pads and verify free axle rotation without brake drag.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Ultramax Racing Chassis",
+      "source_url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Section 3",
+        "applicability": {
+          "chassis_make": [
+            "Ultramax"
+          ],
+          "surface": [
+            "dirt"
+          ],
+          "generation": "legacy_unspecified"
+        },
+        "corroboration": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "ultra",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: test one adjustment at a time",
+      "body": "Diagnose the handling complaint before adjusting; change one variable per test to preserve interpretability.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_fe13b158d2bf428c8e65d8fc0171aba1.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "adjust",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: RR tight and LR tight require different changes",
+      "body": "RR overload and LR overload have opposite crossweight and left-weight remedies. A complaint of tight alone is insufficient.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_fe13b158d2bf428c8e65d8fc0171aba1.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "adjust",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Crossweight definition for oval kart scales",
+      "body": "Cross percentage is 100 × (RF weight + LR weight) / total weight.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_21277f06f5584c71a50ddc22237cc6cf.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "definition",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "cross",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: ride-height changes also alter cross and rake",
+      "body": "Spindle washers and cassette positions change cross; rear cassette changes also alter rake. Re-scale instead of assuming an isolated effect.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_21277f06f5584c71a50ddc22237cc6cf.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "cross",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: washer-to-cross conversion is approximate",
+      "body": "A 0.060-inch washer is described as roughly 1–2 percentage points of cross, dependent on total weight; confirm with scales.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_21277f06f5584c71a50ddc22237cc6cf.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.5,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "cross",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Camber sign convention",
+      "body": "Top of tire leaning inward is negative camber; outward is positive.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_017d0db4e0e645e9a47b0c731382fc50.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "definition",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "camber",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: more positive LF camber can add turning bite",
+      "body": "Phantom describes greater positive LF camber as adding bite, with excessive settings potentially causing center-exit looseness.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_017d0db4e0e645e9a47b0c731382fc50.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "camber",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: less negative RF camber can add grip",
+      "body": "Reducing negative RF camber can increase contact and grip; interpret against track bite and tire deflection.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_017d0db4e0e645e9a47b0c731382fc50.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          },
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "camber",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Caster definition and split",
+      "body": "Caster is the kingpin angle viewed from the side; split is the difference between RF and LF settings.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b191dac09054436fb054650b5e3b0ce1.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "definition",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {},
+        "corroboration": [
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "caster",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: caster changes steering effort and dynamic camber",
+      "body": "More caster increases steering effort and camber change with steering; overall handling effect depends on steering angle and chassis.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b191dac09054436fb054650b5e3b0ce1.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "caster",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: LF pressure can change static cross",
+      "body": "Phantom describes more LF pressure reducing cross and less LF pressure increasing it; verify on scales after adjustment.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_70beacc30b6b442e8a5b0faf0d89fc29.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "individual",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: RF pressure has competing effects",
+      "body": "Increased RF pressure stiffens the tire but reduces its contact patch; resulting grip requires testing under actual conditions.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_70beacc30b6b442e8a5b0faf0d89fc29.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "individual",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: RR pressure effects require testing",
+      "body": "RR pressure can change loading response and contact area in competing directions; higher pressure is not a universal grip remedy.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_70beacc30b6b442e8a5b0faf0d89fc29.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "individual",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Left-side weight definition",
+      "body": "Left percentage is 100 × (LF weight + LR weight) / total weight.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_f3657e377f5943e9b56cc0e28ac93429.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "definition",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "left",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: left-weight adjustment depends on overloaded side",
+      "body": "More left can relieve overloaded right tires; less left may help when the LR is overworked.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_f3657e377f5943e9b56cc0e28ac93429.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.phantomchassis.com/_files/ugd/d7be0b_fe13b158d2bf428c8e65d8fc0171aba1.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": false
+          },
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "left",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Nose-weight definition",
+      "body": "Nose percentage is 100 × (LF weight + RF weight) / total weight.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_266d022b741a4cd594a456e1b616caf3.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "definition",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "nose",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: nose targets belong to the chassis",
+      "body": "Use the specific chassis nose baseline; different designs require different front-weight percentages.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_266d022b741a4cd594a456e1b616caf3.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "nose",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: overall pressure trades grip against freer rolling",
+      "body": "On dirt, more overall pressure generally reduces grip while freeing rolling; insufficient grip can outweigh that benefit.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_3d2afd18e454454f8ad06bac9e913927.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          },
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "air",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom and Burris pressure ranges have different scope",
+      "body": "Phantom general guidance and Burris compound application pressures overlap but differ. Use the matching tire specification and testing; never average ranges.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_3d2afd18e454454f8ad06bac9e913927.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "disputed_or_opinion",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.3,
+      "verification_status": "conflicting",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1; Burris application chart",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [
+          {
+            "url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+            "note": "Tire-specific starting pressure differs from general chassis tuning guidance."
+          }
+        ],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "air",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: excessive body fasteners can restrict chassis flex",
+      "body": "Phantom cautions against excess nose-to-side fasteners restricting flex; preserve the specified secure mounting method.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_142ed87729ac404d8e03703ca5d7c7ff.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "body",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: mount body around representative tires and alignment",
+      "body": "Set approximate toe/camber and representative tire sizes before locating bodywork; inspect tire clearance and secure fasteners.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_142ed87729ac404d8e03703ca5d7c7ff.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "body",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: inspect braking system before track use",
+      "body": "Inspect fluid, pads, gap, leaks and fasteners regularly; resolve questionable brake condition before racing.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_cc38318e4cde491cb8e7e25cc62b8bfe.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "brakes",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: specified brake fluid is system-specific",
+      "body": "This Phantom procedure specifies DOT-5 silicone fluid. Apply only to the confirmed matching brake system; not a universal kart-fluid instruction.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_cc38318e4cde491cb8e7e25cc62b8bfe.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "brakes",
+        "web-vetting-20261006",
+        "requires_brake_system_confirmation"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: rear tread width requires loaded contact measurement",
+      "body": "Measure outside tread-contact edges with the kart race-ready and driver aboard; rim-edge width is a different measurement.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_3a365cc5a28b456ca00c3e0a0de0948b.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "high",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Independent factory source agrees on the general principle; exact values and diagnosis remain equipment/condition dependent.",
+      "retrieval_weight": 0.85,
+      "verification_status": "corroborated",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "relationship": "supports_general_principle",
+            "independent_publisher": true
+          }
+        ],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "hubs",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: LR hub movement changes loading",
+      "body": "Phantom describes inward LR hub movement increasing LR work; outward movement can relieve an overloaded LR. Test against the specific complaint.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_3a365cc5a28b456ca00c3e0a0de0948b.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "hubs",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Toe definition and measurement reference",
+      "body": "Toe describes front-wheel convergence/divergence using leading versus trailing measurements; record the tool, steering reference and driver load.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b67b36ad5d0f4dd6a52d992bd4b99c74.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "definition",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "toe",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom toe convention differs from Slack and Ultramax",
+      "body": "This Phantom article sets LF straight and RF toe-out; Slack Elevate and legacy Ultramax use different reference-side instructions.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_b67b36ad5d0f4dd6a52d992bd4b99c74.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.3,
+      "verification_status": "conflicting",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [
+          {
+            "url": "https://www.pmckart.com/wp-content/uploads/2023/12/elevate-setup-guide.pdf",
+            "note": "RF zero, LF toe-out."
+          },
+          {
+            "url": "https://ultramaxracing.com/technical-support-from-the-box-to-the-track.html",
+            "note": "Square RF then set LF toe-out."
+          }
+        ],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "toe",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: center sprocket teeth within the chain",
+      "body": "Check alignment by rotating the axle backward and adjusting hub position until the sprocket tracks centrally; secure the hub afterward.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/_files/ugd/d7be0b_8b2fa6e4f6d0404e9d039df165d4938b.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "PDF p.1",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ],
+          "surface": [
+            "dirt"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "chain",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Burris SS-11: published six-inch slick application",
+      "body": "SS-11: high moisture; chart starting pressure 6–9 psi. Match size, wheel width and rules before use.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Burris Racing",
+      "source_url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Application sheet p.1, 6-inch slick rows",
+        "applicability": {
+          "tire_brand": [
+            "Burris"
+          ],
+          "tire_compound": [
+            "SS-11"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "burris",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": "SS-11",
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Burris SS-22: published six-inch slick application",
+      "body": "SS-22: some moisture; chart starting pressure 6–9 psi. Match size, wheel width and rules before use.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Burris Racing",
+      "source_url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Application sheet p.1, 6-inch slick rows",
+        "applicability": {
+          "tire_brand": [
+            "Burris"
+          ],
+          "tire_compound": [
+            "SS-22"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "burris",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": "SS-22",
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Burris SS-33A: published six-inch slick application",
+      "body": "SS-33A: minimal moisture transitioning dry; chart starting pressure 6–9 psi. Match size, wheel width and rules before use.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Burris Racing",
+      "source_url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Application sheet p.1, 6-inch slick rows",
+        "applicability": {
+          "tire_brand": [
+            "Burris"
+          ],
+          "tire_compound": [
+            "SS-33A"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "burris",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": "SS-33A",
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Burris B33B: published six-inch slick application",
+      "body": "B33B: dry slick; chart starting pressure 6–10 psi. Match size, wheel width and rules before use.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Burris Racing",
+      "source_url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Application sheet p.1, 6-inch slick rows",
+        "applicability": {
+          "tire_brand": [
+            "Burris"
+          ],
+          "tire_compound": [
+            "B33B"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "burris",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": "B33B",
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Burris B44B: published six-inch slick application",
+      "body": "B44B: dirt or pavement; chart starting pressure 8–12 psi. Match size, wheel width and rules before use.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Burris Racing",
+      "source_url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Application sheet p.1, 6-inch slick rows",
+        "applicability": {
+          "tire_brand": [
+            "Burris"
+          ],
+          "tire_compound": [
+            "B44B"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "burris",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": "B44B",
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Burris B55A: published six-inch slick application",
+      "body": "B55A: dirt or pavement; chart starting pressure 8–12 psi. Match size, wheel width and rules before use.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Burris Racing",
+      "source_url": "https://www.burrisracing.com/wp-content/uploads/Tire-Application-Info-Sheet-06-22.pdf",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Application sheet p.1, 6-inch slick rows",
+        "applicability": {
+          "tire_brand": [
+            "Burris"
+          ],
+          "tire_compound": [
+            "B55A"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "burris",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": "B55A",
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Track Tac SST-5: softening language needs qualification",
+      "body": "The page says SST-5 is not intended as a softener but also reports possible 0–5-point hardness reduction. Do not claim zero softening.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Track Tac",
+      "source_url": "https://www.tracktac.com/products/sst-5-purple",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "disputed_or_opinion",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.3,
+      "verification_status": "conflicting",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Product description and directions",
+        "applicability": {
+          "tire_prep": [
+            "Track Tac SST-5 Purple"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [
+          {
+            "url": "https://www.tracktac.com/products/sst-5-purple",
+            "note": "Internal wording tension: intended use versus measured hardness claim."
+          }
+        ],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "sst",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Track Tac SST-5: cure and concentration are product-specific",
+      "body": "Instructions describe advance curing, dilution and no wrapping; manufacturer warns full-strength use can lock a kart down.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Track Tac",
+      "source_url": "https://www.tracktac.com/products/sst-5-purple",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Manufacturer product instruction; performance claims are not independent test results. Check class permission and current label.",
+      "retrieval_weight": 0.45,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Directions",
+        "applicability": {
+          "tire_prep": [
+            "Track Tac SST-5 Purple"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "sst",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Track Tac PRW Orange: thin coating and complete drying",
+      "body": "Manufacturer calls for sparing thin application and complete drying between track runs; claims are product-specific, not independently tested here.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Track Tac",
+      "source_url": "https://www.tracktac.com/products/prw-orange",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.45,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Directions",
+        "applicability": {
+          "tire_prep": [
+            "Track Tac PRW Orange"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "prw",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Track Tac PRW Orange: intended bite does not imply zero softening",
+      "body": "The page emphasizes bite/dirt repellence while reporting possible 0–5-point hardness reduction. Log actual hardness and conditions.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Track Tac",
+      "source_url": "https://www.tracktac.com/products/prw-orange",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "disputed_or_opinion",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.3,
+      "verification_status": "conflicting",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Description and directions",
+        "applicability": {
+          "tire_prep": [
+            "Track Tac PRW Orange"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [
+          {
+            "url": "https://www.tracktac.com/products/prw-orange",
+            "note": "Intended purpose does not establish an absence of hardness change."
+          }
+        ],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "prw",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "NORAM Cheetah: factory engagement is not universal optimum",
+      "body": "NORAM lists 4000 rpm factory engagement for the Cheetah. Optimal engagement still needs the engine, clutch and loaded track context.",
+      "source_type": "manufacturer_manual",
+      "source_name": "NORAM",
+      "source_url": "https://noramclutch.com/go-kart-clutch/noram/cheetah-sp-2/",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "specific_numeric_recommendation",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.75,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Engagement page",
+        "applicability": {
+          "clutch_model": [
+            "NORAM Cheetah"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "cheetah",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "AiM: compare channels by distance and segment",
+      "body": "RaceStudio supports distance-based overlays and split-level comparison; use them to locate time loss rather than judging whole-lap time alone.",
+      "source_type": "manufacturer_manual",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/analysis.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Time/distance and Split Details sections",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "aim",
+        "web-vetting-20261006",
+        "telemetry"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "AiM: verify math-channel dependencies and units",
+      "body": "Math-channel definitions list required channels and units. Verify formulas against the session and retain missing-channel warnings.",
+      "source_type": "manufacturer_manual",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/analysis.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Math Channels: description and verification",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "aim",
+        "web-vetting-20261006",
+        "telemetry"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "AiM: GPS driver-state channels are inferred",
+      "body": "GPS-only braking, accelerating and coasting states are approximations from acceleration vectors, not pedal measurements.",
+      "source_type": "manufacturer_manual",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/analysis.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.8,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "GPS Math Channels Group",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "aim",
+        "web-vetting-20261006",
+        "telemetry",
+        "inferred_not_measured"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "AiM: threshold choices can change inferred driving states",
+      "body": "GPS state thresholds determine classification; validate them against actual traces before interpreting inferred brake/coast events.",
+      "source_type": "manufacturer_manual",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/analysis.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "GPS Math Channels: Thresholds",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "aim",
+        "web-vetting-20261006",
+        "telemetry"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "AiM: preserve computed and displayed units",
+      "body": "RaceStudio may convert a math channel from its calculation units into user display units; record units before external comparisons.",
+      "source_type": "manufacturer_manual",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/analysis.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.65,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Math Channels: Channels Description",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "aim",
+        "web-vetting-20261006",
+        "telemetry"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Phantom: discontinued setup sheets require age qualification",
+      "body": "Phantom states discontinued models no longer receive setup development and their historical recommendations can be outdated.",
+      "source_type": "manufacturer_manual",
+      "source_name": "Phantom Racing Chassis / James Stanley",
+      "source_url": "https://www.phantomchassis.com/set-up-sheets",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "active",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Read directly in the primary source; not independently proven on this kart.",
+      "retrieval_weight": 0.8,
+      "verification_status": "primary_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "Setup-sheet introductory notice",
+        "applicability": {
+          "chassis_make": [
+            "Phantom"
+          ]
+        },
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "primary_text_read",
+        "is_probability": false
+      },
+      "tags": [
+        "sheets",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Pending video review: Finding Speed with Data — David Smith, 2024-04-09",
+      "body": "Official AiM index identifies this relevant webinar. Recording not transcribed or claim-vetted; exclude from advice until reviewed.",
+      "source_type": "video",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/web-resources.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "draft",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Discovery record only; index description does not establish the video’s technical claims.",
+      "retrieval_weight": 0,
+      "verification_status": "catalog_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "2024 webinar entry",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "official_index_only",
+        "is_probability": false
+      },
+      "tags": [
+        "videos",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Pending video review: Innovative Kart Data Analysis — David Smith, 2025-02-11",
+      "body": "Official AiM index identifies this relevant webinar. Recording not transcribed or claim-vetted; exclude from advice until reviewed.",
+      "source_type": "video",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/web-resources.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "draft",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Discovery record only; index description does not establish the video’s technical claims.",
+      "retrieval_weight": 0,
+      "verification_status": "catalog_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "2025 webinar entry",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "official_index_only",
+        "is_probability": false
+      },
+      "tags": [
+        "videos",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Pending video review: GPS vs. Wheel Speeds — 2024-09-24",
+      "body": "Official AiM index identifies this relevant webinar. Recording not transcribed or claim-vetted; exclude from advice until reviewed.",
+      "source_type": "video",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/web-resources.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "draft",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Discovery record only; index description does not establish the video’s technical claims.",
+      "retrieval_weight": 0,
+      "verification_status": "catalog_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "2024 webinar entry",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "official_index_only",
+        "is_probability": false
+      },
+      "tags": [
+        "videos",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    },
+    {
+      "user_id": "b5a13a9c-4a85-4023-b058-bc42dd402443",
+      "title": "Pending video review: Accelerometers in Racing Data Analysis — 2024-10-08",
+      "body": "Official AiM index identifies this relevant webinar. Recording not transcribed or claim-vetted; exclude from advice until reviewed.",
+      "source_type": "video",
+      "source_name": "AiM Sportline",
+      "source_url": "https://www.aim-sportline.com/docs/racestudio3/manual/html/web-resources.html",
+      "evidence_level": "manufacturer",
+      "confidence": "medium",
+      "status": "draft",
+      "knowledge_category": "general_principle",
+      "confidence_note": "Discovery record only; index description does not establish the video’s technical claims.",
+      "retrieval_weight": 0,
+      "verification_status": "catalog_only",
+      "review_metadata": {
+        "reviewed_at": "2026-10-06",
+        "batch": "web-vetting-20261006",
+        "locator": "2024 webinar entry",
+        "applicability": {},
+        "corroboration": [],
+        "conflicts": [],
+        "promotion_rule": "Increase weight only after claim-specific independent corroboration or repeatable condition-matched tests; duplicate reposts do not count.",
+        "content_basis": "official_index_only",
+        "is_probability": false
+      },
+      "tags": [
+        "videos",
+        "web-vetting-20261006"
+      ],
+      "tire_compound": null,
+      "class_name": null
+    }
+  ]
+}
