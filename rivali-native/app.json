@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Rivali",
+    "slug": "rivali-native",
+    "owner": "taskrocket",
+    "version": "1.0.0",
+    "scheme": "rivali",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.taskrocket.rivali",
+      "supportsTablet": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Rivali records your race debrief when you tap the microphone.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "microphonePermission": "Rivali uses your microphone when you choose to talk to Doug."
+        }
+      ],
+      "expo-font",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b38ac46a-740e-4e8d-84ef-b62bedd61304"
+      }
+    }
+  }
+}
