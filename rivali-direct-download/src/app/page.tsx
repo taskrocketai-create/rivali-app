@@ -44,10 +44,16 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <a className="button landing-secondary-button" href="#system">See how it works</a>
           </div>
         </div>
-        <div className="landing-doug" aria-label="Doug, Rivali AI crew chief">
-          <div className="landing-doug-glow" />
-          <Image src="/doug-crew-chief.png" alt="Doug, Rivali's dirt racing crew chief" width={620} height={744} priority />
-          <div className="landing-welcome"><small>DOUG — CREW CHIEF</small><strong>“Ready when you are. Tell me everything, or I can walk you through it.”</strong></div>
+        <div className="landing-race-plan" aria-label="Rivali race-day workflow">
+          <Image src="/rivali-icon.png" alt="Rivali Racing" width={128} height={128} />
+          <div className="eyebrow">TURN DATA INTO SPEED</div>
+          <h2>Your next session starts here.</h2>
+          <ol>
+            <li><strong>Plan your Raceday</strong><span>Choose your driver, kart, track, and goal.</span></li>
+            <li><strong>Capture the run</strong><span>Upload your data and tell Doug what the kart did.</span></li>
+            <li><strong>Review the evidence</strong><span>Compare sessions and decide on the next controlled change.</span></li>
+          </ol>
+          <a className="button" href="#driver-access">Start your Raceday <ArrowRight size={18} /></a>
         </div>
       </section>
       <section className="feature-grid shell" id="system">

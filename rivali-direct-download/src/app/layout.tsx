@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Rivali — Turn Data Into Speed",
   description: "Data-driven crew chief tools for dirt oval kart racers.",
   applicationName: "Rivali",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = { themeColor: "#000000", colorScheme: "dark" };

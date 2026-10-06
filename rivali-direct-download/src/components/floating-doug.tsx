@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import dynamic from "next/dynamic";
-import { ChevronDown, MessageCircle } from "lucide-react";
+import { ChevronDown, Mic } from "lucide-react";
 import { useState } from "react";
 import type { DougAction } from "./doug-call";
 
@@ -26,19 +25,18 @@ export function FloatingDoug({ racedayContext, onNavigate, onRequestAction, atte
   return (
     <aside className={`floating-doug ${open ? "open" : "closed"}`} aria-label="Doug, Rivali crew chief" data-attention-key={attentionKey}>
       {open ? (
-        <div className="floating-doug-panel">
+        <div className="floating-doug-panel" id="doug-conversation">
           <button className="floating-doug-collapse" type="button" onClick={() => setManuallyOpen(false)} aria-label="Minimize Doug"><ChevronDown /></button>
-          <div className="floating-doug-figure"><Image src="/doug-crew-chief.png" alt="Doug" width={620} height={744} priority /></div>
           <div className="floating-doug-chat">
-            <div className="conversation-status"><span /> DOUG IS READY</div>
+            <div className="conversation-status"><Mic size={16} /> ASK DOUG</div>
             <strong>{guidance}</strong>
             <DougCall racedayContext={racedayContext} onNavigate={onNavigate} onRequestAction={onRequestAction} />
           </div>
         </div>
       ) : (
-        <button className="floating-doug-trigger" type="button" onClick={() => setManuallyOpen(true)}>
-          <Image src="/doug-crew-chief.png" alt="Open Doug" width={620} height={744} />
-          <span><MessageCircle /> Talk to Doug</span>
+        <button className="floating-doug-trigger" type="button" onClick={() => setManuallyOpen(true)} aria-expanded={open} aria-controls="doug-conversation">
+          <Mic size={20} aria-hidden="true" />
+          <span>Ask Doug</span>
         </button>
       )}
     </aside>
