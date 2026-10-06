@@ -1,9 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { ChevronDown, MessageCircle } from "lucide-react";
 import { useState } from "react";
-import { DougCall, type DougAction } from "./doug-call";
+import type { DougAction } from "./doug-call";
+
+const DougCall = dynamic(
+  () => import("./doug-call").then((mod) => mod.DougCall),
+  { ssr: false, loading: () => <div className="doug-caption"><small>DOUG</small><span>Loading crew chief…</span></div> },
+);
 
 type AppTab = "home" | "upload" | "debrief" | "drivers" | "karts" | "tracks" | "sessions" | "compare" | "profile";
 
@@ -14,15 +20,14 @@ export function FloatingDoug({ racedayContext, onNavigate, onRequestAction, atte
   attentionKey: string;
   guidance: string;
 }) {
-  const [manuallyOpen, setManuallyOpen] = useState(true);
-  const [dismissedAttention, setDismissedAttention] = useState("");
-  const open = manuallyOpen || (!!attentionKey && dismissedAttention !== attentionKey);
+  const [manuallyOpen, setManuallyOpen] = useState(false);
+  const open = manuallyOpen;
 
   return (
-    <aside className={`floating-doug ${open ? "open" : "closed"}`} aria-label="Doug, Rivali crew chief">
+    <aside className={`floating-doug ${open ? "open" : "closed"}`} aria-label="Doug, Rivali crew chief" data-attention-key={attentionKey}>
       {open ? (
         <div className="floating-doug-panel">
-          <button className="floating-doug-collapse" type="button" onClick={() => { setManuallyOpen(false); setDismissedAttention(attentionKey); }} aria-label="Minimize Doug"><ChevronDown /></button>
+          <button className="floating-doug-collapse" type="button" onClick={() => setManuallyOpen(false)} aria-label="Minimize Doug"><ChevronDown /></button>
           <div className="floating-doug-figure"><Image src="/doug-crew-chief.png" alt="Doug" width={620} height={744} priority /></div>
           <div className="floating-doug-chat">
             <div className="conversation-status"><span /> DOUG IS READY</div>
