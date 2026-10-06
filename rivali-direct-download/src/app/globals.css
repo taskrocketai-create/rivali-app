@@ -1267,3 +1267,67 @@ body { background: #070809; }
   .doug-confirm { align-items: stretch; flex-direction: column; gap: 14px; }
   .doug-confirm-actions button { flex: 1; }
 }
+
+/* Approved Rivali Racing brand guide: red, metallic silver, charcoal and black. */
+:root {
+  --race-red: #a3271f;
+  --accent-red: #e53935;
+  --silver: #d7d7d7;
+  --charcoal: #1a1a1a;
+  --black: #000000;
+  --ink: var(--black);
+  --paper: var(--silver);
+  --paper-2: #b8b8b8;
+  --white: #ffffff;
+  --red: var(--race-red);
+  --red-dark: #731b16;
+  --muted: #a3a3a3;
+  --line: rgba(215, 215, 215, .18);
+  --brand-font: "Eurostile", "Microgramma", "Bank Gothic", "Arial Narrow", Arial, sans-serif;
+}
+body, .app-body { background-color: var(--black); color: var(--silver); }
+body { font-family: var(--brand-font); }
+.app-body { background-image: linear-gradient(145deg, #101010, #000000 65%); }
+.brand-logo, .brand-logo.compact, .landing-nav .brand-logo.compact, .app-header .brand-logo.compact {
+  display: block; width: min(340px, 100%); height: auto; flex-shrink: 0; overflow: hidden;
+}
+.brand-logo:not(.compact) { width: min(560px, 100%); }
+.brand-logo-artwork {
+  display: block; width: 100%; aspect-ratio: 644 / 120;
+  background-image: url('/rivali-brand-guide.png');
+  background-size: 238.5093% 853.3333%; background-position: 2.2422% 54.2035%; background-repeat: no-repeat;
+}
+.nav:after, .app-header:after { background: linear-gradient(90deg, var(--race-red), var(--accent-red) 45%, var(--silver)); }
+.app-header:before { background: var(--accent-red); box-shadow: none; }
+.race-hero:after { background: var(--accent-red); box-shadow: 190px 0 var(--silver), 380px 0 var(--race-red); }
+h1, h2, h3, .doug-sales-copy h1, .landing-access-copy h2, .race-hero h1,
+.session-headline h2, .empty-session h2, .feature-card h2, .auth-card h2, .panel h2,
+.garage-strip strong, .metric-card strong, .race-actions strong, .profile-grid button strong,
+.doug-next-copy strong, .base-goal-editor strong {
+  font-family: var(--brand-font); font-weight: 900; font-style: normal; letter-spacing: .025em;
+}
+.doug-sales-copy h1, .landing-access-copy h2, .race-hero h1 { line-height: 1.02; }
+.card, .race-panel, .feature-card, .landing-access, .auth-card {
+  border: 1px solid var(--line); border-radius: 14px;
+  background: linear-gradient(145deg, var(--charcoal), #090909 75%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 12px 30px rgba(0,0,0,.22);
+}
+.race-grid { gap: 16px; background: transparent; }
+.button, .race-actions button { clip-path: none; border-radius: 9px; }
+.button, .primary-race-action { background: linear-gradient(125deg, var(--accent-red), var(--race-red)); color: #fff; }
+.button:hover, .primary-race-action:hover { box-shadow: 0 0 20px rgba(229,57,53,.24); }
+.button.secondary, .landing-secondary-button, .secondary-race-action { background: linear-gradient(125deg, #242424, #101010); border: 1px solid var(--line); }
+.tab.active svg, .eyebrow, .feature-card > svg, .doug-next-copy small, .doug-confirm small { color: var(--accent-red); }
+.tab.active:after, .mobile-bottom-nav button.active:after { background: var(--accent-red); }
+.field label { color: var(--silver); }
+.field input, .field select, .field textarea, input, select, textarea { background: #111111; border-color: #505050; color: #fff; }
+.field input:focus, .field select:focus, .field textarea:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-red); background: var(--charcoal); box-shadow: 0 0 0 3px rgba(229,57,53,.2);
+}
+a:focus-visible, button:focus-visible { outline: 2px solid var(--silver); outline-offset: 4px; }
+@media (max-width: 760px) {
+  .landing-nav .brand-logo.compact, .app-header .brand-logo.compact { width: min(245px, 62vw); }
+  .race-hero:after { box-shadow: 25vw 0 var(--silver), 50vw 0 var(--race-red); }
+  .race-grid { display: grid; gap: 12px; }
+  .race-hero h1.mobile-race-title { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+}
