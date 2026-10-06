@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -42,6 +42,18 @@ export default function Home() {
       recorder.stop().then(() => setRecordedUri(recorder.uri)).catch(() => Alert.alert('Recording', 'Could not stop the recording.'));
     }
   }, [recording.isRecording, recording.durationMillis, recorder]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state !== 'active' && recorder.isRecording) {
+        recorder.stop().then(async () => {
+          setRecordedUri(recorder.uri);
+          await setAudioModeAsync({ allowsRecording: false });
+        }).catch(() => Alert.alert('Recording', 'Could not finish the recording.'));
+      }
+    });
+    return () => { subscription.remove(); };
+  }, [recorder]);
 
   async function perform(action: () => Promise<void>) {
     if (busy) return;
