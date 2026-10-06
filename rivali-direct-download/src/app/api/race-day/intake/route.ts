@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PASS_COOKIE, resolveRaceDayPass } from "@/lib/race-day-pass";
+import { PASS_COOKIE, resolveRaceDayPass, raceDayToken } from "@/lib/race-day-pass";
 
 const schema = z.object({
   driverName: z.string().min(1).max(120),
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   const cookieStore = await cookies();
   const admin = createAdminClient();
-  const pass = await resolveRaceDayPass(admin, cookieStore.get(PASS_COOKIE)?.value);
+  const pass = await resolveRaceDayPass(admin, raceDayToken(request, cookieStore.get(PASS_COOKIE)?.value));
   if (!pass) return NextResponse.json({ error: "Race Day pass not found." }, { status: 401 });
 
   const values = parsed.data;
