@@ -13,7 +13,8 @@ const storage = {
   async setItem(key: string, value: string) {
     const previous = await SecureStore.getItemAsync(key);
     const generation = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const chunks = value.match(/[\s\S]{1,400}/g) ?? [''];
+    const characters = Array.from(value);
+    const chunks = Array.from({ length: Math.max(1, Math.ceil(characters.length / 400)) }, (_, i) => characters.slice(i * 400, (i + 1) * 400).join(''));
     for (let i = 0; i < chunks.length; i++) await SecureStore.setItemAsync(`${key}.${generation}.${i}`, chunks[i]);
     await SecureStore.setItemAsync(key, JSON.stringify({ generation, count: chunks.length }));
     if (previous) {

@@ -14,10 +14,14 @@ export async function connectDoug(sessionId: string | undefined, onCaption: (tex
   const peer = new RTCPeerConnection();
   const channel = peer.createDataChannel('oai-events');
   let closed = false;
+  let spokenCaption = '';
   const close = () => {
-    if (closed) return;
-    closed = true; signal.removeEventListener('abort', close);
-    channel.close(); peer.close(); stream?.getTracks().forEach(track => track.stop()); remoteStream?.getTracks().forEach(track => track.stop());
+    if (!closed) {
+      closed = true; signal.removeEventListener('abort', close);
+      channel.onmessage = null; channel.onopen = null; peer.ontrack = null; peer.onconnectionstatechange = null;
+      channel.close(); peer.close();
+    }
+    stream?.getTracks().forEach(track => track.stop()); remoteStream?.getTracks().forEach(track => track.stop());
   };
   signal.addEventListener('abort', close, { once: true });
   try {
@@ -31,8 +35,8 @@ export async function connectDoug(sessionId: string | undefined, onCaption: (tex
     channel.onmessage = (event: { data: string }) => {
       try {
         const message = JSON.parse(event.data);
-        if (message.type === 'response.output_audio_transcript.delta') onCaption(message.delta ?? 'Doug is speaking…');
-        if (message.type === 'input_audio_buffer.speech_started') onCaption('Listening…');
+        if (message.type === 'response.output_audio_transcript.delta') { spokenCaption += message.delta ?? ''; onCaption(spokenCaption || 'Doug is speaking…'); }
+        if (message.type === 'input_audio_buffer.speech_started') { spokenCaption = ''; onCaption('Listening…'); }
         if (message.type === 'error') onCaption('Doug could not finish that response.');
       } catch { /* Ignore non-JSON transport events. */ }
     };
