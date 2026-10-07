@@ -10,7 +10,11 @@
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.taskrocket.rivali",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bitcode": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": [
       "expo-router",
