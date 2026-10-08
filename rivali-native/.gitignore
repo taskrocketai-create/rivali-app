@@ -6,3 +6,6 @@ android/
 .env*
 !.env.example
 *.tsbuildinfo
+dist-track-test/
+track-test-*.log
+track-test-*-exit.txt

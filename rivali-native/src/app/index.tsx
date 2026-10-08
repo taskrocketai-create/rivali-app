@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TrackTest from '../components/track-test';
 import { router } from 'expo-router';
 import { ActivityIndicator, Alert, AppState, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +11,9 @@ import { api, appendFile, clearCredential, Credential, json, loadCredential, Rac
 type Intake = { driverName: string; kartName: string; chassisMake: string; chassisModel: string; drivingStyle: 'lift' | 'burp_throttle' | 'full_throttle_brake_drag' | 'other' };
 const initialIntake: Intake = { driverName: '', kartName: '', chassisMake: '', chassisModel: '', drivingStyle: 'other' };
 export default function Home() {
+  return process.env.EXPO_PUBLIC_RIVALI_MODE === 'track-test' ? <TrackTest /> : <RaceDayHome />;
+}
+function RaceDayHome() {
   const [credential, setCredential] = useState<Credential | null>(null);
   const [status, setStatus] = useState<RaceStatus | null>(null);
   const [code, setCode] = useState('');

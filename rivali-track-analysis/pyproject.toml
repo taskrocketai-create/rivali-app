@@ -1,0 +1,16 @@
+[project]
+name = "rivali-track-analysis"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "packaging==25.0",
+  "fastapi==0.117.1",
+  "requests==2.32.5",
+  "pandas==2.2.3",
+  "numpy==2.2.6",
+  "scipy==1.14.1",
+  "daq-tools @ git+https://github.com/zaggyai/daq_tools.git@5160d914cc80cb6514701576ec4252bfd6ed9f7b",
+]
+
+[tool.vercel]
+entrypoint = "app:app"
