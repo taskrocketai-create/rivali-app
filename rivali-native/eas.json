@@ -13,6 +13,15 @@
     "production": {
       "distribution": "store",
       "autoIncrement": true
+    },
+    "track-test": {
+      "extends": "production",
+      "channel": "track-test",
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_RIVALI_MODE": "track-test",
+        "EXPO_PUBLIC_TRACK_ANALYSIS_URL": "https://rivali-track-analysis.vercel.app"
+      }
     }
   },
   "submit": {

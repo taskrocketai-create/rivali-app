@@ -3,7 +3,7 @@
     "name": "Rivali",
     "slug": "rivali-native",
     "owner": "taskrocket",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "rivali",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
