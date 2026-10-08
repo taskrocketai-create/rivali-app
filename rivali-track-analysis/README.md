@@ -6,7 +6,7 @@ The Python FastAPI service verifies the user's Supabase session and owner-prefix
 
 ## Deployment
 
-Deploy this directory to the Vercel FastAPI project `rivali-track-analysis`, with production `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. No service-role key is used. Existing owner-folder storage RLS must permit select/insert/update. Dependency versions are locked in `uv.lock`.
+Deploy this directory to the Vercel FastAPI project `rivali-track-analysis`, with production `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. No service-role key is used. Existing owner-folder storage RLS must permit select/insert/update. The private `telemetry` bucket must allow `application/json` for reports alongside `application/octet-stream` and `application/x-binary` for XRK files. An XRK upload succeeding does not verify the report MIME allowance. Dependency versions are locked in `uv.lock`.
 
 From `rivali-native`, run:
 
