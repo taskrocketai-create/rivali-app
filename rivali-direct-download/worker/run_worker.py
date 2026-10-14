@@ -16,6 +16,7 @@ from engine.session_summary import summarize_session, summary_from_gps_laps
 from engine.gps_laps import reconstruct_lap_times
 from engine.knowledge_selection import select_knowledge
 from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
+from engine.alfano6 import read_alfano
 
 GPS_LAT_NAMES=("GPS Latitude","GPS Lat","Latitude","Lat","GPS_Latitude")
 GPS_LON_NAMES=("GPS Longitude","GPS Long","GPS Lon","Longitude","Lon","GPS_Longitude")
@@ -123,7 +124,17 @@ def process_one(client):
     job=response.data[0];job_id,session_id,owner_id=job["job_id"],job["session_id"],job["user_id"];path=None
     try:
         payload=client.storage.from_("telemetry").download(job["raw_storage_path"])
-        with tempfile.NamedTemporaryFile(suffix=".xrk",delete=False) as handle:path=handle.name;handle.write(payload)
+        is_alfano=job["raw_storage_path"].lower().endswith(".alf2")
+        with tempfile.NamedTemporaryFile(suffix=".alf2" if is_alfano else ".xrk",delete=False) as handle:path=handle.name;handle.write(payload)
+        if is_alfano:
+            summary,channels,untimed=read_alfano(path)
+            telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps], "gps_trace":[], "channel_manifest":channels,"corner_analysis":{"diagnostic":"Alfano 6: lap times verified; GPS scale, corner alignment and speed units require validation.","turns":{},"alignment":{"confidence":"low","score":0,"reason":"Alfano GPS scaling unverified"},"lap_timing":{"source":"alfano_lap_table","diagnostic":f"Recorded lap times; {len(untimed)} untimed telemetry segments."}}}
+            client.table("session_telemetry").upsert(telemetry).execute()
+            client.table("sessions").update({"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec,"report_status":"pending_approval"}).eq("id",session_id).execute()
+            # Do NOT synthesize or publish coaching recommendations before Alfano scale and timing validation.
+            client.table("processing_jobs").update({"status":"completed","error":None}).eq("id",job_id).execute()
+            print(f"completed Alfano timing-only session {session_id}",flush=True)
+            return True
         summary=summarize_session(path);_header,data=XRKReader.read(path,header_only=False)
         session=client.table("sessions").select("track_id,race_day_pass_id").eq("id",session_id).single().execute().data
         track=client.table("tracks").select("start_finish,turns").eq("id",session["track_id"]).single().execute().data

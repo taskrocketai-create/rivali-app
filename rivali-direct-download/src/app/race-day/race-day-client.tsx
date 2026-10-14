@@ -259,8 +259,8 @@ export function RaceDayClient() {
         </form>
       ) : (
         <form onSubmit={uploadRun} className={styles.card}>
-          <div className={styles.cardHeading}><Upload /><div><span>NEXT RUN</span><h2>Send Rivali the MyChron file</h2></div></div>
-          <p className={styles.muted}>After you come off the track, choose the latest .xrk file. Rivali will analyze it automatically and put the report into Alan&apos;s approval queue.</p>
+          <div className={styles.cardHeading}><Upload /><div><span>NEXT RUN</span><h2>Send Rivali your telemetry file</h2></div></div>
+          <p className={styles.muted}>After you come off the track, choose the latest AiM .xrk or Alfano 6 .alf2 file. Rivali will analyze it automatically and put the report into Alan&apos;s approval queue.</p>
           <div className={styles.grid}>
             <label>Session type
               <select name="sessionType" defaultValue="practice">
@@ -270,7 +270,7 @@ export function RaceDayClient() {
                 <option value="feature">Feature</option>
               </select>
             </label>
-            <label>MyChron file<input name="file" type="file" accept=".xrk" required /></label>
+            <label>Telemetry file<input name="file" type="file" accept=".xrk,.alf2" required /></label>
           </div>
           <button className={styles.primary} disabled={working}>{working ? "Uploading..." : "Upload and analyze"}</button>
         </form>
