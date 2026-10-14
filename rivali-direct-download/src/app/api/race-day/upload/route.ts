@@ -21,8 +21,8 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const file = form.get("file");
   const sessionType = String(form.get("sessionType") || "practice");
-  if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xrk")) {
-    return NextResponse.json({ error: "Choose a MyChron .xrk file." }, { status: 400 });
+  if (!(file instanceof File) || !(/\.(xrk|alf2)$/i.test(file.name))) {
+    return NextResponse.json({ error: "Choose an AiM .xrk or Alfano 6 .alf2 file." }, { status: 400 });
   }
   if (!["practice", "hot laps", "heat", "feature"].includes(sessionType)) {
     return NextResponse.json({ error: "Invalid session type." }, { status: 400 });
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       driving_style: pass.driving_style,
       telemetry_attached: true,
       source: "race_day_pass",
+      telemetry_format: file.name.toLowerCase().endsWith(".alf2") ? "alfano6" : "aim_xrk",
     },
     conditions: raceDay.conditions ?? {},
     handling_feedback: {},
