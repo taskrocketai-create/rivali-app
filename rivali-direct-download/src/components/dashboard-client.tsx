@@ -426,6 +426,12 @@ export function DashboardClient({
         kart_weight_lb: Number(form.get("kart_weight_lb")) || existingSetup.kart_weight_lb || null,
         left_side_weight_pct: Number(form.get("left_side_weight_pct")) || existingSetup.left_side_weight_pct || null,
         cross_weight_pct: Number(form.get("cross_weight_pct")) || existingSetup.cross_weight_pct || null,
+        front_stagger_in: form.get("front_stagger_in") === "" ? (existingSetup.front_stagger_in ?? null) : Number(form.get("front_stagger_in")),
+        rear_stagger_in: form.get("rear_stagger_in") === "" ? (existingSetup.rear_stagger_in ?? null) : Number(form.get("rear_stagger_in")),
+        lf_rollout_in: form.get("lf_rollout_in") === "" ? (existingSetup.lf_rollout_in ?? null) : Number(form.get("lf_rollout_in")),
+        rf_rollout_in: form.get("rf_rollout_in") === "" ? (existingSetup.rf_rollout_in ?? null) : Number(form.get("rf_rollout_in")),
+        lr_rollout_in: form.get("lr_rollout_in") === "" ? (existingSetup.lr_rollout_in ?? null) : Number(form.get("lr_rollout_in")),
+        rr_rollout_in: form.get("rr_rollout_in") === "" ? (existingSetup.rr_rollout_in ?? null) : Number(form.get("rr_rollout_in")),
         chassis_adjustments: form.get("chassis_adjustments") || existingSetup.chassis_adjustments || null,
         driver_feedback: form.get("driver_feedback") || existingSetup.driver_feedback || null,
         notes: form.get("setup_notes") || existingSetup.notes || null,
@@ -776,6 +782,16 @@ export function DashboardClient({
                 value={weatherNotes}
                 onChange={(event) => setWeatherNotes(event.target.value)}
               />
+            </div>
+            <h3>Stagger and tire rollout</h3>
+            <p className="muted">Measurements in inches. Enter tire circumference (rollout) or the front/rear stagger directly. Leave unknown values blank.</p>
+            <div className="grid-3">
+              <div className="field"><label>Front stagger (in)</label><input name="front_stagger_in" type="number" step=".01" placeholder="RF minus LF" /></div>
+              <div className="field"><label>Rear stagger (in)</label><input name="rear_stagger_in" type="number" step=".01" placeholder="RR minus LR" /></div>
+              <div className="field"><label>LF rollout (in)</label><input name="lf_rollout_in" type="number" min="0" step=".01" /></div>
+              <div className="field"><label>RF rollout (in)</label><input name="rf_rollout_in" type="number" min="0" step=".01" /></div>
+              <div className="field"><label>LR rollout (in)</label><input name="lr_rollout_in" type="number" min="0" step=".01" /></div>
+              <div className="field"><label>RR rollout (in)</label><input name="rr_rollout_in" type="number" min="0" step=".01" /></div>
             </div>
             <h3>Current setup</h3>
             <div className="grid-3">
