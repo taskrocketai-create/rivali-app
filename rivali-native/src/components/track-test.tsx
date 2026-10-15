@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../lib/supabase';
+import { SetupForm, setupText, type Setup } from './setup-form';
+import { TrackMapper } from './track-mapper';
 
 type Report = { filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
 type Pending = { id: string; filename: string; uri: string; path: string; uploaded: boolean };
@@ -18,6 +20,7 @@ export default function TrackTest() {
   const [busy, setBusy] = useState(false); const [status, setStatus] = useState(''); const [error, setError] = useState(supabase ? '' : 'Rivali sign-in is not configured.');
   const [pending, setPending] = useState<Pending | null>(null); const [report, setReport] = useState<Report | null>(null);
   const [saved, setSaved] = useState<{ file: string; report: Report }[]>([]);
+  const [setup, setSetup] = useState<Setup>({});
   const locked = useRef(false);
   const activeUser = useRef<string | undefined>(undefined);
   const directory = session && FileSystem.documentDirectory ? `${FileSystem.documentDirectory}track-test-${session.user.id}/` : null;
@@ -103,13 +106,15 @@ export default function TrackTest() {
       <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry placeholder="Password" placeholderTextColor="#999" style={styles.input} />
       <ActionButton label="Sign in" disabled={busy || !email.trim() || !password} onPress={() => void perform(async () => { if (!supabase) throw new Error('Rivali sign-in is not configured.'); const { error: loginError } = await supabase.auth.signInWithPassword({ email: email.trim(), password }); if (loginError) throw loginError; setPassword(''); })} />
     </View> : <>
+      {directory && <TrackMapper directory={directory} />}
+      {directory && <SetupForm directory={directory} onSaved={setSetup} />}
       <View style={styles.card}><Text style={styles.title}>1 · Choose a run</Text><Text style={styles.muted}>Internet is needed for upload and analysis. Leave MyChron Wi-Fi after downloading the file.</Text>
         <ActionButton label="Choose XRK file" disabled={busy} onPress={() => void perform(choose)} />{pending && <Text style={styles.text}>{pending.filename} · {pending.uploaded ? 'Uploaded' : 'Saved on phone'}</Text>}
         <ActionButton label={pending?.uploaded ? "Retry / retrieve analysis" : "Run analysis"} disabled={busy || !pending} onPress={() => void perform(run)} />
       </View>
       {report && <View style={styles.card}><Text style={styles.title}>2 · Report ready</Text><Text style={styles.text}>{report.filename}</Text><Text style={styles.confidence}>Confidence: {report.confidence.toUpperCase()}</Text><Text style={styles.muted}>{report.confidenceReason}</Text>
         {report.observations.map((line, i) => <Text key={i} style={styles.text}>{line}</Text>)}
-        <ActionButton label="Share report" disabled={busy} onPress={() => void perform(async () => { await Share.share({ title: "Rivali track test report", message: report.text }); })} />
+        <ActionButton label="Share report" disabled={busy} onPress={() => void perform(async () => { await Share.share({ title: "Rivali track test report", message: report.text + (setupText(setup) ? "\n\nKART SETUP (operator supplied, not verified from telemetry)\n" + setupText(setup) : "") }); })} />
         <Text style={styles.title}>Quality flags</Text>{report.warnings.map((line, i) => <Text key={i} style={styles.muted}>{line}</Text>)}
         <Text style={styles.title}>Not assessed</Text>{report.unavailable.map((line, i) => <Text key={i} style={styles.muted}>{line}</Text>)}
         <Text style={styles.title}>Lap times</Text>{report.summary.laps.map(lap => <Text key={lap.lap_number} style={styles.text}>Lap {lap.lap_number} · {lap.lap_time_sec.toFixed(3)} s{lap.is_best ? ' · BEST' : ''}</Text>)}
