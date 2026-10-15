@@ -3,11 +3,12 @@ import math
 from datetime import datetime, timezone
 from daq_tools.readers import XRKReader
 from session_summary import summarize_session
+from fastest_groove import extract_fastest_lap
 
 
 def analyze(path, filename):
     summary = summarize_session(path).to_dict()
-    _, data = XRKReader.read(path, header_only=False)
+    header, data = XRKReader.read(path, header_only=False)
     channels = []
     for name in data.columns:
         series = data[name]
@@ -38,7 +39,8 @@ def analyze(path, filename):
     unavailable = ['Corner-by-corner and groove analysis require a mapped track.',
                    'Driver versus kart percentages cannot be established from this file alone.',
                    'Brake, throttle, steering, and tire-temperature conclusions require usable channels for those sensors.']
-    report = {'schemaVersion': 1, 'filename': filename, 'createdAt': datetime.now(timezone.utc).isoformat(),
+    groove_trace = extract_fastest_lap(header, data)
+    report = {'fastestGroove': groove_trace, 'schemaVersion': 1, 'filename': filename, 'createdAt': datetime.now(timezone.utc).isoformat(),
               'summary': summary, 'channels': channels, 'confidence': confidence,
               'confidenceReason': 'Measured file summary; timing still needs device/RS3 confirmation. Limited sensor or lap coverage reduces confidence.',
               'observations': observations, 'warnings': warnings, 'unavailable': unavailable}

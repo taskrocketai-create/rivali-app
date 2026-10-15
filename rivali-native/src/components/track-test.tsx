@@ -6,9 +6,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../lib/supabase';
 import { SetupForm, setupText, type Setup } from './setup-form';
-import { TrackMapper } from './track-mapper';
+import { TrackMapper, type FastestGroove } from './track-mapper';
 
-type Report = { filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
+type Report = { fastestGroove?: FastestGroove; filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
 type Pending = { id: string; filename: string; uri: string; path: string; uploaded: boolean };
 const backend = process.env.EXPO_PUBLIC_TRACK_ANALYSIS_URL?.replace(/\/$/, '');
 const storageUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -106,7 +106,7 @@ export default function TrackTest() {
       <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry placeholder="Password" placeholderTextColor="#999" style={styles.input} />
       <ActionButton label="Sign in" disabled={busy || !email.trim() || !password} onPress={() => void perform(async () => { if (!supabase) throw new Error('Rivali sign-in is not configured.'); const { error: loginError } = await supabase.auth.signInWithPassword({ email: email.trim(), password }); if (loginError) throw loginError; setPassword(''); })} />
     </View> : <>
-      {directory && <TrackMapper directory={directory} />}
+      {directory && <TrackMapper directory={directory} fastestGroove={report?.fastestGroove} />}
       {directory && <SetupForm directory={directory} onSaved={setSetup} />}
       <View style={styles.card}><Text style={styles.title}>1 · Choose a run</Text><Text style={styles.muted}>Internet is needed for upload and analysis. Leave MyChron Wi-Fi after downloading the file.</Text>
         <ActionButton label="Choose XRK file" disabled={busy} onPress={() => void perform(choose)} />{pending && <Text style={styles.text}>{pending.filename} · {pending.uploaded ? 'Uploaded' : 'Saved on phone'}</Text>}
