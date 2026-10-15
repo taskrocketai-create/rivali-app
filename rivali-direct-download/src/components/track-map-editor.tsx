@@ -83,6 +83,8 @@ export function TrackMapEditor({
   const [trackId, setTrackId] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [mode, setMode] = useState<Mode>(null);
+  const [savingLayout, setSavingLayout] = useState(false);
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState("");
   const [startFinish, setStartFinish] = useState<LatLng[]>([]);
   const [turns, setTurns] = useState<Record<string, TurnMarker>>({});
   const [radiusFeet, setRadiusFeet] = useState(60);
@@ -353,6 +355,7 @@ export function TrackMapEditor({
   }
   function chooseTrack(id: string) {
     setTrackId(id);
+    setLastSavedSnapshot("");
     const track = tracks.find((x) => x.id === id);
     const sf = track?.start_finish ?? [];
     const markers = track?.turns ?? {};
@@ -557,6 +560,18 @@ export function TrackMapEditor({
     setGroove(ovalPoints(next));
     setMessage("Oval placed with eight shape points. Drag any number to shape that part of the groove; drag yellow ✥ to move the whole oval. Then approve and save it.");
   }
+  const layoutSnapshot = JSON.stringify({ trackId, startFinish, turns: Object.fromEntries(Object.entries(turns).filter(([key]) => /^[1-4]$/.test(key))), groove, radiusFeet });
+  const layoutSaved = !!trackId && layoutSnapshot === lastSavedSnapshot;
+  function exportLayout() {
+    const track = tracks.find((entry) => entry.id === trackId);
+    const file = new Blob([JSON.stringify({ format: "rivali-track-layout-v1", track: track?.name ?? "track", exported_at: new Date().toISOString(), start_finish: startFinish, turns: Object.fromEntries(Object.entries(turns).filter(([key]) => /^[1-4]$/.test(key))), preferred_groove: groove, turn_radius_ft: radiusFeet, persisted: layoutSaved }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "rivali-track-layout.json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
   async function save() {
     if (!trackId) return setMessage("Choose a track first.");
     const numericTurns = Object.fromEntries(Object.entries(turns).filter(([key]) => ["1", "2", "3", "4"].includes(key))) as Record<string, TurnMarker>;
@@ -580,13 +595,16 @@ export function TrackMapEditor({
       ]),
     );
     const storedTurns = { ...normalized, _rivali: { walk: { ...walk, saved_at: new Date().toISOString() }, groove } };
+    setSavingLayout(true);
     const { data, error } = await supabase
       .from("tracks")
       .update({ start_finish: hasStartFinish ? finalStartFinish : startFinish, turns: storedTurns })
       .eq("id", trackId)
       .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
       .single();
-    if (error) return setMessage(error.message);
+    if (error) { setSavingLayout(false); return setMessage(error.message); }
+    setLastSavedSnapshot(layoutSnapshot);
+    setSavingLayout(false);
     onTrackUpdated(data as Track);
     if (hasStartFinish) setStartFinish(finalStartFinish);
     setTurns(normalized);
@@ -658,7 +676,7 @@ export function TrackMapEditor({
         )}
       </div>
       <div className="notice">{message}</div>
-      {trackId && <div className="notice"><strong>{setupReady ? "Track analysis ready." : "Track analysis not ready."}</strong> Start/Finish: {startFinish.length === 2 ? "saved" : "needed"} · Turns: {currentTurnCount}/4 · Groove: {groove.length > 1 ? "saved" : "needed"}. {setupReady ? "Rivali can use this geometry to interpret the next MyChron run." : "Finish all three before uploading telemetry."}</div>}
+      {trackId && <div className="notice"><strong>{layoutSaved ? "Track layout saved." : setupReady ? "Layout ready to save (not approved yet)." : "Track analysis not ready."}</strong> Start/Finish: {startFinish.length === 2 ? "marked" : "needed"} · Turns: {currentTurnCount}/4 · Groove: {groove.length > 1 ? "marked" : "needed"}. {layoutSaved ? "Latest edits were approved and saved." : setupReady ? "Approve and save before using the map in a report." : "Complete all three before saving."}</div>}
       {!trackId && <div className="notice"><strong>Choose the track first.</strong> Search above, then click the correct result. Rivali will create and select it before the map tools unlock.</div>}
       <small className="muted">Race Day Track Setup does not require a MyChron file: select the track, set Start/Finish, set Turns 1-4, fit the preferred groove, then approve and save. The lap overlay appears only after a MyChron upload has finished processing.</small>
       {grooveInsight && (
@@ -747,10 +765,11 @@ export function TrackMapEditor({
           />
           <small className="muted">Start near 60 ft. Increase it until the circle covers the full corner without reaching the straightaways.</small>
         </div>
-        <button className="button" type="button" disabled={!trackId} onClick={save}>
-          Approve & save groove
+        <button className="button" type="button" disabled={!trackId || !setupReady || savingLayout} onClick={save}>
+          {savingLayout ? "Saving..." : "Approve & save track layout"}
         </button>
       </div>
+      <button className="button secondary small" type="button" disabled={!trackId || !setupReady} onClick={exportLayout}>Export map geometry (JSON)</button>
     </div>
   );
 }
