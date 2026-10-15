@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../lib/supabase';
 import { SetupForm, setupText, type Setup } from './setup-form';
 import { TrackMapper, type FastestGroove } from './track-mapper';
+import { getMyChronRuns, downloadMyChronRun, type MyChronRun } from '../lib/mychron-download';
 
 type Report = { fastestGroove?: FastestGroove; filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
 type Pending = { id: string; filename: string; uri: string; path: string; uploaded: boolean };
@@ -21,6 +22,9 @@ export default function TrackTest() {
   const [pending, setPending] = useState<Pending | null>(null); const [report, setReport] = useState<Report | null>(null);
   const [saved, setSaved] = useState<{ file: string; report: Report }[]>([]);
   const [setup, setSetup] = useState<Setup>({});
+  const [myChronRuns, setMyChronRuns] = useState<MyChronRun[]>([]);
+  const [wifiFile, setWifiFile] = useState(false);
+  const [deviceNotice,setDeviceNotice] = useState('');
   const locked = useRef(false);
   const activeUser = useRef<string | undefined>(undefined);
   const directory = session && FileSystem.documentDirectory ? `${FileSystem.documentDirectory}track-test-${session.user.id}/` : null;
@@ -43,7 +47,7 @@ export default function TrackTest() {
       const files = await FileSystem.readDirectoryAsync(directory);
       const reports = await Promise.all(files.filter(f => f.startsWith('report-')).sort().reverse().slice(0, 10).map(async file => ({ file, report: JSON.parse(await FileSystem.readAsStringAsync(directory + file)) as Report })));
       if (active) { setSaved(reports); setReport(reports[0]?.report ?? null); }
-      if (files.includes('pending.json')) { const value = JSON.parse(await FileSystem.readAsStringAsync(directory + 'pending.json')) as Pending; if (active) setPending(value); }
+      if (files.includes('pending.json')) { const value = JSON.parse(await FileSystem.readAsStringAsync(directory + 'pending.json')) as Pending; if (active) {setPending(value);if(!value.uploaded)setWifiFile(true);} }
     })().catch(() => { if (active) setError('Could not restore saved runs on this phone. You can choose the original XRK again.'); });
     return () => { active = false; };
   }, [directory]);
@@ -69,6 +73,39 @@ export default function TrackTest() {
     await FileSystem.writeAsStringAsync(directory + 'pending.json', JSON.stringify(value));
     setPending(value); setReport(null);
   }
+  async function scanMyChron() {
+    setStatus('Reading MyChron 5S session list...');
+    const runs=await getMyChronRuns();
+    setMyChronRuns(runs);
+    setDeviceNotice(runs.length ? runs.length+' sessions found' : 'MyChron replied: 0 sessions.');
+  }
+  async function takeMyChronRun(selected:MyChronRun) {
+    if (!session || !directory) throw Error('Sign in before downloading.');
+    if (pending) throw Error('Complete the pending upload before downloading another session.');
+    const id=`${Date.now()}-${Math.random().toString(36).slice(2,12)}`;
+    const uri=directory+id+'.xrk';
+    setStatus('Downloading XRK over MyChron Wi-Fi...');
+    let result;
+    try {
+      result=await downloadMyChronRun(selected,uri,(done,total)=>setStatus('Downloading MyChron: '+Math.round(done/total*100)+'%'));
+    }catch(e){await FileSystem.deleteAsync(uri,{idempotent:true});throw e;}
+    const value:Pending={id,filename:result.filename,uri,path:`${session.user.id}/track-tests/${id}/source.xrk`,uploaded:false};
+    await FileSystem.writeAsStringAsync(directory+'pending.json',JSON.stringify(value));
+    setPending(value);setReport(null);setMyChronRuns([]);setWifiFile(true);
+    setStatus('XRK verified and queued. Switch to LTE or regular Wi-Fi for automatic upload.');
+  }
+  // Returning from Wi-Fi Settings triggers the queued upload and report generation.
+  useEffect(()=>{
+    if(!pending || !wifiFile || !session || !backend)return;
+    const tryUpload=async()=>{
+      try{const response=await fetch(backend+'/health',{signal:AbortSignal.timeout(5000)});
+        if(response.ok){setWifiFile(false);void perform(run);}
+      }catch{/* Still connected to MyChron Wi-Fi. Retain the verified XRK. */}
+    };
+    void tryUpload();
+    const listener=AppState.addEventListener('change',value=>{if(value==='active')void tryUpload()});
+    return ()=>listener.remove();
+  },[pending,wifiFile,session]);
   async function run() {
     if (!pending || !directory || !session || !supabase || !backend || !storageUrl || !storageKey) throw new Error('Rivali analysis is not configured.');
     const userId = session.user.id;
@@ -109,6 +146,9 @@ export default function TrackTest() {
       {directory && <TrackMapper directory={directory} fastestGroove={report?.fastestGroove} />}
       {directory && <SetupForm directory={directory} onSaved={setSetup} />}
       <View style={styles.card}><Text style={styles.title}>1 · Choose a run</Text><Text style={styles.muted}>Internet is needed for upload and analysis. Leave MyChron Wi-Fi after downloading the file.</Text>
+        <ActionButton label="Find MyChron 5S sessions (Wi-Fi)" disabled={busy || !!pending} onPress={() => void perform(scanMyChron)} />
+        {!!deviceNotice && <Text style={styles.muted}>{deviceNotice}</Text>}`n        {myChronRuns.map(item=><Pressable key={item.name} disabled={busy || !!pending} accessibilityRole="button" style={styles.saved} onPress={() => void perform(()=>takeMyChronRun(item))}><Text style={styles.text}>{item.name} · {item.date} {item.time} · {item.laps} laps</Text><Text style={styles.muted}>Download XRK to Rivali queue</Text></Pressable>)}
+        {wifiFile && <Text style={styles.muted}>XRK verified. Leave MyChron Wi-Fi and use LTE or regular Wi-Fi. Rivali will upload and analyze when you return to the app.</Text>}
         <ActionButton label="Choose XRK file" disabled={busy} onPress={() => void perform(choose)} />{pending && <Text style={styles.text}>{pending.filename} · {pending.uploaded ? 'Uploaded' : 'Saved on phone'}</Text>}
         <ActionButton label={pending?.uploaded ? "Retry / retrieve analysis" : "Run analysis"} disabled={busy || !pending} onPress={() => void perform(run)} />
       </View>

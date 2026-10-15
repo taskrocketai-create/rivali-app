@@ -13,7 +13,8 @@
       "supportsTablet": true,
       "bitcode": false,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocalNetworkUsageDescription": "Rivali connects to your MyChron 5S over its Wi-Fi to retrieve recorded racing sessions."
       }
     },
     "plugins": [
