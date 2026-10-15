@@ -420,6 +420,14 @@ export function DashboardClient({
         lr_pressure_psi: Number(form.get("lr_pressure_psi")) || existingSetup.lr_pressure_psi || null,
         rr_pressure_psi: Number(form.get("rr_pressure_psi")) || existingSetup.rr_pressure_psi || null,
         rear_sprocket: Number(form.get("rear_sprocket")) || existingSetup.rear_sprocket || null,
+        front_sprocket: Number(form.get("front_sprocket")) || existingSetup.front_sprocket || null,
+        tire_preparation: form.get("tire_preparation") || existingSetup.tire_preparation || null,
+        tire_compound: form.get("tire_compound") || existingSetup.tire_compound || null,
+        kart_weight_lb: Number(form.get("kart_weight_lb")) || existingSetup.kart_weight_lb || null,
+        left_side_weight_pct: Number(form.get("left_side_weight_pct")) || existingSetup.left_side_weight_pct || null,
+        cross_weight_pct: Number(form.get("cross_weight_pct")) || existingSetup.cross_weight_pct || null,
+        chassis_adjustments: form.get("chassis_adjustments") || existingSetup.chassis_adjustments || null,
+        driver_feedback: form.get("driver_feedback") || existingSetup.driver_feedback || null,
         notes: form.get("setup_notes") || existingSetup.notes || null,
         telemetry_attached: true,
       };
@@ -793,7 +801,39 @@ export function DashboardClient({
               </div>
               <div className="field">
                 <label>Setup notes</label>
-                <input name="setup_notes" />
+                <textarea name="setup_notes" rows={3} placeholder="Anything Stephen wants noted about the kart, run, or changes." />
+              </div>
+              <div className="field">
+                <label>Front sprocket (teeth)</label>
+                <input name="front_sprocket" type="number" min="1" placeholder="Optional" />
+              </div>
+              <div className="field">
+                <label>Tire compound / model</label>
+                <input name="tire_compound" placeholder="Optional" />
+              </div>
+              <div className="field">
+                <label>Tire preparation</label>
+                <textarea name="tire_preparation" rows={2} placeholder="Prep product, application, cut, age, roll, or none" />
+              </div>
+              <div className="field">
+                <label>Total kart and driver weight (lb)</label>
+                <input name="kart_weight_lb" type="number" min="0" step=".1" />
+              </div>
+              <div className="field">
+                <label>Left-side weight (%)</label>
+                <input name="left_side_weight_pct" type="number" min="0" max="100" step=".1" />
+              </div>
+              <div className="field">
+                <label>Cross weight (%)</label>
+                <input name="cross_weight_pct" type="number" min="0" max="100" step=".1" />
+              </div>
+              <div className="field">
+                <label>Chassis / seat / stagger adjustments</label>
+                <textarea name="chassis_adjustments" rows={2} placeholder="Changes made or current baseline" />
+              </div>
+              <div className="field">
+                <label>Driver handling feedback</label>
+                <textarea name="driver_feedback" rows={2} placeholder="Entry, center, exit, tight / loose, throttle / brake" />
               </div>
             </div>
             <button
