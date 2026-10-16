@@ -10,7 +10,7 @@ import { TrackMapper, type FastestGroove } from './track-mapper';
 import { getMyChronRuns, downloadMyChronRun, type MyChronRun } from '../lib/mychron-download';
 import { DriverTelemetry, type TelemetryTrace } from './driver-telemetry';
 
-type Report = { telemetryTrace?: TelemetryTrace; fastestGroove?: FastestGroove; filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
+type Report = { theoreticalGroove?: {status:string;message:string;missing_inputs:string[]}; telemetryTrace?: TelemetryTrace; fastestGroove?: FastestGroove; filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
 type Pending = { id: string; filename: string; uri: string; path: string; uploaded: boolean };
 const backend = process.env.EXPO_PUBLIC_TRACK_ANALYSIS_URL?.replace(/\/$/, '');
 const storageUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -154,6 +154,7 @@ export default function TrackTest() {
         <ActionButton label="Choose XRK file" disabled={busy} onPress={() => void perform(choose)} />{pending && <Text style={styles.text}>{pending.filename} · {pending.uploaded ? 'Uploaded' : 'Saved on phone'}</Text>}
         <ActionButton label={pending?.uploaded ? "Retry / retrieve analysis" : "Run analysis"} disabled={busy || !pending} onPress={() => void perform(run)} />
       </View>
+      {report?.theoreticalGroove && <View style={styles.card}><Text style={styles.title}>Physics-based optimal groove</Text><Text style={styles.muted}>{report.theoreticalGroove.message}</Text><Text style={styles.muted}>Status: {report.theoreticalGroove.status.replace(/_/g,' ')}</Text><Text style={styles.muted}>Inputs still needed: {report.theoreticalGroove.missing_inputs.join(', ') || 'Model calibration'}</Text></View>}
       {report && <DriverTelemetry trace={report.telemetryTrace} filename={report.filename} laps={report.summary.laps} />}
       {report && <View style={styles.card}><Text style={styles.title}>2 · Report ready</Text><Text style={styles.text}>{report.filename}</Text><Text style={styles.confidence}>Confidence: {report.confidence.toUpperCase()}</Text><Text style={styles.muted}>{report.confidenceReason}</Text>
         {report.observations.map((line, i) => <Text key={i} style={styles.text}>{line}</Text>)}
