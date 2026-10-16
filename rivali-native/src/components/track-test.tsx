@@ -20,7 +20,7 @@ export default function TrackTest() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false); const [status, setStatus] = useState(''); const [error, setError] = useState(supabase ? '' : 'Rivali sign-in is not configured.');
-  const [pending, setPending] = useState<Pending | null>(null); const [report, setReport] = useState<Report | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null); const [report, setReport] = useState<Report | null>(null); const [geometryStatus,setGeometryStatus]=useState('');
   const [saved, setSaved] = useState<{ file: string; report: Report }[]>([]);
   const [setup, setSetup] = useState<Setup>({});
   const [myChronRuns, setMyChronRuns] = useState<MyChronRun[]>([]);
@@ -144,7 +144,8 @@ export default function TrackTest() {
       <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry placeholder="Password" placeholderTextColor="#999" style={styles.input} />
       <ActionButton label="Sign in" disabled={busy || !email.trim() || !password} onPress={() => void perform(async () => { if (!supabase) throw new Error('Rivali sign-in is not configured.'); const { error: loginError } = await supabase.auth.signInWithPassword({ email: email.trim(), password }); if (loginError) throw loginError; setPassword(''); })} />
     </View> : <>
-      {directory && <TrackMapper directory={directory} fastestGroove={report?.fastestGroove} />}
+      {directory && <TrackMapper directory={directory} fastestGroove={report?.fastestGroove} gpsTrace={report?.telemetryTrace} />}
+      {directory && <View style={styles.card}><Text style={styles.title}>Track geometry verification</Text><Text style={styles.muted}>Send saved ovals and banking to the physics model for input validation. This does not yet calculate an optimal line.</Text><ActionButton label="Validate saved track geometry" disabled={busy} onPress={()=>void perform(async()=>{if(!backend||!session||!directory)throw Error('Rivali analysis is unavailable.');const raw=await FileSystem.readAsStringAsync(directory+'track-boundaries.json');const geometry=JSON.parse(raw);const latest=await supabase?.auth.getSession();const token=latest?.data.session?.access_token;if(!token)throw Error('Sign in to Rivali again.');const response=await fetch(backend+'/groove-model',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({inside_boundary:geometry.inside_boundary,outside_boundary:geometry.outside_boundary,banking:geometry.banking??{}})});const data=await response.json();if(!response.ok)throw Error('Geometry validation failed: '+response.status);setGeometryStatus(data.status+'; missing: '+(data.missing_inputs||[]).join(', '));})}/>{!!geometryStatus&&<Text style={styles.muted}>{geometryStatus}</Text>}</View>}
       {directory && <SetupForm directory={directory} onSaved={setSetup} />}
       <View style={styles.card}><Text style={styles.title}>1 · Choose a run</Text><Text style={styles.muted}>Internet is needed for upload and analysis. Leave MyChron Wi-Fi after downloading the file.</Text>
         <ActionButton label="Find MyChron 5S sessions (Wi-Fi)" disabled={busy || !!pending} onPress={() => void perform(scanMyChron)} />

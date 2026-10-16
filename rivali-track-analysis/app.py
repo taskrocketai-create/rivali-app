@@ -7,6 +7,7 @@ import requests
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 from analysis import analyze
+from theoretical_groove import theoretical_groove
 
 app = FastAPI()
 MAX_BYTES = 20 * 1024 * 1024
@@ -16,6 +17,25 @@ class Intake(BaseModel):
     path: str = Field(max_length=200)
     filename: str = Field(max_length=200)
 
+
+
+class GeometryIntake(BaseModel):
+    inside_boundary: list[list[float]] = Field(min_length=12,max_length=200)
+    outside_boundary: list[list[float]] = Field(min_length=12,max_length=200)
+    banking: dict[str,float|None] = Field(default_factory=dict)
+
+@app.post('/groove-model')
+def model_geometry(body: GeometryIntake, authorization: str=Header(default='')):
+    if not authorization.startswith('Bearer '):
+        raise HTTPException(401,'Sign in to Rivali.')
+    base=os.environ['SUPABASE_URL'].rstrip('/')
+    headers={'apikey':os.environ['SUPABASE_PUBLISHABLE_KEY'],'Authorization':authorization}
+    auth=requests.get(base+'/auth/v1/user',headers=headers,timeout=20)
+    if auth.status_code!=200:
+        raise HTTPException(401,'Rivali session expired.')
+    result=theoretical_groove(track={'inside_boundary':body.inside_boundary,'outside_boundary':body.outside_boundary})
+    result['banking_degrees']=body.banking
+    return result
 
 @app.get('/health')
 def health():
