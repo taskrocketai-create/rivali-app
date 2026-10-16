@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from daq_tools.readers import XRKReader
 from session_summary import summarize_session
 from fastest_groove import extract_fastest_lap
+from telemetry_trace import extract_trace
 
 
 def analyze(path, filename):
@@ -40,7 +41,7 @@ def analyze(path, filename):
                    'Driver versus kart percentages cannot be established from this file alone.',
                    'Brake, throttle, steering, and tire-temperature conclusions require usable channels for those sensors.']
     groove_trace = extract_fastest_lap(header, data)
-    report = {'fastestGroove': groove_trace, 'schemaVersion': 1, 'filename': filename, 'createdAt': datetime.now(timezone.utc).isoformat(),
+    report = {'fastestGroove': groove_trace, 'telemetryTrace': extract_trace(data), 'schemaVersion': 1, 'filename': filename, 'createdAt': datetime.now(timezone.utc).isoformat(),
               'summary': summary, 'channels': channels, 'confidence': confidence,
               'confidenceReason': 'Measured file summary; timing still needs device/RS3 confirmation. Limited sensor or lap coverage reduces confidence.',
               'observations': observations, 'warnings': warnings, 'unavailable': unavailable}

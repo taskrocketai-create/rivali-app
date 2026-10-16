@@ -8,8 +8,9 @@ import { supabase } from '../lib/supabase';
 import { SetupForm, setupText, type Setup } from './setup-form';
 import { TrackMapper, type FastestGroove } from './track-mapper';
 import { getMyChronRuns, downloadMyChronRun, type MyChronRun } from '../lib/mychron-download';
+import { DriverTelemetry, type TelemetryTrace } from './driver-telemetry';
 
-type Report = { fastestGroove?: FastestGroove; filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
+type Report = { telemetryTrace?: TelemetryTrace; fastestGroove?: FastestGroove; filename: string; text: string; confidence: string; confidenceReason: string; observations: string[]; warnings: string[]; unavailable: string[]; summary: { lap_count: number; best_lap_sec: number | null; average_lap_sec: number | null; consistency_stdev_sec: number | null; laps: { lap_number: number; lap_time_sec: number; is_best: boolean }[] } };
 type Pending = { id: string; filename: string; uri: string; path: string; uploaded: boolean };
 const backend = process.env.EXPO_PUBLIC_TRACK_ANALYSIS_URL?.replace(/\/$/, '');
 const storageUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -147,11 +148,13 @@ export default function TrackTest() {
       {directory && <SetupForm directory={directory} onSaved={setSetup} />}
       <View style={styles.card}><Text style={styles.title}>1 · Choose a run</Text><Text style={styles.muted}>Internet is needed for upload and analysis. Leave MyChron Wi-Fi after downloading the file.</Text>
         <ActionButton label="Find MyChron 5S sessions (Wi-Fi)" disabled={busy || !!pending} onPress={() => void perform(scanMyChron)} />
-        {!!deviceNotice && <Text style={styles.muted}>{deviceNotice}</Text>}`n        {myChronRuns.map(item=><Pressable key={item.name} disabled={busy || !!pending} accessibilityRole="button" style={styles.saved} onPress={() => void perform(()=>takeMyChronRun(item))}><Text style={styles.text}>{item.name} · {item.date} {item.time} · {item.laps} laps</Text><Text style={styles.muted}>Download XRK to Rivali queue</Text></Pressable>)}
+        {!!deviceNotice && <Text style={styles.muted}>{deviceNotice}</Text>}
+        {myChronRuns.map(item=><Pressable key={item.name} disabled={busy || !!pending} accessibilityRole="button" style={styles.saved} onPress={() => void perform(()=>takeMyChronRun(item))}><Text style={styles.text}>{item.name} · {item.date} {item.time} · {item.laps} laps</Text><Text style={styles.muted}>Download XRK to Rivali queue</Text></Pressable>)}
         {wifiFile && <Text style={styles.muted}>XRK verified. Leave MyChron Wi-Fi and use LTE or regular Wi-Fi. Rivali will upload and analyze when you return to the app.</Text>}
         <ActionButton label="Choose XRK file" disabled={busy} onPress={() => void perform(choose)} />{pending && <Text style={styles.text}>{pending.filename} · {pending.uploaded ? 'Uploaded' : 'Saved on phone'}</Text>}
         <ActionButton label={pending?.uploaded ? "Retry / retrieve analysis" : "Run analysis"} disabled={busy || !pending} onPress={() => void perform(run)} />
       </View>
+      {report && <DriverTelemetry trace={report.telemetryTrace} filename={report.filename} laps={report.summary.laps} />}
       {report && <View style={styles.card}><Text style={styles.title}>2 · Report ready</Text><Text style={styles.text}>{report.filename}</Text><Text style={styles.confidence}>Confidence: {report.confidence.toUpperCase()}</Text><Text style={styles.muted}>{report.confidenceReason}</Text>
         {report.observations.map((line, i) => <Text key={i} style={styles.text}>{line}</Text>)}
         <ActionButton label="Share report" disabled={busy} onPress={() => void perform(async () => { await Share.share({ title: "Rivali track test report", message: report.text + (setupText(setup) ? "\n\nKART SETUP (operator supplied, not verified from telemetry)\n" + setupText(setup) : "") }); })} />
