@@ -1,0 +1,17 @@
+{
+  "source": "a_0394 2.xrk",
+  "track": "Tri-County Kartway",
+  "device_track_alias": "Zach",
+  "session_date": "2026-07-17",
+  "parser_record_count": 34,
+  "verified_against_rs3_screenshot": {
+    "fastest": {"parser_ordinal": 9, "rs3_lap": 8, "time_seconds": 12.295},
+    "comparison": {"parser_ordinal": 18, "rs3_lap": 17, "time_seconds": 12.312}
+  },
+  "known_defects": [
+    "Parser reports no valid completed laps despite recorded lap times",
+    "Parsed ordinal is one greater than Race Studio lap number in this session",
+    "GPS georeferencing is not validated; do not approve satellite groove"
+  ],
+  "caution": "Do not apply a global minus-one rule without identifying XRK lap numbering semantics."
+}
