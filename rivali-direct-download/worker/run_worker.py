@@ -127,7 +127,7 @@ def process_one(client):
         summary=summarize_session(path);_header,data=XRKReader.read(path,header_only=False)
         session=client.table("sessions").select("track_id,race_day_pass_id").eq("id",session_id).single().execute().data
         track=client.table("tracks").select("start_finish,turns").eq("id",session["track_id"]).single().execute().data
-        timing_source="aim_lap_table";timing_diagnostic="Lap times read from the XRK lap table."
+        timing_source="raw_xrk_packet_fallback" if any("raw XRK packets" in warning for warning in summary.warnings) else "aim_lap_table";timing_diagnostic="Lap times recovered from XRK LAP packets; RS3 numbering and status flags require validation." if timing_source=="raw_xrk_packet_fallback" else "Lap times read from the XRK lap table."
         if not summary.laps:
             gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"))
             summary=summary_from_gps_laps(summary,gps_times,timing_diagnostic)
