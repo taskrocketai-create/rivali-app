@@ -130,6 +130,21 @@ def summarize_session(xrk_path: str) -> SessionSummary:
         )
 
     if not raw_laps:
+        from .xrk_lap_decoder import decode_laps
+        with open(xrk_path, "rb") as source:
+            packet_records = decode_laps(source.read())
+        raw_laps = [
+            {"lap_number": record["record_ordinal"],
+             "lap_time": round(record["duration_seconds"] * 1000)}
+            for record in packet_records
+            if 3 <= record["duration_seconds"] <= 180
+        ]
+        warnings.append(
+            "Lap times recovered from raw XRK packets. "
+            "RS3 numbering and raw status flags are not validated."
+        )
+
+    if not raw_laps:
         warnings.append(
             "No lap data found in this session. This can happen with a "
             "bench/test session, a session where the unit never crossed "
