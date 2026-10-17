@@ -134,7 +134,10 @@ def process_one(client):
             timing_source="gps_start_finish" if gps_times else "unavailable"
         mapped=analyze_mapped_track(data,track)
         if not mapped.get("analysis_ready"):
-            raise RuntimeError(mapped.get("diagnostic") or "Track mapping is not ready for analysis.")
+            # A missing or unvalidated track map must not erase verified lap timing.
+            # Store a neutral, timing-only result; do not infer corners or handling.
+            mapped={"analysis_ready":False,"diagnostic":mapped.get("diagnostic") or "Track mapping is not validated.",
+                    "turns":[],"corner_pairs":[],"groove":None,"alignment":None}
         telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic}},"channel_manifest":[str(column) for column in data.columns]}
         client.table("session_telemetry").upsert(telemetry).execute()
         session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
