@@ -10,7 +10,7 @@ import struct
 import sys
 from pathlib import Path
 
-MARKER = b"<hLAP\\x00"
+MARKER = b"<hLAP\x00"
 
 
 def decode_laps(data: bytes):
@@ -21,7 +21,7 @@ def decode_laps(data: bytes):
         if offset + 32 > len(data):
             raise ValueError(f"Truncated lap packet at {offset}")
         size = struct.unpack_from("<I", data, offset + 6)[0]
-        if size != 20 or data[offset + 10:offset + 12] != b"\\x03>":
+        if size != 20 or data[offset + 10:offset + 12] != b"\x03>":
             raise ValueError(f"Unsupported LAP packet at {offset}: size={size}")
         ordinal = struct.unpack_from("<H", data, offset + 14)[0]
         duration_ms = struct.unpack_from("<I", data, offset + 16)[0]
