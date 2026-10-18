@@ -2,6 +2,7 @@
 import argparse
 import math
 import os
+import socket
 import tempfile
 import time
 import shutil
@@ -118,9 +119,13 @@ def save_grounded_recommendation(client, session_id, owner_id):
     client.table("recommendations").upsert({"user_id": owner_id, "session_id": session_id, "recommendation": text, "confidence": confidence, "evidence": evidence}, on_conflict="session_id").execute()
 
 def process_one(client):
+    print(f"worker={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2 attempting claim",flush=True)
     response=client.rpc("claim_processing_job").execute()
-    if not response.data:return False
+    if not response.data:
+        print("no processing job claimed",flush=True)
+        return False
     job=response.data[0];job_id,session_id,owner_id=job["job_id"],job["session_id"],job["user_id"];path=None
+    print(f"claimed job={job_id} session={session_id} worker={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2",flush=True)
     try:
         payload=client.storage.from_("telemetry").download(job["raw_storage_path"])
         with tempfile.NamedTemporaryFile(suffix=".xrk",delete=False) as handle:path=handle.name;handle.write(payload)
@@ -226,8 +231,9 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--interval",type=int,default=8);args=parser.parse_args();url,secret=os.environ.get("SUPABASE_URL"),os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not secret:raise SystemExit("SUPABASE_URL and SUPABASE_SECRET_KEY are required")
     client=create_client(url,secret)
+    print(f"Rivali worker startup host={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2",flush=True)
     while True:
-        found=process_knowledge_video(client) or process_one(client)
+        found=process_one(client) if args.once else (process_knowledge_video(client) or process_one(client))
         if args.once:break
         if not found:time.sleep(args.interval)
 if __name__=="__main__":main()
