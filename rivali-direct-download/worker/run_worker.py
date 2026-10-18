@@ -132,7 +132,12 @@ def process_one(client):
             gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"))
             summary=summary_from_gps_laps(summary,gps_times,timing_diagnostic)
             timing_source="gps_start_finish" if gps_times else "unavailable"
-        mapped=analyze_mapped_track(data,track)
+        try:
+            mapped=analyze_mapped_track(data,track)
+        except RuntimeError as mapping_error:
+            if "Track mapping incomplete" not in str(mapping_error):
+                raise
+            mapped={"analysis_ready":False,"diagnostic":str(mapping_error)}
         if not mapped.get("analysis_ready"):
             # A missing or unvalidated track map must not erase verified lap timing.
             # Store a neutral, timing-only result; do not infer corners or handling.
@@ -143,7 +148,8 @@ def process_one(client):
         session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
         client.table("sessions").update(session_update).eq("id",session_id).execute()
         try:
-            save_grounded_recommendation(client, session_id, owner_id)
+            if mapped.get("analysis_ready") and timing_source != "raw_xrk_packet_fallback":
+                save_grounded_recommendation(client, session_id, owner_id)
         except Exception as recommendation_error:
             print(f"recommendation skipped for {session_id}: {recommendation_error}", flush=True)
         if session.get("race_day_pass_id"):
