@@ -118,9 +118,9 @@ def save_grounded_recommendation(client, session_id, owner_id):
         })
     client.table("recommendations").upsert({"user_id": owner_id, "session_id": session_id, "recommendation": text, "confidence": confidence, "evidence": evidence}, on_conflict="session_id").execute()
 
-def process_one(client):
+def process_one(client,job_id_override=None):
     print(f"worker={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2 attempting claim",flush=True)
-    response=client.rpc("claim_processing_job").execute()
+    response=(client.rpc("claim_reserved_processing_job",{"p_job_id":job_id_override}).execute() if job_id_override is not None else client.rpc("claim_processing_job").execute())
     if not response.data:
         print("no processing job claimed",flush=True)
         return False
@@ -228,12 +228,12 @@ def process_knowledge_video(client):
     return True
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--interval",type=int,default=8);args=parser.parse_args();url,secret=os.environ.get("SUPABASE_URL"),os.environ.get("SUPABASE_SECRET_KEY")
+    parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--job-id",type=int);parser.add_argument("--interval",type=int,default=8);args=parser.parse_args();url,secret=os.environ.get("SUPABASE_URL"),os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not secret:raise SystemExit("SUPABASE_URL and SUPABASE_SECRET_KEY are required")
     client=create_client(url,secret)
     print(f"Rivali worker startup host={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2",flush=True)
     while True:
-        found=process_one(client) if args.once else (process_knowledge_video(client) or process_one(client))
+        found=process_one(client,args.job_id) if args.once else (process_knowledge_video(client) or process_one(client))
         if args.once:break
         if not found:time.sleep(args.interval)
 if __name__=="__main__":main()
