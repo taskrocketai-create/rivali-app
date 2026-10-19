@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 import { CheckCircle2, RotateCcw, Pencil, Send } from "lucide-react";
 import styles from "./report-service.module.css";
+import SessionLapReview from "./session-lap-review";
 
 type TracePoint = { lat: number; lng: number; time?: number; speed_mph?: number; lateral_g?: number };
 type Lap = { lap_number?: number; lap_time_sec?: number; duration_sec?: number };
@@ -184,6 +185,7 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
               <div className={styles.lapStat}><span>Average</span><strong>{session.average_lap_sec?.toFixed(3) ?? "—"}</strong></div>
               <div className={styles.lapStat}><span>Clean laps</span><strong>{session.lap_count ?? "—"}</strong></div>
             </div>
+            <SessionLapReview laps={sessionTelemetry?.laps ?? null} timingSource={sessionTelemetry?.corner_analysis?.lap_timing?.source} channelManifest={manifest} />
             <div className={styles.section}><h3>Rivali interpretation</h3><p>{safeToPublish ? recommendation?.recommendation : "More data is needed before making a setup interpretation. Rivali will report what was observed without inventing a cause or setup change."}</p></div>
             {debrief?.transcript && <div className={styles.section}><h3>Driver debrief</h3><p className={styles.debrief}>“{debrief.transcript}”</p></div>}
             <div className={styles.section}>
