@@ -19,15 +19,17 @@ def inventory(data: bytes, decoded_columns=()):
     records = []
     for match in re.finditer(re.escape(CHS), data):
         start = match.start()
-        if start + HEADER_BYTES > len(data):
-            raise ValueError("Truncated XRK channel header")
+        if start + 10 > len(data):
+            raise ValueError("Truncated XRK channel header size field")
         size = struct.unpack_from("<I", data, start + 6)[0]
-        if size != HEADER_BYTES:
-            raise ValueError(f"Unsupported XRK channel header size: {size}")
+        if size < 68 or size > 4096 or start + size > len(data):
+            raise ValueError(f"Invalid or truncated XRK channel header size: {size}")
+        # Channel names are in the shared prefix of known CHS layouts.
+        # Retain the advertised record size for forward compatibility.
         short = data[start + 36:start + 44].split(bytes((0,)), 1)[0].decode("ascii", "replace")
         name = data[start + 44:start + 68].split(bytes((0,)), 1)[0].decode("ascii", "replace")
         records.append({"index": len(records), "short_name": short,
-                        "name": name, "has_samples": name in decoded or short in decoded,
+                        "name": name, "header_size": size, "has_samples": name in decoded or short in decoded,
                         "sample_status": "decoded" if name in decoded or short in decoded
                         else "not_verified"})
     return {"defined_channels": len(records),
