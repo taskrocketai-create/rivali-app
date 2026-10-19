@@ -55,3 +55,23 @@ def rpm_lap_summaries(path, rpm_samples=None):
                               "sample_count": len(values), "min_rpm": min(values),
                               "max_rpm": max(values), "average_rpm": round(sum(values)/len(values), 1)})
     return summaries
+
+def align_rpm_to_laps(raw_summaries, reported_laps):
+    """Match RPM packet summaries to reported laps by lap duration and order.
+
+    Refuse ambiguous matches; never assume raw ordinal equals RS3 lap number.
+    """
+    aligned = []
+    previous_ordinal = -1
+    for lap in reported_laps:
+        number = lap.lap_number
+        duration = lap.lap_time_sec
+        candidates = [r for r in raw_summaries
+                      if r["raw_lap_ordinal"] > previous_ordinal
+                      and abs((r["end_timestamp_ms"] - r["start_timestamp_ms"]) / 1000 - duration) < 0.002]
+        if len(candidates) != 1:
+            continue
+        match = candidates[0]
+        previous_ordinal = match["raw_lap_ordinal"]
+        aligned.append({"lap_number": number, **match})
+    return aligned
