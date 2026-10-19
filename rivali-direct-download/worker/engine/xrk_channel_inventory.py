@@ -17,13 +17,16 @@ TARGETS = {"RPM", "AccX", "AccY", "AccZ", "GyrX", "GyrY", "GyrZ",
 def inventory(data: bytes, decoded_columns=()):
     decoded = set(decoded_columns)
     records = []
+    diagnostics = []
     for match in re.finditer(re.escape(CHS), data):
         start = match.start()
         if start + 10 > len(data):
-            raise ValueError("Truncated XRK channel header size field")
+            diagnostics.append({"offset": start, "error": "truncated_header_size"})
+            continue
         size = struct.unpack_from("<I", data, start + 6)[0]
         if size < 68 or size > 4096 or start + size > len(data):
-            raise ValueError(f"Invalid or truncated XRK channel header size: {size}")
+            diagnostics.append({"offset": start, "error": "invalid_or_truncated_header", "advertised_size": size})
+            continue
         # Channel names are in the shared prefix of known CHS layouts.
         # Retain the advertised record size for forward compatibility.
         short = data[start + 36:start + 44].split(bytes((0,)), 1)[0].decode("ascii", "replace")
@@ -32,7 +35,7 @@ def inventory(data: bytes, decoded_columns=()):
                         "name": name, "header_size": size, "has_samples": name in decoded or short in decoded,
                         "sample_status": "decoded" if name in decoded or short in decoded
                         else "not_verified"})
-    return {"defined_channels": len(records),
+    return {"defined_channels": len(records), "inventory_diagnostics": diagnostics, "inventory_complete": not diagnostics,
             "decoded_channel_count": sum(r["has_samples"] for r in records),
             "priority_channels": [r for r in records if r["short_name"] in TARGETS],
             "channels": records}
