@@ -153,7 +153,7 @@ def process_one(client,job_id_override=None):
         session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
         client.table("sessions").update(session_update).eq("id",session_id).execute()
         try:
-            if mapped.get("analysis_ready") and timing_source != "raw_xrk_packet_fallback":
+            if mapped.get("analysis_ready") and timing_source == "aim_lap_table":
                 save_grounded_recommendation(client, session_id, owner_id)
         except Exception as recommendation_error:
             print(f"recommendation skipped for {session_id}: {recommendation_error}", flush=True)
