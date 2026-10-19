@@ -25,7 +25,7 @@ def inventory(data: bytes, decoded_columns=()):
         if size != HEADER_BYTES:
             raise ValueError(f"Unsupported XRK channel header size: {size}")
         short = data[start + 36:start + 44].split(bytes((0,)), 1)[0].decode("ascii", "replace")
-        name = data[start + 44:start + 68].split(b"\\x00", 1)[0].decode("ascii", "replace")
+        name = data[start + 44:start + 68].split(bytes((0,)), 1)[0].decode("ascii", "replace")
         records.append({"index": len(records), "short_name": short,
                         "name": name, "has_samples": name in decoded or short in decoded,
                         "sample_status": "decoded" if name in decoded or short in decoded
