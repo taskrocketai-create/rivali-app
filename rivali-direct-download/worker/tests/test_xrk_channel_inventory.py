@@ -19,6 +19,16 @@ class ChannelInventoryTests(unittest.TestCase):
         self.assertFalse(result['channels'][0]['has_samples'])
         self.assertEqual(result['channels'][0]['sample_status'], 'not_verified')
 
+    def test_channel_name_null_padding_is_removed(self):
+        header = bytearray(112)
+        header[:6] = b'<hCHS\\x00'
+        header[6:10] = (112).to_bytes(4, 'little')
+        header[36:40] = b'ACCX'
+        header[44:58] = b'Acceleration X'
+        result = inventory(bytes(header), decoded_columns=['Acceleration X'])
+        self.assertEqual(result['channels'][0]['name'], 'Acceleration X')
+        self.assertTrue(result['channels'][0]['has_samples'])
+
 
 if __name__ == '__main__':
     unittest.main()
