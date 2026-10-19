@@ -5,6 +5,7 @@ import type * as Leaflet from "leaflet";
 import { CheckCircle2, RotateCcw, Pencil, Send } from "lucide-react";
 import styles from "./report-service.module.css";
 import SessionLapReview from "./session-lap-review";
+import RpmLapChart from "./rpm-lap-chart";
 
 type TracePoint = { lat: number; lng: number; time?: number; speed_mph?: number; lateral_g?: number };
 type Lap = { lap_number?: number; lap_time_sec?: number; duration_sec?: number };
@@ -39,7 +40,7 @@ type Telemetry = {
   laps: Lap[] | null;
   gps_trace: TracePoint[] | null;
   channel_manifest: string[] | null;
-  corner_analysis: { diagnostic?: string; turns?: Record<string, unknown>; alignment?: { confidence?: string; score?: number; track_coverage_pct?: number; median_groove_distance_m?: number | null; reason?: string }; groove?: { median_deviation_m?: number | null; samples_within_reference_band_pct?: number }; lap_timing?: { source?: string; diagnostic?: string }; rpm_by_lap?: { lap_number: number; sample_count: number; min_rpm: number; max_rpm: number; average_rpm: number }[]; rpm_summary?: { source: string; sample_count: number; min_rpm: number; max_rpm: number; validation: string } | null } | null;
+  corner_analysis: { diagnostic?: string; turns?: Record<string, unknown>; alignment?: { confidence?: string; score?: number; track_coverage_pct?: number; median_groove_distance_m?: number | null; reason?: string }; groove?: { median_deviation_m?: number | null; samples_within_reference_band_pct?: number }; lap_timing?: { source?: string; diagnostic?: string }; rpm_by_lap?: { lap_number: number; sample_count: number; min_rpm: number; max_rpm: number; average_rpm: number; trace?: [number, number][] }[]; rpm_summary?: { source: string; sample_count: number; min_rpm: number; max_rpm: number; validation: string } | null } | null;
 };
 type Debrief = { session_id: string; transcript: string | null; created_at: string };
 type ConfidenceBand = "high" | "medium" | "low";
@@ -195,6 +196,7 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
                 <div className={styles.fact}><span>Verification</span><strong>RS3 curve comparison pending</strong></div>
               </div>
               {!!sessionTelemetry.corner_analysis.rpm_by_lap?.length && <>
+                <RpmLapChart laps={sessionTelemetry.corner_analysis.rpm_by_lap} />
                 <h4>RPM by timed lap</h4>
                 <div className={styles.facts}>
                   {sessionTelemetry.corner_analysis.rpm_by_lap.map((lap) => <div className={styles.fact} key={lap.lap_number}>
