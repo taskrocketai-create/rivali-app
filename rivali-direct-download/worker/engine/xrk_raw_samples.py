@@ -13,14 +13,18 @@ def extract_samples(path, channels=None):
         if data[offset:offset + 2] != b"(S":
             offset += 1
             continue
-        if data[offset + 10] == 0x29:
+        channel = data[offset + 6]
+        # A 32-bit payload can contain 0x29 at the 16-bit terminator
+        # position. For the tested Lat Gri channel, prefer its 13-byte form.
+        if channel == 39 and offset + 13 <= len(data) and data[offset + 12] == 0x29:
+            size, fmt = 13, "<I"
+        elif data[offset + 10] == 0x29:
             size, fmt = 11, "<H"
         elif offset + 13 <= len(data) and data[offset + 12] == 0x29:
             size, fmt = 13, "<I"
         else:
             offset += 1
             continue
-        channel = data[offset + 6]
         if wanted is None or channel in wanted:
             timestamp = struct.unpack_from("<I", data, offset + 2)[0]
             value = struct.unpack_from(fmt, data, offset + 8)[0]
