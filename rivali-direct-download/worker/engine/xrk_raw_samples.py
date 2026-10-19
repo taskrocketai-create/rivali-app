@@ -46,14 +46,18 @@ def rpm_lap_summaries(path, rpm_samples=None):
             start_index += 1
         cursor = start_index
         values = []
+        trace = []
         while cursor < len(rpm) and rpm[cursor][0] < end:
             values.append(rpm[cursor][1])
+            if (cursor - start_index) % 4 == 0:
+                trace.append([round((rpm[cursor][0] - start) / 1000, 3), rpm[cursor][1]])
             cursor += 1
         if values:
             summaries.append({"raw_lap_ordinal": lap["record_ordinal"],
                               "start_timestamp_ms": start, "end_timestamp_ms": end,
                               "sample_count": len(values), "min_rpm": min(values),
-                              "max_rpm": max(values), "average_rpm": round(sum(values)/len(values), 1)})
+                              "max_rpm": max(values), "average_rpm": round(sum(values)/len(values), 1),
+                              "trace": trace})
     return summaries
 
 def align_rpm_to_laps(raw_summaries, reported_laps):
