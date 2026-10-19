@@ -8,7 +8,7 @@ import re
 import struct
 from pathlib import Path
 
-CHS = b"<hCHS\\x00"
+CHS = bytes((60, 104, 67, 72, 83, 0))
 HEADER_BYTES = 112
 TARGETS = {"RPM", "AccX", "AccY", "AccZ", "GyrX", "GyrY", "GyrZ",
            "Lat Gri", "WSpd", "eAX", "eAY", "eAZ"}
@@ -24,7 +24,7 @@ def inventory(data: bytes, decoded_columns=()):
         size = struct.unpack_from("<I", data, start + 6)[0]
         if size != HEADER_BYTES:
             raise ValueError(f"Unsupported XRK channel header size: {size}")
-        short = data[start + 36:start + 44].split(b"\\x00", 1)[0].decode("ascii", "replace")
+        short = data[start + 36:start + 44].split(bytes((0,)), 1)[0].decode("ascii", "replace")
         name = data[start + 44:start + 68].split(b"\\x00", 1)[0].decode("ascii", "replace")
         records.append({"index": len(records), "short_name": short,
                         "name": name, "has_samples": name in decoded or short in decoded,
