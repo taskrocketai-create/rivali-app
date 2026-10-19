@@ -43,8 +43,9 @@ class ChannelInventoryTests(unittest.TestCase):
         header = bytearray(112)
         header[:6] = bytes((60, 104, 67, 72, 83, 0))
         header[6:10] = (144).to_bytes(4, 'little')
-        with self.assertRaisesRegex(ValueError, 'truncated'):
-            inventory(bytes(header))
+        result = inventory(bytes(header))
+        self.assertFalse(result['inventory_complete'])
+        self.assertEqual(result['inventory_diagnostics'][0]['error'], 'invalid_or_truncated_header')
 
 
 if __name__ == '__main__':
