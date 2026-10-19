@@ -21,7 +21,7 @@ class ChannelInventoryTests(unittest.TestCase):
 
     def test_channel_name_null_padding_is_removed(self):
         header = bytearray(112)
-        header[:6] = b'<hCHS\\x00'
+        header[:6] = bytes((60, 104, 67, 72, 83, 0))
         header[6:10] = (112).to_bytes(4, 'little')
         header[36:40] = b'ACCX'
         header[44:58] = b'Acceleration X'
