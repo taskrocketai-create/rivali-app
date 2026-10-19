@@ -14,7 +14,7 @@ from daq_tools.readers import XRKReader
 from supabase import create_client
 from engine.mapped_track_analysis import analyze_mapped_track
 from engine.session_summary import summarize_session, summary_from_gps_laps
-from engine.xrk_raw_samples import extract_samples
+from engine.xrk_raw_samples import extract_samples, rpm_lap_summaries, align_rpm_to_laps
 from engine.gps_laps import reconstruct_lap_times
 from engine.knowledge_selection import select_knowledge
 from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
@@ -150,7 +150,8 @@ def process_one(client,job_id_override=None):
             mapped={"analysis_ready":False,"diagnostic":mapped.get("diagnostic") or "Track mapping is not validated.",
                     "turns":[],"corner_pairs":[],"groove":None,"alignment":None}
         raw_rpm = extract_samples(path, channels=[33]).get(33, [])
-        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic},"rpm_summary":{"source":"raw_xrk_sample","sample_count":len(raw_rpm),"min_rpm":min(v for _,v in raw_rpm),"max_rpm":max(v for _,v in raw_rpm),"validation":"pending_rs3_curve_comparison"} if raw_rpm else None},"channel_manifest":[str(column) for column in data.columns]+(["RPM"] if raw_rpm else [])}
+        rpm_by_lap = align_rpm_to_laps(rpm_lap_summaries(path, raw_rpm), summary.laps) if raw_rpm and summary.laps else []
+        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic},"rpm_by_lap":rpm_by_lap,"rpm_summary":{"source":"raw_xrk_sample","sample_count":len(raw_rpm),"min_rpm":min(v for _,v in raw_rpm),"max_rpm":max(v for _,v in raw_rpm),"validation":"pending_rs3_curve_comparison"} if raw_rpm else None},"channel_manifest":[str(column) for column in data.columns]+(["RPM"] if raw_rpm else [])}
         client.table("session_telemetry").upsert(telemetry).execute()
         session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
         client.table("sessions").update(session_update).eq("id",session_id).execute()
