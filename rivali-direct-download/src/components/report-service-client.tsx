@@ -39,7 +39,7 @@ type Telemetry = {
   laps: Lap[] | null;
   gps_trace: TracePoint[] | null;
   channel_manifest: string[] | null;
-  corner_analysis: { diagnostic?: string; turns?: Record<string, unknown>; alignment?: { confidence?: string; score?: number; track_coverage_pct?: number; median_groove_distance_m?: number | null; reason?: string }; groove?: { median_deviation_m?: number | null; samples_within_reference_band_pct?: number }; lap_timing?: { source?: string; diagnostic?: string } } | null;
+  corner_analysis: { diagnostic?: string; turns?: Record<string, unknown>; alignment?: { confidence?: string; score?: number; track_coverage_pct?: number; median_groove_distance_m?: number | null; reason?: string }; groove?: { median_deviation_m?: number | null; samples_within_reference_band_pct?: number }; lap_timing?: { source?: string; diagnostic?: string }; rpm_summary?: { source: string; sample_count: number; min_rpm: number; max_rpm: number; validation: string } | null } | null;
 };
 type Debrief = { session_id: string; transcript: string | null; created_at: string };
 type ConfidenceBand = "high" | "medium" | "low";
@@ -186,6 +186,15 @@ export function ReportServiceClient({ sessions, telemetry, debriefs }: { session
               <div className={styles.lapStat}><span>Clean laps</span><strong>{session.lap_count ?? "—"}</strong></div>
             </div>
             <SessionLapReview laps={sessionTelemetry?.laps ?? null} timingSource={sessionTelemetry?.corner_analysis?.lap_timing?.source} channelManifest={manifest} />
+            {sessionTelemetry?.corner_analysis?.rpm_summary && <div className={styles.section}>
+              <h3>Recorded engine RPM</h3>
+              <div className={styles.facts}>
+                <div className={styles.fact}><span>RPM samples</span><strong>{sessionTelemetry.corner_analysis.rpm_summary.sample_count.toLocaleString()}</strong></div>
+                <div className={styles.fact}><span>Recorded range</span><strong>{sessionTelemetry.corner_analysis.rpm_summary.min_rpm.toLocaleString()} to {sessionTelemetry.corner_analysis.rpm_summary.max_rpm.toLocaleString()} RPM</strong></div>
+                <div className={styles.fact}><span>Source</span><strong>MyChron XRK recorded samples</strong></div>
+                <div className={styles.fact}><span>Verification</span><strong>RS3 curve comparison pending</strong></div>
+              </div>
+            </div>}
             <div className={styles.section}><h3>Rivali interpretation</h3><p>{safeToPublish ? recommendation?.recommendation : "More data is needed before making a setup interpretation. Rivali will report what was observed without inventing a cause or setup change."}</p></div>
             {debrief?.transcript && <div className={styles.section}><h3>Driver debrief</h3><p className={styles.debrief}>“{debrief.transcript}”</p></div>}
             <div className={styles.section}>
