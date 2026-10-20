@@ -26,14 +26,23 @@ def compare_lateral_grip(raw_samples, gps_times, gps_lateral_g, *, lag_seconds=-
         return {"status": "insufficient_variation", "sample_count": len(x)}
     correlation = float(np.corrcoef(x, y)[0, 1])
     slope, intercept = np.polyfit(x, y, 1)
+    # AiM Oval Kart guide displays Lateral Grip in ft/s². Test the
+    # physical conversion independently of the fitted regression.
+    fixed_g = x / 32.174
+    fixed_rmse_g = float(np.sqrt(np.mean((fixed_g - y) ** 2)))
+    fixed_bias_g = float(np.mean(fixed_g - y))
     return {
         "status": "provisional_comparison_only",
         "raw_sample_count": len(raw_samples),
         "compared_sample_count": int(len(x)),
         "correlation": round(correlation, 5),
+        "documented_display_units": "ft/s² (AiM MyChron 5 Oval Kart guide)",
+        "physical_conversion_ft_s2_per_g": 32.174,
+        "fixed_conversion_rmse_g": round(fixed_rmse_g, 5),
+        "fixed_conversion_bias_g": round(fixed_bias_g, 5),
         "fitted_scale": round(float(slope), 7),
         "fitted_intercept_g": round(float(intercept), 5),
         "time_offset_seconds": lag_seconds,
-        "units": "GPS reference in standard gravity; raw channel units unverified",
+        "units": "AiM documents Lateral Grip display in ft/s²; raw XRK encoding not manufacturer confirmed",
         "validation": "Not manufacturer calibrated; do not use for grip or setup recommendations",
     }
