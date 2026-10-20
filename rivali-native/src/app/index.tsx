@@ -111,6 +111,7 @@ export default function Home() {
       <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" accessibilityLabel="Rivali" />
       <Text style={styles.eyebrow}>TURN DATA INTO SPEED</Text>
       <Text style={styles.heading}>Race day, ready.</Text>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/race-day')} style={styles.button}><Text style={styles.buttonText}>Open 3-Kart Pit Control</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push("/account")} style={styles.chip}><Text style={styles.text}>Open your race shop · sign in</Text></Pressable>
       {busy && <ActivityIndicator color="#c33535" />}
       {!credential ? <View style={styles.card}>
