@@ -354,10 +354,11 @@ export function TrackMapEditor({
   function chooseTrack(id: string) {
     setTrackId(id);
     const track = tracks.find((x) => x.id === id);
-    const sf = track?.start_finish ?? [];
+    const rawStart = track?.start_finish;
+    const sf = Array.isArray(rawStart) ? rawStart : [];
     const markers = track?.turns ?? {};
     setStartFinish(sf);
-    setTurns(markers);
+    setTurns(Object.fromEntries(Object.entries(markers).filter(([key]) => /^[1-4]$/.test(key))) as Record<string, TurnMarker>);
     const metadata = (markers as Record<string, unknown>)._rivali as { walk?: WalkLayout; groove?: GeoPoint[] } | undefined;
     setWalk(metadata?.walk ?? { points: {} });
     const savedGroove = metadata?.groove ?? [];
@@ -571,18 +572,31 @@ export function TrackMapEditor({
     const hasTurns = Object.keys(finalTurns).length === 4;
     const hasGroove = groove.length > 1;
     const hasLayout = hasStartFinish && hasTurns && hasGroove;
-    if (!hasStartFinish || !hasTurns || !hasGroove)
-      return setMessage("Race Day Track Setup is not complete. Save Start/Finish, Turns 1-4, and the preferred groove before Rivali can analyze a run.");
+    if (!hasStartFinish && !hasTurns && !hasGroove)
+      return setMessage("Place at least one turn, a start/finish line, or a groove before saving.");
     const normalized = Object.fromEntries(
       Object.entries(finalTurns).map(([key, value]) => [
         key,
         { ...value, radius_m: feetToMeters(radiusFeet) },
       ]),
     );
-    const storedTurns = { ...normalized, _rivali: { walk: { ...walk, saved_at: new Date().toISOString() }, groove } };
+    const existing = tracks.find((item) => item.id === trackId);
+    const existingTurns = (existing?.turns ?? {}) as Record<string, unknown>;
+    const existingMeta = (existingTurns._rivali ?? {}) as Record<string, unknown>;
+    const storedTurns = {
+      ...existingTurns,
+      ...normalized,
+      _rivali: {
+        ...existingMeta,
+        walk: { ...walk, saved_at: new Date().toISOString() },
+        groove: hasGroove ? groove : (existingMeta.groove ?? []),
+      },
+    };
+    const previousStart = existing?.start_finish;
+    const nextStart = hasStartFinish ? finalStartFinish : previousStart;
     const { data, error } = await supabase
       .from("tracks")
-      .update({ start_finish: hasStartFinish ? finalStartFinish : startFinish, turns: storedTurns })
+      .update({ start_finish: nextStart, turns: storedTurns })
       .eq("id", trackId)
       .select("id,name,location,surface_type,latitude,longitude,start_finish,turns")
       .single();
@@ -748,7 +762,7 @@ export function TrackMapEditor({
           <small className="muted">Start near 60 ft. Increase it until the circle covers the full corner without reaching the straightaways.</small>
         </div>
         <button className="button" type="button" disabled={!trackId} onClick={save}>
-          Approve & save groove
+          Save track markers & groove
         </button>
       </div>
     </div>
