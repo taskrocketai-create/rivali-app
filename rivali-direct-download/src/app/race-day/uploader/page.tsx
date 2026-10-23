@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UploaderClient } from "./uploader-client";
 export const dynamic = "force-dynamic";
@@ -18,3 +18,4 @@ export default async function OperatorUploaderPage() {
   ]);
   return <UploaderClient tracks={tracks.data ?? []} racers={racers.data ?? []} karts={karts.data ?? []} sessions={(sessions.data ?? []) as never} />;
 }
+
