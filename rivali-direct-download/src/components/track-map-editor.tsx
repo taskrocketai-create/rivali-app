@@ -4,7 +4,7 @@ import type * as Leaflet from "leaflet";
 import { createClient } from "@/lib/supabase/client";
 import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 
-type Mode = "start" | "1" | "2" | "3" | "4" | "groove" | null;
+type Mode = "start" | "quick-line" | "quick-direction" | "1" | "2" | "3" | "4" | "groove" | null;
 type TracePoint = { lat: number; lng: number; time: number; speed_mph?: number };
 type LapShape = { lap:number; seconds:number; points:TracePoint[] };
 const LAP_COLORS = ["#eaff00","#00c8ff","#ff5cbd","#ff9c24","#9a7bff"];
@@ -106,6 +106,8 @@ export function TrackMapEditor({
   const [sessionId, setSessionId] = useState("");
   const [mode, setMode] = useState<Mode>(null);
   const [startFinish, setStartFinish] = useState<LatLng[]>([]);
+  const [raceArrow,setRaceArrow] = useState<LatLng[] | null>(null);
+  const [quickStart,setQuickStart] = useState<LatLng | null>(null);
   const [turns, setTurns] = useState<Record<string, TurnMarker>>({});
   const [radiusFeet, setRadiusFeet] = useState(60);
   const radiusRef = useRef(feetToMeters(radiusFeet));
@@ -260,11 +262,24 @@ export function TrackMapEditor({
       layers.current.push(marker);
     });
     if (startFinish.length === 2) {
-      const line = L.polyline(
-        startFinish.map((x) => [x.lat, x.lng]),
-        { color: "#f5ff00", weight: 6, opacity: 1 },
-      ).addTo(map);
-      layers.current.push(line);
+      const a=startFinish[0],b=startFinish[1];
+      // Alternating thin black and white blocks across the actual start/finish line.
+      for(let i=0;i<12;i++){
+        const t=i/12,u=(i+1)/12;
+        const line=L.polyline([[a.lat+(b.lat-a.lat)*t,a.lng+(b.lng-a.lng)*t],[a.lat+(b.lat-a.lat)*u,a.lng+(b.lng-a.lng)*u]],{color:i%2===0?"#fff":"#0b0b0b",weight:6,opacity:1}).addTo(map);
+        layers.current.push(line);
+      }
+    }
+    if(raceArrow?.length===2){
+      const [a,b]=raceArrow;
+      const shaft=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{color:"#eaff00",weight:2,opacity:1}).addTo(map);
+      layers.current.push(shaft);
+      const angle=Math.atan2((b.lng-a.lng)*Math.cos(b.lat*Math.PI/180),b.lat-a.lat);
+      const len=.000045;
+      for(const offset of [-.5,.5]){
+        const t=angle+Math.PI+offset;
+        layers.current.push(L.polyline([[b.lat,b.lng],[b.lat+len*Math.cos(t),b.lng+len*Math.sin(t)/Math.cos(b.lat*Math.PI/180)]],{color:"#eaff00",weight:2}).addTo(map));
+      }
     }
     Object.entries(turns).forEach(([number, point]) => {
       const marker = L.marker([point.lat, point.lng], {
@@ -285,7 +300,7 @@ export function TrackMapEditor({
       });
       layers.current.push(marker);
     });
-  }, [startFinish, lapShapes, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
+  }, [startFinish, raceArrow, lapShapes, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
   useEffect(() => {
     radiusRef.current = feetToMeters(radiusFeet);
   }, [radiusFeet]);
@@ -330,6 +345,29 @@ export function TrackMapEditor({
           if (current === "groove") {
             addFreehandGroovePoint(point.lat, point.lng);
             return current;
+          }
+          if(current==="quick-line"){
+            setQuickStart(point);
+            setStartFinish([]);
+            setRaceArrow(null);
+            setMessage("Click 2: choose a point AHEAD of start/finish in the racing direction.");
+            return "quick-direction";
+          }
+          if(current==="quick-direction"){
+            setQuickStart(start=>{
+              if(!start)return null;
+              const dLat=point.lat-start.lat;
+              const dLng=(point.lng-start.lng)*Math.cos(start.lat*Math.PI/180);
+              const mag=Math.hypot(dLat,dLng);
+              if(mag<.00002){setMessage("Second click must be farther ahead along the racing direction.");return start;}
+              const north=dLat/mag,east=dLng/mag,scale=Math.max(.000028,Math.min(.00011,mag*.35));
+              const c=Math.cos(start.lat*Math.PI/180),half=.000055;
+              setStartFinish([{lat:start.lat-east*half,lng:start.lng+north*half/c},{lat:start.lat+east*half,lng:start.lng-north*half/c}]);
+              setRaceArrow([start,{lat:start.lat+north*scale,lng:start.lng+east*scale/c}]);
+              setMessage("Checkered line and arrow placed. Confirm their positions on the map, then Save track.");
+              return null;
+            });
+            return null;
           }
           if (current === "start") {
             setStartFinish((previous) =>
@@ -382,6 +420,8 @@ export function TrackMapEditor({
     const sf = Array.isArray(rawStart) ? rawStart : [];
     const markers = track?.turns ?? {};
     setStartFinish(sf);
+    const arrow=(markers as Record<string,unknown>)._rivali as {race_arrow?:LatLng[]} | undefined;
+    setRaceArrow(Array.isArray(arrow?.race_arrow)&&arrow.race_arrow.length===2?arrow.race_arrow:null);
     setTurns(Object.fromEntries(Object.entries(markers).filter(([key]) => /^[1-4]$/.test(key))) as Record<string, TurnMarker>);
     const metadata = (markers as Record<string, unknown>)._rivali as { walk?: WalkLayout; groove?: GeoPoint[] } | undefined;
     setWalk(metadata?.walk ?? { points: {} });
@@ -614,6 +654,7 @@ export function TrackMapEditor({
         ...existingMeta,
         walk: { ...walk, saved_at: new Date().toISOString() },
         groove: hasGroove ? groove : (existingMeta.groove ?? []),
+        race_arrow: raceArrow ?? existingMeta.race_arrow ?? null,
       },
     };
     const previousStart = existing?.start_finish;
@@ -695,6 +736,7 @@ export function TrackMapEditor({
           </div>
         )}
       </div>
+      {trackId && <div className="notice"><strong>Two-click race setup:</strong> <button type="button" onClick={()=>{setMode("quick-line");setMessage("Click 1: tap the CENTER of the start/finish location.");}} style={{background:"#eaff00",color:"#111",border:0,padding:"9px 12px",fontWeight:900,cursor:"pointer"}}>Place checkered line + direction (2 clicks)</button><span style={{paddingLeft:10}}>Click 1: start/finish center. Click 2: ahead in race direction. Save track afterward.</span></div>}
       <div className="notice">{message}</div>
       <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
        {lapShapes.map((shape,i)=><span key={shape.lap} style={{color:LAP_COLORS[i],fontWeight:800}}>Lap {shape.lap}: {shape.seconds.toFixed(3)}s</span>)}
