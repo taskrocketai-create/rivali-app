@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-py rivali_timing_listener.py
+py rivali_dashboard.py
 if errorlevel 1 pause
