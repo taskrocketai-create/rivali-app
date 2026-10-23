@@ -1,11 +1,14 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
+import {tool} from "@openai/agents";
+import {z} from "zod";
 import {RealtimeAgent,RealtimeSession} from "@openai/agents/realtime";
 import styles from "./uploader.module.css";
 type Turn={role:"driver"|"doug";text:string};
 const KEY="rivali-doug-conversation-v2";
-export function DougLiveVoice({context}:{context:string}){
+export function DougLiveVoice({context,karts,onSelectKart}:{context:string;karts:{id:string;number:string;driver:string}[];onSelectKart:(id:string)=>void}){
  const session=useRef<RealtimeSession|null>(null);
+ const kartState=useRef(karts);const selectState=useRef(onSelectKart);kartState.current=karts;selectState.current=onSelectKart;
  const [status,setStatus]=useState<"idle"|"connecting"|"listening"|"speaking"|"error">("idle");
  const [caption,setCaption]=useState("");
  const [turns,setTurns]=useState<Turn[]>([]);
@@ -22,7 +25,8 @@ export function DougLiveVoice({context}:{context:string}){
    const payload=await response.json();
    if(!response.ok||!payload.value)throw new Error(payload.error??"Voice unavailable.");
    const prior=turns.slice(-25).map(t=>(t.role==="driver"?"Driver: ":"Doug: ")+t.text).join("\n").slice(-9000);
-   const agent=new RealtimeAgent({name:"Doug",voice:"cedar",instructions:`You are Doug, the Rivali trackside crew chief. Speak as naturally as a human crew chief in an uninterrupted two-way conversation. There are no modes to select. Infer whether the person needs instructions, a setup debrief, setup entry, or wants to argue through a tuning choice. Answer the question, and challenge wrong claims with mechanical reasoning and uncertainty. Don't invent lap results, weight percentages, or telemetry. Ballast consists of 5 lb physical weights. For actions that modify setup data, collect exact values and request operator confirmation, and never claim the data was saved by this voice-only UI. No knowledge-base changes. Trackside context: ${context}. Recent conversation, if any: ${prior}`});
+   const selectKart=tool({name:"select_kart",description:"Change active kart when driver asks to switch, open, work on, or talk about a numbered kart or driver. Use this before discussing that kart.",parameters:z.object({kart_id:z.string().describe("Kart slot ID from current context")}),execute:async({kart_id})=>{const kart=kartState.current.find(k=>k.id===kart_id);if(!kart)return "Kart not found. Ask which kart they mean.";selectState.current(kart_id);return "Switched to kart "+(kart.number||"unassigned")+" driver "+(kart.driver||"unassigned")+". The selected kart is now active.";}});
+   const agent=new RealtimeAgent({name:"Doug",voice:"cedar",tools:[selectKart],instructions:`You are Doug, the Rivali trackside crew chief. Speak as naturally as a human crew chief in an uninterrupted two-way conversation. There are no modes to select. Infer whether the person needs instructions, a setup debrief, setup entry, or wants to argue through a tuning choice. Answer the question, and challenge wrong claims with mechanical reasoning and uncertainty. Don't invent lap results, weight percentages, or telemetry. Ballast consists of 5 lb physical weights. For actions that modify setup data, collect exact values and request operator confirmation, and never claim the data was saved by this voice-only UI. Use select_kart immediately for spoken kart switching. The current kart IDs are ${JSON.stringify(karts)}. If asked to perform a save, clearly say that on-screen confirmation is still required. No knowledge-base changes. Trackside context: ${context}. Recent conversation, if any: ${prior}`});
    const live=new RealtimeSession(agent,{model:"gpt-realtime-2.1"});
    live.on("audio_start",()=>setStatus("speaking"));
    live.on("audio_stopped",()=>setStatus("listening"));

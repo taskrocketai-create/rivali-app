@@ -36,7 +36,7 @@ export function DougAssistant({context,trackId,slots}:{context:string;trackId:st
   finally{setBusy(false);}
  }
  return <div className={styles.dougDock}><button className={styles.dougFab} onClick={()=>setOpen(x=>!x)} aria-expanded={open} aria-label="Talk to Doug"><span>ðŸŽ™</span> Talk to Doug</button>{open&&<section className={styles.dougPanel} aria-label="Doug crew chief"><div className={styles.dougHead}><strong>DOUG Â· CREW CHIEF</strong><button onClick={()=>setOpen(false)} aria-label="Close Doug">Ã—</button></div><p>Just talk normally. Ask Doug anything about your kart, the data, setup choices or race-day workflow.</p>
- <DougLiveVoice context={context+"; Selected kart: "+(chosen?.number||"not selected")+"; Driver: "+(chosen?.driver||"not selected")}/>
+ <DougLiveVoice karts={[]} onSelectKart={()=>{}} context={context+"; Selected kart: "+(chosen?.number||"not selected")+"; Driver: "+(chosen?.driver||"not selected")}/>
  <div style={{display:"none"}}><div className={styles.dougModes}>{([["instructions","Instructions"],["setup","Voice setup"],["debrief","Debrief"],["debate","Debate"],["outcome","Test outcome"]] as const).map(([id,label])=><button key={id} className={mode===id?styles.dougSelected:""} onClick={()=>setMode(id)}>{label}</button>)}</div>
  <label style={{display:"block",marginBottom:8}}>Kart context <select value={slotId||slots[0]?.id||""} onChange={e=>setSlotId(e.target.value)} style={{width:"100%",background:"#121a1a",color:"#fff",padding:9,border:"1px solid #4b5656"}}>{slots.map((s,i)=><option value={s.id} key={s.id}>{s.number||"Kart "+(i+1)} Â· {s.driver||"Unassigned"}</option>)}</select></label>
  <button type="button" onClick={()=>{setHistory([]);setReply("");setMessage("");}} style={{fontSize:12,background:"transparent",border:"1px solid #555",color:"#ccc",padding:6,marginBottom:8,cursor:"pointer"}}>New conversation</button>
@@ -54,4 +54,5 @@ export function DougAssistant({context,trackId,slots}:{context:string;trackId:st
  {error&&<p role="alert" className={styles.dougError}>{error}</p>}{reply&&<div className={styles.dougReply}><strong>Doug's assessment</strong><p>{reply}</p></div>}
  <small>Two-way voice is the primary interface. Changes require your approval before saving.</small></section>}</div>;
 }
+
 
