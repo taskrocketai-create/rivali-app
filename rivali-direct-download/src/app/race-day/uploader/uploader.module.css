@@ -4,3 +4,12 @@
 .brand :global(.brand-logo-artwork){filter:hue-rotate(62deg) saturate(1.7) brightness(1.15)}
 
 .trackLink{cursor:pointer;background:#121508}.mapInline{border:0;background:transparent;color:#eaff00;cursor:pointer;text-decoration:underline;text-align:left;padding:0;font:inherit}.mapperPanel{border:1px solid #b0bc00;background:#0a0c08;border-radius:10px;padding:22px;margin:0 0 25px;color:#e8efdf;--red:#eaff00;--accent-red:#eaff00;--race-red:#eaff00;--green:#eaff00;--paper:#fff;--silver:#d1d1bb}.mapperPanel :global(.card){background:#121710!important;border-color:#4c560a!important}.mapperPanel :global(button){accent-color:#eaff00}.mapperHeading{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:15px}.mapperHeading h2{margin:0 0 5px;color:#eaff00}.mapperHeading p{margin:0;color:#abb8a1}.mapperHeading button{background:#eaff00;color:#101000;border:0;border-radius:6px;padding:11px;font-weight:800;cursor:pointer}
+
+.bar nav button{background:transparent;border:0;color:#e6e6e6;font-weight:700;cursor:pointer;font-size:14px;padding:9px}
+.bar nav button.activeTab{color:#eaff00;border-bottom:2px solid #eaff00}
+.operatorArea{min-height:450px}.adminOverview{background:#101514;border:1px solid #404941;border-radius:10px;padding:18px}
+.adminOverview h2{color:#eaff00}.sessionRow{display:grid;grid-template-columns:minmax(170px,2fr) auto minmax(120px,1fr) auto;align-items:center;gap:14px;border-top:1px solid #343c3c;padding:14px 2px}
+.sessionRow small{display:block;color:#9da8a7;margin-top:4px;overflow-wrap:anywhere}
+.sessionRow button{background:#eaff00;color:#111;border:0;border-radius:5px;padding:10px;font-weight:800;cursor:pointer}
+.sessionRow button:disabled{opacity:.45}.reportDetail{border:1px solid #c5d600;border-radius:8px;padding:16px;margin-top:20px;overflow-wrap:anywhere}
+@media(max-width:720px){.bar nav{display:flex;gap:3px}.bar nav button{font-size:11px;padding:6px 3px}.bar .tag{display:none}.sessionRow{grid-template-columns:1fr auto;gap:9px}}

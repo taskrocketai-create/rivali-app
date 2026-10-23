@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { RivaliLogo } from "@/components/rivali-logo";
 import { TrackMapEditor } from "@/components/track-map-editor";
 import type { Track as DomainTrack, RaceSession } from "@/types/domain";
@@ -8,17 +8,40 @@ import { Plus, Trash2, UploadCloud, CheckCircle2, AlertCircle, Flag, MapPinned, 
 import styles from "./uploader.module.css";
 
 type Track = DomainTrack;
+type OperatorSession = RaceSession & {report_status?:string|null};
 type Racer = { id:string; name:string; primary_class:string | null };
 type Kart = { id:string; name:string; racer_id:string | null; chassis_make:string | null; chassis_model:string | null };
 type Slot = { id:string; driver:string; number:string; className:string; sessionType:string; fileName:string; status:"waiting"|"uploading"|"queued"|"error"; message:string; sessionId?:string };
 type Draft = { trackId:string; eventDate:string; slots:Slot[] };
 const makeSlot = (index:number):Slot => ({id:crypto.randomUUID(),driver:"",number:"",className:"",sessionType:"practice",fileName:"",status:"waiting",message:""});
 const KEY = "rivali-operator-raceday-v1";
-export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];racers:Racer[];karts:Kart[];sessions:RaceSession[]}) {
+export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];racers:Racer[];karts:Kart[];sessions:OperatorSession[]}) {
   const [draft,setDraft] = useState<Draft>({trackId:"",eventDate:"",slots:[]});
   const [hydrated,setHydrated] = useState(false);
   const [files,setFiles] = useState<Record<string,File>>({});
   const [showMapper,setShowMapper] = useState(false);
+  const [activeTab,setActiveTab]=useState<"race"|"admin"|"reports">("race");
+  const [liveSessions,setLiveSessions]=useState<OperatorSession[]>(sessions);
+  const [selectedReport,setSelectedReport]=useState<string|null>(null);
+  const [reportTelemetry,setReportTelemetry]=useState<Record<string,unknown>|null>(null);
+  const [reportError,setReportError]=useState("");
+  const supabase=createClient();
+  async function refreshSessions(){
+    const {data,error}=await supabase.from("sessions").select("id,session_date,session_type,status,report_status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name),racers(id,name),karts(id,name)").order("created_at",{ascending:false}).limit(100);
+    if(!error&&data)setLiveSessions(data as unknown as OperatorSession[]);
+  }
+  useEffect(()=>{
+    void refreshSessions();
+    const timer=window.setInterval(()=>{void refreshSessions();},15000);
+    return ()=>window.clearInterval(timer);
+  },[]);
+  async function inspectReport(id:string){
+    setSelectedReport(id);setReportError("");setReportTelemetry(null);
+    const {data,error}=await supabase.from("session_telemetry").select("laps,corner_analysis,channel_manifest").eq("session_id",id).maybeSingle();
+    if(error)setReportError(error.message);
+    else if(data)setReportTelemetry(data as Record<string,unknown>);
+    else setReportError("Telemetry is not available for this session yet.");
+  }
   const [currentTracks,setCurrentTracks] = useState(tracks);
   const chosenTrack = currentTracks.find(t=>t.id===draft.trackId);
   const turnNames=chosenTrack?.turns?Object.keys(chosenTrack.turns).filter(x=>/^[1-4]$/.test(x)):[];
@@ -63,12 +86,42 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
       const result=await fetch("/api/race-day/operator-upload",{method:"POST",body:form});
       const data=await result.json();
       if(!result.ok)throw new Error(data.error??"Upload was rejected.");
-      change(slot.id,{status:"queued",sessionId:data.sessionId,message:"XRK received. Analysis queued."});
+      change(slot.id,{status:"queued",sessionId:data.sessionId,message:"XRK received. Analysis queued."});void refreshSessions();
     }catch(e){change(slot.id,{status:"error",message:e instanceof Error?e.message:"Upload failed."});}
   }
   return <main className={styles.page}>
-    <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav><Link href="/race-day/uploader">Race Day</Link><Link href="/race-day/admin">Race Day Admin</Link><Link href="/reports">Reports</Link></nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
+    <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav>{([["race","Race Day"],["admin","Race Day Admin"],["reports","Reports"]] as const).map(([tab,name])=><button key={tab} type="button" onClick={()=>{setActiveTab(tab);void refreshSessions();}} className={activeTab===tab?styles.activeTab:styles.navTab}>{name}</button>)}</nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
     <div className={styles.content}>
+    {activeTab!=="race" && <section className={styles.operatorArea}>
+      <div className={styles.heading}><div><h1>{activeTab==="admin"?"Race Day Admin":"Reports"}</h1><p>Rivali Uploader workspace. No links to the old Rivali app.</p></div><button type="button" className={styles.trackLink} onClick={()=>void refreshSessions()}>Refresh status</button></div>
+      {activeTab==="admin" && <div className={styles.adminOverview}>
+        <h2>Session processing and report approvals</h2>
+        <p>Review completed sessions before reports are delivered. Job status updates automatically.</p>
+        {liveSessions.length===0?<p>No sessions found.</p>:liveSessions.map(item=><div key={item.id} className={styles.sessionRow}>
+          <div><strong>{item.racers?.name??"Unassigned driver"}</strong> · {item.karts?.name??"Kart"} · {item.tracks?.name??"Track"}<small>{item.raw_file_name}</small></div>
+          <strong>{item.status}</strong><span>{item.report_status??"Awaiting report review"}</span>
+          <button type="button" onClick={()=>{setActiveTab("reports");void inspectReport(item.id);}}>Review</button>
+        </div>)}
+      </div>}
+      {activeTab==="reports" && <div className={styles.adminOverview}>
+        <h2>Imported XRK reports</h2>
+        {liveSessions.length===0?<p>No reports yet.</p>:liveSessions.map(item=><div key={item.id} className={styles.sessionRow}>
+          <div><strong>{item.racers?.name??"Unassigned driver"}</strong> · {item.tracks?.name??"Track"}<small>{item.raw_file_name}</small></div>
+          <span>{item.status}</span><span>{item.lap_count??0} laps · best {item.best_lap_sec?.toFixed(3)??"Not established"}s</span>
+          <button type="button" disabled={item.status!=="completed"} onClick={()=>void inspectReport(item.id)}>View analysis</button>
+        </div>)}
+        {selectedReport && <div className={styles.reportDetail}><h3>Session analysis</h3>
+          {reportError?<p>{reportError}</p>:!reportTelemetry?<p>Loading session telemetry...</p>:<>
+            <p><strong>Lap records:</strong> {Array.isArray(reportTelemetry.laps)?reportTelemetry.laps.length:"Unavailable"}</p>
+            <p><strong>Recorded channels:</strong> {Array.isArray(reportTelemetry.channel_manifest)?reportTelemetry.channel_manifest.join(", "):"Not recorded"}</p>
+            <p><strong>Analysis diagnostic:</strong> {String((reportTelemetry.corner_analysis as Record<string,unknown>|undefined)?.diagnostic??"No verified corner interpretation available")}</p>
+            <p><strong>Sector assignments:</strong> {String(((reportTelemetry.corner_analysis as Record<string,unknown>|undefined)?.sector_assignments as Record<string,unknown>|undefined)?.status??"Not evaluated")}</p>
+            <p>This is a technical preview, not an approved customer report or Stripe delivery.</p>
+          </>}
+        </div>}
+      </div>}
+    </section>}
+    {activeTab==="race" && <>
       <div className={styles.heading}><div><h1>Race Day</h1><p>Set up drivers, upload MyChron data, analyze and deliver reports.</p></div><button type="button" className={styles.trackLink} onClick={()=>setShowMapper(v=>!v)}><MapPinned size={17}/>{showMapper?"Close Track Mapper":"Open Track Mapper"}</button></div>
       <section className={styles.setup}>
         <label>Track<select value={draft.trackId} onChange={e=>setDraft(d=>({...d,trackId:e.target.value}))}><option value="">Select track</option>{currentTracks.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
@@ -88,10 +141,11 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
         <div className={styles.fieldsTwo}><label>Run type<select value={slot.sessionType} onChange={e=>change(slot.id,{sessionType:e.target.value})}>{["practice","hot laps","heat","feature"].map(t=><option key={t} value={t}>{t}</option>)}</select></label></div>
         <label className={styles.drop}><UploadCloud size={26}/><strong>{slot.fileName || "Choose XRK file"}</strong><span>{slot.fileName?"Click to replace":"MyChron / Race Studio .xrk Â· max 100 MB"}</span><input type="file" accept=".xrk" onChange={e=>onFile(slot.id,e)}/></label>
         <button className={styles.upload} disabled={slot.status==="uploading"} onClick={()=>void upload(slot)}><UploadCloud size={18}/>{slot.status==="uploading"?"Uploading...":"Upload & Analyze"}</button>
-        <div className={styles.status}><span>{slot.status==="queued"?<CheckCircle2 size={16}/>:slot.status==="error"?<AlertCircle size={16}/>:<ClipboardCheck size={16}/>}</span><p>{slot.message || "Waiting for telemetry. Select an XRK file to upload to your Rivali account."}</p></div>
+        <div className={styles.status}><span>{slot.status==="queued"?<CheckCircle2 size={16}/>:slot.status==="error"?<AlertCircle size={16}/>:<ClipboardCheck size={16}/>}</span><p>{slot.sessionId?(liveSessions.find(item=>item.id===slot.sessionId)?.status==="completed"?"Analysis completed. Open Reports to view results.":liveSessions.find(item=>item.id===slot.sessionId)?.status==="failed"?"Processing failed. Open Race Day Admin for details.":slot.message):slot.message || "Waiting for telemetry. Select an XRK file to upload to your Rivali account."}</p></div>
         {slot.sessionId&&<small className={styles.session}>Session: {slot.sessionId}</small>}
       </article>)}</div>
       <footer className={styles.footer}><span>Rivali RaceDay Â· 1â€“5 independent kart workflows</span><span>Track mapping must be analysis-ready before XRK processing.</span></footer>
+    </>}
     </div>
   </main>;
 }
