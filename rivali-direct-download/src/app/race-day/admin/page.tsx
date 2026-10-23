@@ -28,6 +28,7 @@ export default async function RaceDayAdminPage() {
             <Link href="/dashboard">Race shop</Link>
             <Link href="/reports">Reports</Link>
             <Link href="/race-day">Driver view</Link>
+            <Link href="/race-day/uploader">5-Kart Uploader</Link>
           </nav>
         </div>
       </header>
