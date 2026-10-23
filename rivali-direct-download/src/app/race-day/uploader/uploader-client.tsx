@@ -7,7 +7,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { Plus, Trash2, UploadCloud, CheckCircle2, AlertCircle, Flag, MapPinned, ClipboardCheck } from "lucide-react";
 import styles from "./uploader.module.css";
 import { KartSetup } from "./kart-setup";
-import { DougAssistant } from "./doug-assistant";
+import { DougLiveVoice } from "./doug-live-voice";
 
 type Track = DomainTrack;
 type OperatorSession = RaceSession & {report_status?:string|null};
@@ -162,6 +162,6 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
       <footer className={styles.footer}><span>Rivali RaceDay Â· 1â€“5 independent kart workflows</span><span>Trackside uploader · GPS analysis is confidence-gated.</span></footer>
     </>}
     </div>
-    <DougAssistant trackId={draft.trackId} slots={draft.slots} context={["Track: "+(chosenTrack?.name??"not selected"),"Karts: "+draft.slots.map(x=>[x.number,x.driver,x.className].filter(Boolean).join("/")).join("; "),"Latest sessions: "+liveSessions.slice(0,4).map(x=>x.raw_file_name+" status "+x.status).join("; ")].join("\n")}/>
+    <DougLiveVoice context={["Track: "+(chosenTrack?.name??"not selected"),"Karts: "+draft.slots.map(x=>[x.number,x.driver,x.className].filter(Boolean).join("/")).join("; "),"Latest sessions: "+liveSessions.slice(0,4).map(x=>x.raw_file_name+" status "+x.status).join("; ")].join("\n")}/>
   </main>;
 }
