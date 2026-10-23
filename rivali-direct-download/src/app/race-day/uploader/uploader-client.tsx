@@ -32,22 +32,45 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
   const [selectedReport,setSelectedReport]=useState<string|null>(null);
   const [reportTelemetry,setReportTelemetry]=useState<Record<string,unknown>|null>(null);
   const [reportError,setReportError]=useState("");
+  const [generatingReport,setGeneratingReport]=useState(false);
+  const [approvingReport,setApprovingReport]=useState(false);
   const supabase=createClient();
   async function refreshSessions(){
     const {data,error}=await supabase.from("sessions").select("id,session_date,session_type,status,report_status,best_lap_sec,average_lap_sec,consistency_stdev_sec,lap_count,setup,conditions,raw_file_name,tracks(id,name),racers(id,name),karts(id,name)").order("created_at",{ascending:false}).limit(100);
     if(!error&&data)setLiveSessions(data as unknown as OperatorSession[]);
   }
   useEffect(()=>{
-    void refreshSessions();
+    void Promise.resolve().then(()=>refreshSessions());
     const timer=window.setInterval(()=>{void refreshSessions();},15000);
     return ()=>window.clearInterval(timer);
   },[]);
   async function inspectReport(id:string){
     setSelectedReport(id);setReportError("");setReportTelemetry(null);
-    const {data,error}=await supabase.from("session_telemetry").select("laps,corner_analysis,channel_manifest").eq("session_id",id).maybeSingle();
+    const {data,error}=await supabase.from("session_telemetry").select("laps,corner_analysis,channel_manifest,report_analysis").eq("session_id",id).maybeSingle();
     if(error)setReportError(error.message);
     else if(data)setReportTelemetry(data as Record<string,unknown>);
     else setReportError("Telemetry is not available for this session yet.");
+  }
+  async function generateReport(id:string,tier:"standard"|"crew_chief"){
+    setGeneratingReport(true);setReportError("");
+    try{
+      const response=await fetch("/api/race-day/report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId:id,tier})});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||"Report generation failed.");
+      await inspectReport(id);await refreshSessions();
+    }catch(error){setReportError(error instanceof Error?error.message:"Could not generate report.");}
+    finally{setGeneratingReport(false);}
+  }
+  async function approveReport(id:string){
+    setApprovingReport(true);setReportError("");
+    try{
+      const response=await fetch(`/api/reports/${id}/approve`,{method:"POST"});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||"Approval failed.");
+      await inspectReport(id);await refreshSessions();
+      setReportError("Report approved privately. No automatic text or payment.");
+    }catch(error){setReportError(error instanceof Error?error.message:"Could not approve report.");}
+    finally{setApprovingReport(false);}
   }
   const [currentTracks,setCurrentTracks] = useState(tracks);
   const chosenTrack = currentTracks.find(t=>t.id===draft.trackId);
@@ -67,12 +90,14 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
     change(id,{number:kart.name,driver:racer?.name??"",className:racer?.primary_class??""});
   }
   useEffect(()=>{
+    void Promise.resolve().then(()=>{
     try {
       const raw=window.localStorage.getItem(KEY);
       if(raw) { const stored=JSON.parse(raw) as Draft; setDraft({trackId:stored.trackId??"",eventDate:stored.eventDate??"",slots:Array.isArray(stored.slots)?stored.slots.slice(0,5):[]}); }
       else setDraft({trackId:"",eventDate:new Date().toLocaleDateString("en-CA"),slots:[makeSlot(0)]});
     } catch {setDraft({trackId:"",eventDate:"",slots:[makeSlot(0)]});}
     setHydrated(true);
+    });
   },[]);
   useEffect(()=>{if(hydrated)window.localStorage.setItem(KEY,JSON.stringify({...draft,slots:draft.slots.map(s=>({...s,status:s.status==="uploading"?"waiting":s.status}))}));},[draft,hydrated]);
   function change(id:string,patch:Partial<Slot>) {setDraft(d=>({...d,slots:d.slots.map(s=>s.id===id?{...s,...patch}:s)}));}
@@ -104,8 +129,8 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
       <div className={styles.racedayHeroBadges}><span>{chosenTrack?.name??"Select track"}</span><span>{liveSessions.filter(s=>s.status==="completed").length} processed sessions</span><span>5 kart capacity</span></div>
     </div>}
     {activeTab==="setup" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Kart Setup</h1><p>Session settings and version history</p></div></div><SetupInvitePanel racers={racers} karts={karts} /><div className={styles.kartPicker}>{draft.slots.map((slot,i)=><button key={slot.id} className={selectedKart===slot.id||(!selectedKart&&i===0)?styles.selectedKart:""} onClick={()=>setSelectedKart(slot.id)}>Kart {slot.number||i+1} · {slot.driver||"Add driver"}</button>)}</div>{draft.slots.filter((slot,i)=>slot.id===(selectedKart||draft.slots[0]?.id)).map(slot=>{const linked=karts.find(k=>k.name===slot.number&&racers.some(r=>r.id===k.racer_id&&r.name===slot.driver));return <KartSetup key={slot.id} driver={slot.driver} kart={slot.number} className={slot.className} trackId={draft.trackId} kartId={linked?.id} racerId={linked?.racer_id??undefined}/>;})}</section>}
-    {activeTab==="timekeeper" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Timekeeper</h1><p>MYLAPS / Race Monitor · read-only trackside timing</p></div></div><div className={styles.timingPanel}><h2>Rivali Uploader Live Timing</h2><p>The existing Timekeeper is a separate Windows receiver. It must connect to the scoring operator's authorized RMonitor feed. No live connection is represented here until that receiver is connected.</p><div className={styles.demoControls}><button type="button" onClick={()=>{setDemoTiming(v=>!v);setDemoLap(0);}}>{demoTiming?"Stop Demo":"Run Demo"}</button><strong>{demoTiming?"SIMULATED DATA · DEMO MODE":"Connection status: Not linked to web Uploader"}</strong></div>
- {demoTiming&&<div className={styles.demoTimingTable}><h3>Practice 1 · Demonstration only</h3><table><thead><tr><th>Pos</th><th>Kart</th><th>Driver</th><th>Laps</th><th>Best</th><th>Status</th></tr></thead><tbody>{[["145","Demo Driver A","12.110"],["22","Demo Driver B","12.296"],["88","Demo Driver C","12.341"],["7","Demo Driver D","12.415"],["11","Demo Driver E","12.488"]].map((v,i)=><tr key={v[0]}><td>{i+1}</td><td>{v[0]}</td><td>{v[1]}</td><td>{Math.max(0,demoLap-i)}</td><td>{v[2]}</td><td>Simulated</td></tr>)}</tbody></table><p>This is fabricated demonstration data and is never saved as official race timing.</p></div>}<p>On this laptop, open <code>Documents\rivali-app\rivali-direct-download\timing_listener\START_RIVALI_TIMING.bat</code> to launch the receiver. Use Demo only for simulated testing. Obtain the scoring operator's permission before connecting to a live feed.</p><p>Live leaderboards and timing data will appear here only after a verified receiver-to-Uploader connection is built.</p></div></section>}
+    {activeTab==="timekeeper" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Timekeeper</h1><p>MYLAPS / Race Monitor · read-only trackside timing</p></div></div><div className={styles.timingPanel}><h2>Rivali Uploader Live Timing</h2><p>The existing Timekeeper is a separate Windows receiver. It must connect to the scoring operator authorized RMonitor feed. No live connection is represented here until that receiver is connected.</p><div className={styles.demoControls}><button type="button" onClick={()=>{setDemoTiming(v=>!v);setDemoLap(0);}}>{demoTiming?"Stop Demo":"Run Demo"}</button><strong>{demoTiming?"SIMULATED DATA · DEMO MODE":"Connection status: Not linked to web Uploader"}</strong></div>
+ {demoTiming&&<div className={styles.demoTimingTable}><h3>Practice 1 · Demonstration only</h3><table><thead><tr><th>Pos</th><th>Kart</th><th>Driver</th><th>Laps</th><th>Best</th><th>Status</th></tr></thead><tbody>{[["145","Demo Driver A","12.110"],["22","Demo Driver B","12.296"],["88","Demo Driver C","12.341"],["7","Demo Driver D","12.415"],["11","Demo Driver E","12.488"]].map((v,i)=><tr key={v[0]}><td>{i+1}</td><td>{v[0]}</td><td>{v[1]}</td><td>{Math.max(0,demoLap-i)}</td><td>{v[2]}</td><td>Simulated</td></tr>)}</tbody></table><p>This is fabricated demonstration data and is never saved as official race timing.</p></div>}<p>On this laptop, open <code>Documents\rivali-app\rivali-direct-download\timing_listener\START_RIVALI_TIMING.bat</code> to launch the receiver. Use Demo only for simulated testing. Obtain the scoring operator permission before connecting to a live feed.</p><p>Live leaderboards and timing data will appear here only after a verified receiver-to-Uploader connection is built.</p></div></section>}
     {["admin","reports"].includes(activeTab) && <section className={styles.operatorArea}>
       <div className={styles.heading}><div><h1>{activeTab==="admin"?"Race Day Admin":"Reports"}</h1><p>Rivali Uploader workspace. No links to the old Rivali app.</p></div><button type="button" className={styles.trackLink} onClick={()=>void refreshSessions()}>Refresh status</button></div>
       {activeTab==="admin" && <div className={styles.adminOverview}>
@@ -130,7 +155,25 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
             <p><strong>Recorded channels:</strong> {Array.isArray(reportTelemetry.channel_manifest)?reportTelemetry.channel_manifest.join(", "):"Not recorded"}</p>
             <p><strong>Analysis diagnostic:</strong> {String((reportTelemetry.corner_analysis as Record<string,unknown>|undefined)?.diagnostic??"No verified corner interpretation available")}</p>
             <p><strong>Sector assignments:</strong> {String(((reportTelemetry.corner_analysis as Record<string,unknown>|undefined)?.sector_assignments as Record<string,unknown>|undefined)?.status??"Not evaluated")}</p>
-            <p>This is a technical preview, not an approved customer report or Stripe delivery.</p>
+            {(()=>{const report=reportTelemetry.report_analysis as Record<string,unknown>|undefined;
+              const interpretation=report?.interpretation as Record<string,unknown>|undefined;
+              const facts=report?.facts as Record<string,unknown>|undefined;
+              return interpretation?<div style={{padding:"14px",border:"1px solid #53624b",borderRadius:10}}>
+                <h3>Rivali interpretation · {String(report?.tier??"standard").replaceAll("_"," ")}</h3>
+                <p><strong>Confidence:</strong> {String(report?.confidence??"Low")}</p>
+                {([["Summary","summary"],["What the data says","what_data_says"],["What it means","what_it_means"],["Possible causes","possible_causes"],["Confidence reasoning","confidence_reason"],["What to try","what_to_try"],["How to verify","how_to_verify"]] as const).map(([label,key])=>interpretation[key]?<p key={key}><strong>{label}:</strong> {String(interpretation[key])}</p>:null)}
+                <p><small>Timing: {String(facts?.lap_timing_diagnostic??"Unverified")} · Track: {String(facts?.corner_mapping_diagnostic??"Unverified")}</small></p>
+                <p>Original AiM report remains separate; Rivali does not substitute for Race Studio.</p>
+                <button type="button" disabled={generatingReport} onClick={()=>{window.print();}}>Print report</button>
+              </div>:<p>No Rivali interpreted report saved yet. Generate a draft below.</p>;
+            })()}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
+              <button type="button" disabled={generatingReport} onClick={()=>void generateReport(selectedReport,"standard")}>Generate Standard draft</button>
+              <button type="button" disabled={generatingReport} onClick={()=>void generateReport(selectedReport,"crew_chief")}>Generate Crew Chief draft</button>
+              {liveSessions.find(s=>s.id===selectedReport)?.report_status==="pending_approval"&&
+                <button type="button" disabled={approvingReport||generatingReport} onClick={()=>void approveReport(selectedReport)}>Approve interpreted report</button>}
+            </div>
+            <p>Drafts remain private until operator approval. Payment is not required.</p>
           </>}
         </div>}
       </div>}
