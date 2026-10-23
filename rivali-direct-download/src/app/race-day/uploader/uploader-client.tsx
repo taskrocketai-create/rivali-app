@@ -164,7 +164,7 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
                 {([["Summary","summary"],["What the data says","what_data_says"],["What it means","what_it_means"],["Possible causes","possible_causes"],["Confidence reasoning","confidence_reason"],["What to try","what_to_try"],["How to verify","how_to_verify"]] as const).map(([label,key])=>interpretation[key]?<p key={key}><strong>{label}:</strong> {String(interpretation[key])}</p>:null)}
                 <p><small>Timing: {String(facts?.lap_timing_diagnostic??"Unverified")} · Track: {String(facts?.corner_mapping_diagnostic??"Unverified")}</small></p>
                 <p>Original AiM report remains separate; Rivali does not substitute for Race Studio.</p>
-                <button type="button" disabled={generatingReport} onClick={()=>{window.print();}}>Print report</button>
+                <a href={`/race-day/uploader/report/${selectedReport}`} target="_blank" rel="noopener noreferrer" style={{color:"#e6f34c"}}>Open printable Rivali report</a>
               </div>:<p>No Rivali interpreted report saved yet. Generate a draft below.</p>;
             })()}
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
