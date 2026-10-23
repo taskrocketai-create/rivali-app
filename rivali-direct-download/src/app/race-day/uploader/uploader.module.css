@@ -18,3 +18,35 @@
 .kartPicker{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.kartPicker button{background:#14191b;color:#fff;border:1px solid #4a5052;border-radius:8px;padding:12px 16px;cursor:pointer}.kartPicker button.selectedKart{border-color:#eaff00;color:#eaff00}
 .setupWorkspace{display:grid;grid-template-columns:minmax(0,2fr) minmax(270px,1fr);gap:18px}.setupForm,.setupHistory,.timingPanel{border:1px solid #414949;border-radius:12px;background:#101416;padding:18px}.setupTitle,.setupStage,.setupActions{display:flex;align-items:center;justify-content:space-between;gap:15px}.setupTitle h2,.setupHistory h2{margin:0;color:#fff}.setupTitle p,.setupHistory p,.timingPanel p{color:#aeb5b6}.setupTitle span{color:#eaff00}.setupStage{margin:20px 0}.setupStage select,.setupFields input{background:#090c0d;border:1px solid #4d5557;border-radius:5px;padding:10px;color:#fff;min-width:0}.setupSections{display:grid;gap:10px}.setupSection{border:1px solid #393f41;border-radius:9px;overflow:hidden}.setupSectionButton{width:100%;border:0;display:flex;gap:14px;align-items:center;background:#14191b;color:white;text-align:left;padding:12px;cursor:pointer}.setupSectionButton b{background:#eaff00;color:#111;width:28px;height:28px;border-radius:50%;display:grid;place-items:center}.setupSectionButton span{margin-left:auto;color:#eaff00}.setupFields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px}.setupFields label{display:flex;flex-direction:column;gap:6px;color:#c5cccc;font-size:12px}.setupActions{margin-top:16px}.setupActions button{background:#eaff00;color:#111;border:0;padding:14px 20px;border-radius:7px;font-weight:900;cursor:pointer}.setupActions span{color:#9fe99c}.setupHistory article{border:1px solid #454b4b;border-radius:8px;padding:13px;margin-top:10px}.setupHistory article b{color:#eaff00}.setupHistory article small{display:block;color:#abb5b8;margin-top:7px}.setupHistory article button{background:#141b1b;border:1px solid #d8ef00;color:#eaff00;padding:8px;border-radius:5px;cursor:pointer;margin-top:9px}.timingPanel{max-width:900px}.timingPanel strong{color:#eaff00}.timingPanel code{overflow-wrap:anywhere}
 @media(max-width:850px){.setupWorkspace{grid-template-columns:1fr}.setupFields{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:550px){.setupFields{grid-template-columns:1fr}.setupTitle,.setupStage,.setupActions{align-items:flex-start;flex-direction:column}.bar nav{flex-wrap:wrap}}
+
+/* Approved Rivali Uploader visual direction: flat neon-yellow on deep black. */
+.page{background:#07090a}.bar{min-height:70px;height:auto;gap:22px;padding:9px 2%;border-bottom:2px solid #eaff00;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-size:22px;letter-spacing:-.7px}
+.brand span{color:#eaff00}.brand em{font-style:italic;color:#fff}
+.brand :global(.brand-logo){width:72px;max-width:72px}
+.bar nav{margin-left:14px;flex-wrap:wrap;gap:6px}
+.bar nav button{padding:10px 11px;font-size:13px;border-radius:6px}.bar nav button.activeTab{background:#eaff00;color:#080808;border-bottom:0}
+.content{max-width:1860px;padding:22px 22px}
+.racedayHero{background:linear-gradient(115deg,#171e14,#090c0d 75%);border:1px solid #454b19;border-radius:11px;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;gap:16px;margin-bottom:16px}
+.racedayHero>div:first-child{display:flex;flex-direction:column;gap:5px}.racedayHero strong{color:#eaff00;font-size:11px;letter-spacing:2px}.racedayHero span{color:#bfc7c7;font-size:12px}
+.racedayHeroBadges{display:flex;flex-wrap:wrap;gap:8px}.racedayHeroBadges span{border:1px solid #52591a;padding:8px 10px;border-radius:5px;color:#ecf4dd;font-weight:700}
+.heading h1{font-style:normal;letter-spacing:-1.3px}.headingActions{display:flex;gap:10px;flex-wrap:wrap}
+.newSession{background:#eaff00;color:#080808;padding:12px 18px;border:0;border-radius:7px;display:flex;align-items:center;gap:7px;font-weight:900;cursor:pointer}
+.grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.card{padding:12px;border:1px solid #40494b;box-shadow:0 6px 16px #0005;background:linear-gradient(160deg,#121619,#080a0b)}
+.card:first-child{border-color:#c8e000}.cardTop{margin-bottom:12px}.cardName{font-size:17px;gap:7px}
+.number{width:32px;height:32px;background:#eaff00!important;color:#090a0b!important}
+.loaded{grid-template-columns:1fr;background:#11170e;border-color:#353f16;gap:8px;padding:9px}
+.fields{grid-template-columns:1fr 1fr;gap:9px}.fields label:last-child{grid-column:1/-1}
+.fieldsTwo{grid-template-columns:1fr}.card input,.card select{padding:9px 6px}
+.drop{min-height:84px;padding:8px}.upload{padding:10px;margin:8px 0}
+.card .status{margin-top:6px}
+.workflow{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;padding:12px 0;border-top:1px solid #475100;border-bottom:1px solid #475100;justify-content:space-between}
+.workflow span{font-weight:900;color:#eaff00;font-size:11px;letter-spacing:.5px}
+.mapperPanel{padding:15px}.mapperHeading{margin-bottom:10px}
+@media(max-width:1540px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1030px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.racedayHero{align-items:flex-start;flex-direction:column}}
+@media(max-width:640px){.grid{grid-template-columns:1fr}.bar{gap:4px}.bar nav{margin-left:0}.brand{font-size:19px}.racedayHeroBadges{display:none}.content{padding:14px 10px}}
+
+.brand :global(.brand-logo-artwork){background-image:url('/rivali-brand-guide-uploader.png');filter:none}
+

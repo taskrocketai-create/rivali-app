@@ -20,7 +20,7 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
   const [draft,setDraft] = useState<Draft>({trackId:"",eventDate:"",slots:[]});
   const [hydrated,setHydrated] = useState(false);
   const [files,setFiles] = useState<Record<string,File>>({});
-  const [showMapper,setShowMapper] = useState(false);
+  const [showMapper,setShowMapper] = useState(true);
   const [activeTab,setActiveTab]=useState<"race"|"setup"|"admin"|"reports"|"timekeeper">("race");
   const [selectedKart,setSelectedKart]=useState<string|null>(null);
   const [liveSessions,setLiveSessions]=useState<OperatorSession[]>(sessions);
@@ -92,8 +92,12 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
     }catch(e){change(slot.id,{status:"error",message:e instanceof Error?e.message:"Upload failed."});}
   }
   return <main className={styles.page}>
-    <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav>{([["race","Race Day"],["setup","Kart Setup"],["admin","Race Day Admin"],["reports","Reports"],["timekeeper","Timekeeper"]] as const).map(([tab,name])=><button key={tab} type="button" onClick={()=>{setActiveTab(tab);void refreshSessions();}} className={activeTab===tab?styles.activeTab:styles.navTab}>{name}</button>)}</nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
+    <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span><em>RIVALI</em> UPLOADER</span></div><nav>{([["race","Race Day"],["setup","Kart Setup"],["admin","Race Day Admin"],["reports","Reports"],["timekeeper","Timekeeper"]] as const).map(([tab,name])=><button key={tab} type="button" onClick={()=>{setActiveTab(tab);void refreshSessions();}} className={activeTab===tab?styles.activeTab:styles.navTab}>{name}</button>)}</nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
     <div className={styles.content}>
+    {activeTab==="race" && <div className={styles.racedayHero}>
+      <div><strong>TRACKSIDE OPERATIONS</strong><span>Load up to five karts, collect telemetry, review evidence, then approve reports.</span></div>
+      <div className={styles.racedayHeroBadges}><span>{chosenTrack?.name??"Select track"}</span><span>{liveSessions.filter(s=>s.status==="completed").length} processed sessions</span><span>5 kart capacity</span></div>
+    </div>}
     {activeTab==="setup" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Kart Setup</h1><p>Session settings and version history</p></div></div><div className={styles.kartPicker}>{draft.slots.map((slot,i)=><button key={slot.id} className={selectedKart===slot.id||(!selectedKart&&i===0)?styles.selectedKart:""} onClick={()=>setSelectedKart(slot.id)}>Kart {slot.number||i+1} · {slot.driver||"Add driver"}</button>)}</div>{draft.slots.filter((slot,i)=>slot.id===(selectedKart||draft.slots[0]?.id)).map(slot=><KartSetup key={slot.id} driver={slot.driver} kart={slot.number} className={slot.className} trackId={draft.trackId}/>)}</section>}
     {activeTab==="timekeeper" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Timekeeper</h1><p>MYLAPS / Race Monitor · read-only trackside timing</p></div></div><div className={styles.timingPanel}><h2>Rivali Uploader Live Timing</h2><p>The existing Timekeeper is a separate Windows receiver. It must connect to the scoring operator's authorized RMonitor feed. No live connection is represented here until that receiver is connected.</p><strong>Connection status: Not linked to web Uploader</strong><p>On this laptop, open <code>Documents\rivali-app\rivali-direct-download\timing_listener\START_RIVALI_TIMING.bat</code> to launch the receiver. Use Demo only for simulated testing. Obtain the scoring operator's permission before connecting to a live feed.</p><p>Live leaderboards and timing data will appear here only after a verified receiver-to-Uploader connection is built.</p></div></section>}
     {["admin","reports"].includes(activeTab) && <section className={styles.operatorArea}>
@@ -126,7 +130,7 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
       </div>}
     </section>}
     {activeTab==="race" && <>
-      <div className={styles.heading}><div><h1>Race Day</h1><p>Set up drivers, upload MyChron data, analyze and deliver reports.</p></div><button type="button" className={styles.trackLink} onClick={()=>setShowMapper(v=>!v)}><MapPinned size={17}/>{showMapper?"Close Track Mapper":"Open Track Mapper"}</button></div>
+      <div className={styles.heading}><div><h1>Race Day</h1><p>Upload MyChron XRK data, track processing and manage your karts.</p></div><div className={styles.headingActions}><button type="button" className={styles.trackLink} onClick={()=>setShowMapper(v=>!v)}><MapPinned size={17}/>{showMapper?"Hide Track Editor":"Track Editor"}</button><button type="button" className={styles.newSession} onClick={add}><Plus size={17}/> New Kart</button></div></div>
       <section className={styles.setup}>
         <label>Track<select value={draft.trackId} onChange={e=>setDraft(d=>({...d,trackId:e.target.value}))}><option value="">Select track</option>{currentTracks.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
         <label>Race date<input type="date" value={draft.eventDate} onChange={e=>setDraft(d=>({...d,eventDate:e.target.value}))}/></label>
@@ -137,9 +141,9 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
         <div className={styles.mapperHeading}><div><h2>Track Mapper</h2><p>Map the selected track here without leaving Rivali Uploader.</p></div><button type="button" onClick={()=>setShowMapper(false)}>Close mapper</button></div>
         <TrackMapEditor tracks={currentTracks} sessions={sessions.filter(s=>s.tracks?.id===draft.trackId)} selectedTrackId={draft.trackId} onTrackUpdated={updated=>setCurrentTracks(list=>list.map(t=>t.id===updated.id?updated:t))}/>
       </section>}
-      <div className={styles.sectionHeader}><div><h2>Your Karts</h2><span>{draft.slots.length} of 5 configured</span></div><button disabled={draft.slots.length>=5} onClick={add}><Plus size={18}/> Add Kart</button></div>
+      <div className={styles.sectionHeader}><div><h2>My Karts</h2><span>{draft.slots.length} / 5 active</span></div><button disabled={draft.slots.length>=5} onClick={add}><Plus size={18}/> Add Kart</button></div>
       <div className={styles.grid}>{draft.slots.map((slot,i)=><article className={styles.card} key={slot.id}>
-        <div className={styles.cardTop}><div className={styles.cardName}><span className={styles.number}>{i+1}</span><b>Kart {i+1}</b></div><span className={slot.status==="queued"?styles.success:slot.status==="error"?styles.error:styles.wait}>{slot.status==="uploading"?"Uploading":slot.status==="queued"?"Queued":slot.status==="error"?"Needs attention":"Waiting"}</span><button className={styles.remove} title="Remove kart" onClick={()=>remove(slot.id)}><Trash2 size={17}/></button></div>
+        <div className={styles.cardTop}><div className={styles.cardName}><span className={styles.number}>{i+1}</span><b>Kart {slot.number||i+1}</b></div><span className={slot.status==="queued"?styles.success:slot.status==="error"?styles.error:styles.wait}>{slot.status==="uploading"?"Uploading":slot.status==="queued"?"Queued":slot.status==="error"?"Needs attention":"Waiting"}</span><button className={styles.remove} title="Remove kart" onClick={()=>remove(slot.id)}><Trash2 size={17}/></button></div>
         <div className={styles.loaded}><label>Saved driver<select value="" onChange={e=>chooseRacer(slot.id,e.target.value)}><option value="">Choose existing driver</option>{racers.map(r=><option key={r.id} value={r.id}>{r.name}{r.primary_class? " · "+r.primary_class:""}</option>)}</select></label><label>Saved kart<select value="" onChange={e=>chooseKart(slot.id,e.target.value)}><option value="">Choose existing kart</option>{karts.map(k=><option key={k.id} value={k.id}>{k.name}{k.chassis_make?" · "+k.chassis_make:""}</option>)}</select></label></div>
         <div className={styles.fields}><label>Driver<input value={slot.driver} onChange={e=>change(slot.id,{driver:e.target.value})} placeholder="Driver name"/></label><label>Kart #<input value={slot.number} onChange={e=>change(slot.id,{number:e.target.value})} placeholder="145"/></label><label>Class<input value={slot.className} onChange={e=>change(slot.id,{className:e.target.value})} placeholder="Animal Medium"/></label></div>
         <div className={styles.fieldsTwo}><label>Run type<select value={slot.sessionType} onChange={e=>change(slot.id,{sessionType:e.target.value})}>{["practice","hot laps","heat","feature"].map(t=><option key={t} value={t}>{t}</option>)}</select></label></div>
@@ -149,7 +153,8 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
         <div className={styles.status}><span>{slot.status==="queued"?<CheckCircle2 size={16}/>:slot.status==="error"?<AlertCircle size={16}/>:<ClipboardCheck size={16}/>}</span><p>{slot.sessionId?(liveSessions.find(item=>item.id===slot.sessionId)?.status==="completed"?"Analysis completed. Open Reports to view results.":liveSessions.find(item=>item.id===slot.sessionId)?.status==="failed"?"Processing failed. Open Race Day Admin for details.":slot.message):slot.message || "Waiting for telemetry. Select an XRK file to upload to your Rivali account."}</p></div>
         {slot.sessionId&&<small className={styles.session}>Session: {slot.sessionId}</small>}
       </article>)}</div>
-      <footer className={styles.footer}><span>Rivali RaceDay Â· 1â€“5 independent kart workflows</span><span>Track mapping must be analysis-ready before XRK processing.</span></footer>
+      <div className={styles.workflow}><span>1 · PREPARE KART</span><span>2 · UPLOAD XRK</span><span>3 · ANALYZE</span><span>4 · REVIEW REPORT</span><span>5 · APPROVE & DELIVER</span></div>
+      <footer className={styles.footer}><span>Rivali RaceDay Â· 1â€“5 independent kart workflows</span><span>Trackside uploader · GPS analysis is confidence-gated.</span></footer>
     </>}
     </div>
   </main>;
