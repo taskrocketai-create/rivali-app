@@ -22,6 +22,7 @@ import type {
 } from "@/types/domain";
 import { TrackMapEditor } from "./track-map-editor";
 import { VoiceDebriefRecorder } from "./voice-debrief";
+import { SetupSheetImport } from "./setup-sheet-import";
 import { RaceControlOverview } from "./race-control-overview";
 import type { DougAction } from "./doug-call";
 import { FloatingDoug } from "./floating-doug";
@@ -553,6 +554,8 @@ export function DashboardClient({
           />
         )}
         {tab === "upload" && (
+          <>
+          <SetupSheetImport sessions={sessions} onSaved={(id, setup) => setSessions((current) => current.map((s) => s.id === id ? { ...s, setup: setup as RaceSession["setup"] } : s))} />
           <form className="card stack" onSubmit={uploadSession}>
             <h2>Upload a MyChron session</h2>
             <div className="shortcut-setup">
@@ -805,6 +808,7 @@ export function DashboardClient({
               {busy ? "Uploading..." : "Upload and analyze"}
             </button>
           </form>
+          </>
         )}
         {tab === "drivers" && (
           <div className="grid-2">
