@@ -6,6 +6,7 @@ import type { Track as DomainTrack, RaceSession } from "@/types/domain";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { Plus, Trash2, UploadCloud, CheckCircle2, AlertCircle, Flag, MapPinned, ClipboardCheck } from "lucide-react";
 import styles from "./uploader.module.css";
+import { KartSetup } from "./kart-setup";
 
 type Track = DomainTrack;
 type OperatorSession = RaceSession & {report_status?:string|null};
@@ -20,7 +21,8 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
   const [hydrated,setHydrated] = useState(false);
   const [files,setFiles] = useState<Record<string,File>>({});
   const [showMapper,setShowMapper] = useState(false);
-  const [activeTab,setActiveTab]=useState<"race"|"admin"|"reports">("race");
+  const [activeTab,setActiveTab]=useState<"race"|"setup"|"admin"|"reports"|"timekeeper">("race");
+  const [selectedKart,setSelectedKart]=useState<string|null>(null);
   const [liveSessions,setLiveSessions]=useState<OperatorSession[]>(sessions);
   const [selectedReport,setSelectedReport]=useState<string|null>(null);
   const [reportTelemetry,setReportTelemetry]=useState<Record<string,unknown>|null>(null);
@@ -90,9 +92,11 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
     }catch(e){change(slot.id,{status:"error",message:e instanceof Error?e.message:"Upload failed."});}
   }
   return <main className={styles.page}>
-    <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav>{([["race","Race Day"],["admin","Race Day Admin"],["reports","Reports"]] as const).map(([tab,name])=><button key={tab} type="button" onClick={()=>{setActiveTab(tab);void refreshSessions();}} className={activeTab===tab?styles.activeTab:styles.navTab}>{name}</button>)}</nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
+    <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav>{([["race","Race Day"],["setup","Kart Setup"],["admin","Race Day Admin"],["reports","Reports"],["timekeeper","Timekeeper"]] as const).map(([tab,name])=><button key={tab} type="button" onClick={()=>{setActiveTab(tab);void refreshSessions();}} className={activeTab===tab?styles.activeTab:styles.navTab}>{name}</button>)}</nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
     <div className={styles.content}>
-    {activeTab!=="race" && <section className={styles.operatorArea}>
+    {activeTab==="setup" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Kart Setup</h1><p>Session settings and version history</p></div></div><div className={styles.kartPicker}>{draft.slots.map((slot,i)=><button key={slot.id} className={selectedKart===slot.id||(!selectedKart&&i===0)?styles.selectedKart:""} onClick={()=>setSelectedKart(slot.id)}>Kart {slot.number||i+1} · {slot.driver||"Add driver"}</button>)}</div>{draft.slots.filter((slot,i)=>slot.id===(selectedKart||draft.slots[0]?.id)).map(slot=><KartSetup key={slot.id} driver={slot.driver} kart={slot.number} className={slot.className} trackId={draft.trackId}/>)}</section>}
+    {activeTab==="timekeeper" && <section className={styles.operatorArea}><div className={styles.heading}><div><h1>Timekeeper</h1><p>MYLAPS / Race Monitor · read-only trackside timing</p></div></div><div className={styles.timingPanel}><h2>Rivali Uploader Live Timing</h2><p>The existing Timekeeper is a separate Windows receiver. It must connect to the scoring operator's authorized RMonitor feed. No live connection is represented here until that receiver is connected.</p><strong>Connection status: Not linked to web Uploader</strong><p>On this laptop, open <code>Documents\rivali-app\rivali-direct-download\timing_listener\START_RIVALI_TIMING.bat</code> to launch the receiver. Use Demo only for simulated testing. Obtain the scoring operator's permission before connecting to a live feed.</p><p>Live leaderboards and timing data will appear here only after a verified receiver-to-Uploader connection is built.</p></div></section>}
+    {["admin","reports"].includes(activeTab) && <section className={styles.operatorArea}>
       <div className={styles.heading}><div><h1>{activeTab==="admin"?"Race Day Admin":"Reports"}</h1><p>Rivali Uploader workspace. No links to the old Rivali app.</p></div><button type="button" className={styles.trackLink} onClick={()=>void refreshSessions()}>Refresh status</button></div>
       {activeTab==="admin" && <div className={styles.adminOverview}>
         <h2>Session processing and report approvals</h2>
@@ -140,6 +144,7 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
         <div className={styles.fields}><label>Driver<input value={slot.driver} onChange={e=>change(slot.id,{driver:e.target.value})} placeholder="Driver name"/></label><label>Kart #<input value={slot.number} onChange={e=>change(slot.id,{number:e.target.value})} placeholder="145"/></label><label>Class<input value={slot.className} onChange={e=>change(slot.id,{className:e.target.value})} placeholder="Animal Medium"/></label></div>
         <div className={styles.fieldsTwo}><label>Run type<select value={slot.sessionType} onChange={e=>change(slot.id,{sessionType:e.target.value})}>{["practice","hot laps","heat","feature"].map(t=><option key={t} value={t}>{t}</option>)}</select></label></div>
         <label className={styles.drop}><UploadCloud size={26}/><strong>{slot.fileName || "Choose XRK file"}</strong><span>{slot.fileName?"Click to replace":"MyChron / Race Studio .xrk Â· max 100 MB"}</span><input type="file" accept=".xrk" onChange={e=>onFile(slot.id,e)}/></label>
+        <button className={styles.kartSetupButton} type="button" onClick={()=>{setSelectedKart(slot.id);setActiveTab("setup");}}>Configure Kart Setup</button>
         <button className={styles.upload} disabled={slot.status==="uploading"} onClick={()=>void upload(slot)}><UploadCloud size={18}/>{slot.status==="uploading"?"Uploading...":"Upload & Analyze"}</button>
         <div className={styles.status}><span>{slot.status==="queued"?<CheckCircle2 size={16}/>:slot.status==="error"?<AlertCircle size={16}/>:<ClipboardCheck size={16}/>}</span><p>{slot.sessionId?(liveSessions.find(item=>item.id===slot.sessionId)?.status==="completed"?"Analysis completed. Open Reports to view results.":liveSessions.find(item=>item.id===slot.sessionId)?.status==="failed"?"Processing failed. Open Race Day Admin for details.":slot.message):slot.message || "Waiting for telemetry. Select an XRK file to upload to your Rivali account."}</p></div>
         {slot.sessionId&&<small className={styles.session}>Session: {slot.sessionId}</small>}
