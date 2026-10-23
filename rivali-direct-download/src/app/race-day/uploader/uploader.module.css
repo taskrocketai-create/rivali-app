@@ -59,3 +59,5 @@
 .brand :global(.brand-logo){width:190px;max-width:190px}
 .brand>span{display:none}
 
+
+.ballastControls{width:100%;border-top:1px solid #49510a;padding-top:13px}.ballastControls h3{color:#eaff00;margin:0}.ballastControls p,.ballastControls small{color:#b0baba;font-size:12px;display:block}.ballastControls>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.ballastControls label{display:flex;flex-direction:column;gap:5px;font-size:12px}.ballastControls input{width:100%;box-sizing:border-box;background:#101515;color:#fff;border:1px solid #646d26;border-radius:6px;padding:10px}.ballastControls strong{color:#eaff00}@media(max-width:610px){.ballastControls>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
