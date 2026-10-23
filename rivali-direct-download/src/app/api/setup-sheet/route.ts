@@ -13,12 +13,14 @@ export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   const sessionId = form?.get("sessionId");
-  if (!(file instanceof File) || typeof sessionId !== "string" || !/^[0-9a-f-]{36}$/i.test(sessionId))
-    return NextResponse.json({ error: "Select a session and a setup sheet." }, { status: 400 });
+  if (!(file instanceof File) || (sessionId !== null && (typeof sessionId !== "string" || !/^[0-9a-f-]{36}$/i.test(sessionId))))
+    return NextResponse.json({ error: "Choose a setup sheet image and, if provided, a valid session." }, { status: 400 });
   if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 6*1024*1024 || !file.size)
     return NextResponse.json({ error: "Use a JPG, PNG or WEBP image under 6 MB." }, { status: 400 });
-  const { data: session } = await db.from("sessions").select("id").eq("id",sessionId).eq("user_id",userId).maybeSingle();
-  if (!session) return NextResponse.json({ error: "Session not found." }, { status: 404 });
+  if (typeof sessionId === "string") {
+    const { data: session } = await db.from("sessions").select("id").eq("id",sessionId).eq("user_id",userId).maybeSingle();
+    if (!session) return NextResponse.json({ error: "Session not found." }, { status: 404 });
+  }
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "OpenAI key is not configured." }, { status: 503 });
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
