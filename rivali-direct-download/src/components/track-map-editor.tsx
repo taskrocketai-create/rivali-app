@@ -137,6 +137,7 @@ export function TrackMapEditor({
   const [zoneBreaks,setZoneBreaks]=useState<number[]>(DEFAULT_ZONE_BREAKS);
   const [zoneWidth,setZoneWidth]=useState(12);
   const [showZones,setShowZones]=useState(true);
+  const [zonesApproved,setZonesApproved]=useState(false);
 
   const quickStartRef = useRef<LatLng | null>(null);
   const modeRef = useRef<Mode>(null);
@@ -235,6 +236,7 @@ export function TrackMapEditor({
               const delta=(p.lat-newPoint.lat)**2+((p.lng-newPoint.lng)*Math.cos(p.lat*Math.PI/180))**2;
               if(delta<distance){distance=delta;best=candidate;}
             }
+            setZonesApproved(false);
             setZoneBreaks(current=>{
               const prev=i===0?current[5]-1:current[i-1];
               const next=i===5?current[0]+1:current[i+1];
@@ -477,6 +479,7 @@ export function TrackMapEditor({
     const savedZones=(markers as Record<string,unknown>)._rivali as {zones?:{breaks?:number[];width_m?:number}}|undefined;
     setZoneBreaks(Array.isArray(savedZones?.zones?.breaks)&&savedZones.zones.breaks.length===6?savedZones.zones.breaks:DEFAULT_ZONE_BREAKS);
     setZoneWidth(typeof savedZones?.zones?.width_m==="number"?savedZones.zones.width_m:12);
+    setZonesApproved((savedZones?.zones as {review_status?:string}|undefined)?.review_status==="approved");
 
     setTurns(Object.fromEntries(Object.entries(markers).filter(([key]) => /^[1-4]$/.test(key))) as Record<string, TurnMarker>);
     const metadata = (markers as Record<string, unknown>)._rivali as { walk?: WalkLayout; groove?: GeoPoint[] } | undefined;
@@ -711,7 +714,7 @@ export function TrackMapEditor({
         walk: { ...walk, saved_at: new Date().toISOString() },
         groove: hasGroove ? groove : (existingMeta.groove ?? []),
         race_arrow: raceArrow ?? existingMeta.race_arrow ?? null,
-        zones:{breaks:zoneBreaks,width_m:zoneWidth,names:ZONE_NAMES,review_status:"draft"},
+        zones:{breaks:zoneBreaks,width_m:zoneWidth,names:ZONE_NAMES,review_status:zonesApproved?"approved":"draft",definition_version:1},
 
       },
     };
@@ -802,8 +805,9 @@ export function TrackMapEditor({
       {trackId && <div className="notice" style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
         <strong>6 adjustable sections</strong>
         <label style={{display:"flex",gap:5,alignItems:"center"}}><input type="checkbox" checked={showZones} onChange={e=>setShowZones(e.target.checked)}/> Show colored overlay</label>
-        <label>Track width <input aria-label="Track width in meters" type="number" min={5} max={40} step={1} value={zoneWidth} onChange={e=>setZoneWidth(Math.max(5,Math.min(40,Number(e.target.value)||12)))} style={{width:64}}/> meters</label>
+        <label>Track width <input aria-label="Track width in meters" type="number" min={5} max={40} step={1} value={zoneWidth} onChange={e=>{setZonesApproved(false);setZoneWidth(Math.max(5,Math.min(40,Number(e.target.value)||12)));}} style={{width:64}}/> meters</label>
         <span>Drag the six numbered boundaries along the track. Hiding colors keeps your saved definitions.</span>
+        <button type="button" disabled={groove.length<4} onClick={()=>setZonesApproved(v=>!v)} style={{background:zonesApproved?"#165d31":"#eaff00",color:zonesApproved?"#fff":"#111",border:0,padding:"7px 10px",fontWeight:800}}>{zonesApproved?"Approved for analysis (click to revoke)":"Approve segment definitions for analysis"}</button>
         <div style={{display:"flex",gap:7,flexWrap:"wrap",width:"100%"}}>{ZONE_NAMES.map((name,i)=><span key={name} style={{color:ZONE_COLORS[i],fontWeight:800}}>{name}</span>)}</div>
       </div>}
       {trackId && groove.length<4 && <div className="notice"><strong>Colored turns are not mapped yet.</strong> Choose <button type="button" onClick={fitOvalOverTrack} style={{background:"#eaff00",color:"#111",padding:"8px 12px",border:0,fontWeight:900,cursor:"pointer"}}>Place 4 colored track sections</button> then drag the eight shape handles around the actual racing surface and save. The initial outline is an editable draft, not verified geometry.</div>}
