@@ -119,8 +119,29 @@ class App:
     def __init__(self, root):
         self.root=root
         root.title("Rivali Uploader | MYLAPS Timing Listener")
-        root.geometry("860x590")
-        root.configure(bg="#111314")
+        root.geometry("980x650")
+        root.configure(bg="#0D0F10")
+        neon="#E5FF00"
+        panel="#171A1D"
+        muted="#A9B0B6"
+        style=ttk.Style(root)
+        style.theme_use("clam")
+        style.configure("TFrame",background="#0D0F10")
+        style.configure("TLabel",background="#0D0F10",foreground="#F2F3F4",font=("Segoe UI",10))
+        style.configure("TButton",background="#252A2D",foreground="#F7F8F8",borderwidth=0,
+                        font=("Segoe UI",10,"bold"),padding=(12,10),focuscolor="#252A2D")
+        style.map("TButton",background=[("active","#3B4245")],foreground=[("active","#FFFFFF")])
+        style.configure("Accent.TButton",background=neon,foreground="#090B0D",padding=(16,10))
+        style.map("Accent.TButton",background=[("active","#BDE000")],foreground=[("active","#090B0D")])
+        style.configure("TEntry",fieldbackground="#24282B",foreground="#FFFFFF",
+                        insertcolor="#FFFFFF",bordercolor="#3C4347",padding=7)
+        style.configure("Treeview",background=panel,fieldbackground=panel,foreground="#F5F7F7",
+                        borderwidth=0,rowheight=38,font=("Segoe UI",10))
+        style.map("Treeview",background=[("selected","#505A16")],
+                  foreground=[("selected","#FFFFFF")])
+        style.configure("Treeview.Heading",background="#262B2C",foreground=neon,
+                        relief="flat",font=("Segoe UI",10,"bold"),padding=(8,12))
+        style.map("Treeview.Heading",background=[("active","#333A3D")])
         self.state=RaceState()
         self.events=queue.Queue()
         self.listener=Listener(self.events)
@@ -131,7 +152,7 @@ class App:
         self.summary=tk.StringVar(value="No timing data yet")
         shell=ttk.Frame(root,padding=18)
         shell.pack(fill="both",expand=True)
-        ttk.Label(shell,text="RIVALI UPLOADER",font=("Segoe UI",20,"bold"),foreground="#DFFF00").pack(anchor="w")
+        ttk.Label(shell,text="RIVALI  /  TIMING CONTROL",font=("Segoe UI",23,"bold"),foreground="#DFFF00").pack(anchor="w")
         ttk.Label(shell,text="MYLAPS / RMonitor • RECEIVE ONLY",font=("Segoe UI",10)).pack(anchor="w",pady=(0,18))
         top=ttk.Frame(shell)
         top.pack(fill="x")
@@ -139,9 +160,9 @@ class App:
         ttk.Label(top,text="Port").grid(row=0,column=1,sticky="w")
         ttk.Entry(top,textvariable=self.host,width=34).grid(row=1,column=0,padx=(0,10))
         ttk.Entry(top,textvariable=self.port,width=9).grid(row=1,column=1,padx=(0,10))
-        ttk.Button(top,text="Connect",command=self.connect).grid(row=1,column=2,padx=3)
+        ttk.Button(top,text="CONNECT LIVE",command=self.connect,style="Accent.TButton").grid(row=1,column=2,padx=3)
         ttk.Button(top,text="Disconnect",command=self.disconnect).grid(row=1,column=3,padx=3)
-        ttk.Button(top,text="Demo",command=self.demo).grid(row=1,column=4,padx=3)
+        ttk.Button(top,text="RUN DEMO",command=self.demo,style="Accent.TButton").grid(row=1,column=4,padx=3)
         ttk.Label(shell,textvariable=self.status,foreground="#DFFF00").pack(anchor="w",pady=(16,5))
         ttk.Label(shell,textvariable=self.summary,font=("Segoe UI",11,"bold")).pack(anchor="w",pady=(0,10))
         self.tree=ttk.Treeview(shell,columns=("kart","name","class","passes","last"),show="headings",height=14)
@@ -151,7 +172,7 @@ class App:
         self.tree.pack(fill="both",expand=True)
         foot=ttk.Frame(shell)
         foot.pack(fill="x",pady=12)
-        ttk.Button(foot,text="Save Snapshot JSON",command=self.snapshot).pack(side="left")
+        ttk.Button(foot,text="SAVE TIMING SNAPSHOT",command=self.snapshot,style="Accent.TButton").pack(side="left")
         ttk.Label(foot,text="No messages are transmitted to MYLAPS. Raw lap fields await live format verification.").pack(side="right")
         self.root.after(150,self.poll)
         self.root.protocol("WM_DELETE_WINDOW",self.close)
