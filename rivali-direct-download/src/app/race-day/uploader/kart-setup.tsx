@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import styles from "./uploader.module.css";
+import {KartDiagram} from "./kart-diagram";
 type Setup=Record<string,string>;
 type Version={id:string;at:string;session:string;setup:Setup};
 const defs:{title:string;fields:[string,string,string][]}[]=[
@@ -22,7 +23,7 @@ export function KartSetup({driver,kart,className,trackId}:{driver:string;kart:st
  return <div className={styles.setupWorkspace}>
  <div className={styles.setupForm}><div className={styles.setupTitle}><div><h2>Kart Setup</h2><p>Record only what changes between sessions. Unmeasured fields stay blank.</p></div><span>Draft v{versions.length+1}</span></div>
  <div className={styles.setupStage}><label>Session<select value={session} onChange={e=>setSession(e.target.value)}>{["Practice","Qualifying","Heat","Race","Other"].map(x=><option key={x}>{x}</option>)}</select></label><span>Driver: {driver||"Not chosen"} · Kart {kart||"Not chosen"}</span></div>
- <div className={styles.setupSections}>{defs.map((section,i)=><section key={section.title} className={styles.setupSection}>
+ <KartDiagram values={values} onChange={(key,value)=>setValues(v=>({...v,[key]:value}))}/><div className={styles.setupSections}>{defs.map((section,i)=><section key={section.title} className={styles.setupSection}>
  <button type="button" className={styles.setupSectionButton} onClick={()=>setActive(active===i?-1:i)}><b>{i+1}</b><strong>{section.title}</strong><span>{active===i?"−":"+"}</span></button>
  {active===i&&<div className={styles.setupFields}>{section.fields.map(([field,label,type])=><label key={field}>{label}<input type={type} step={type==="number"?"any":undefined} value={values[field]??(field==="driver"?driver:field==="kart"?kart:field==="class"?className:"")} onChange={e=>setValues(v=>({...v,[field]:e.target.value}))} placeholder="Not recorded" /></label>)}</div>}</section>)}</div>
  <div className={styles.setupActions}><button type="button" onClick={save}>Save Session Changes</button>{notice&&<span>{notice}</span>}</div>
