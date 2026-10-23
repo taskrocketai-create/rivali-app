@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -12,7 +12,7 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect(process.env.RIVALI_UPLOADER_STANDALONE === "1" ? "/race-day/uploader" : "/dashboard");
 }
 export async function signup(formData: FormData) {
   const parsed = credentials.safeParse(Object.fromEntries(formData));
@@ -29,3 +29,4 @@ export async function logout() {
   revalidatePath("/", "layout");
   redirect("/");
 }
+
