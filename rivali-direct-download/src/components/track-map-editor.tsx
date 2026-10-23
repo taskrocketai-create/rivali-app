@@ -107,7 +107,9 @@ export function TrackMapEditor({
   const [mode, setMode] = useState<Mode>(null);
   const [startFinish, setStartFinish] = useState<LatLng[]>([]);
   const [raceArrow,setRaceArrow] = useState<LatLng[] | null>(null);
-  const [quickStart,setQuickStart] = useState<LatLng | null>(null);
+  const quickStartRef = useRef<LatLng | null>(null);
+  const modeRef = useRef<Mode>(null);
+  const selectMode = (next:Mode) => { modeRef.current=next; setMode(next); };
   const [turns, setTurns] = useState<Record<string, TurnMarker>>({});
   const [radiusFeet, setRadiusFeet] = useState(60);
   const radiusRef = useRef(feetToMeters(radiusFeet));
@@ -339,47 +341,41 @@ export function TrackMapEditor({
         map.dragging.enable();
       });
       map.on("click", (event) => {
-        setMode((current) => {
-          if (!current) return current;
-          const point = { lat: event.latlng.lat, lng: event.latlng.lng };
-          if (current === "groove") {
-            addFreehandGroovePoint(point.lat, point.lng);
-            return current;
-          }
-          if(current==="quick-line"){
-            setQuickStart(point);
-            setStartFinish([]);
-            setRaceArrow(null);
-            setMessage("Click 2: choose a point AHEAD of start/finish in the racing direction.");
-            return "quick-direction";
-          }
-          if(current==="quick-direction"){
-            setQuickStart(start=>{
-              if(!start)return null;
-              const dLat=point.lat-start.lat;
-              const dLng=(point.lng-start.lng)*Math.cos(start.lat*Math.PI/180);
-              const mag=Math.hypot(dLat,dLng);
-              if(mag<.00002){setMessage("Second click must be farther ahead along the racing direction.");return start;}
-              const north=dLat/mag,east=dLng/mag,scale=Math.max(.000028,Math.min(.00011,mag*.35));
-              const c=Math.cos(start.lat*Math.PI/180),half=.000055;
-              setStartFinish([{lat:start.lat-east*half,lng:start.lng+north*half/c},{lat:start.lat+east*half,lng:start.lng-north*half/c}]);
-              setRaceArrow([start,{lat:start.lat+north*scale,lng:start.lng+east*scale/c}]);
-              setMessage("Checkered line and arrow placed. Confirm their positions on the map, then Save track.");
-              return null;
-            });
-            return null;
-          }
-          if (current === "start") {
-            setStartFinish((previous) =>
-              previous.length >= 1 ? [previous[0], point] : [point],
-            );
-          } else
-            setTurns((previous) => ({
-              ...previous,
-              [current]: { ...point, radius_m: radiusRef.current },
-            }));
-          return current === "start" ? current : null;
-        });
+        const current=modeRef.current;
+        if(!current)return;
+        const point={lat:event.latlng.lat,lng:event.latlng.lng};
+        if(current==="groove"){addFreehandGroovePoint(point.lat,point.lng);return;}
+        if(current==="quick-line"){
+          quickStartRef.current=point;
+          setStartFinish([]);
+          setRaceArrow(null);
+          selectMode("quick-direction");
+          setMessage("Click 2: click AHEAD along the direction the karts travel.");
+          return;
+        }
+        if(current==="quick-direction"){
+          const start=quickStartRef.current;
+          if(!start){selectMode("quick-line");setMessage("Click the start/finish center first.");return;}
+          const dLat=point.lat-start.lat;
+          const dLng=(point.lng-start.lng)*Math.cos(start.lat*Math.PI/180);
+          const mag=Math.hypot(dLat,dLng);
+          if(mag<.00002){setMessage("Click a little farther ahead on the track.");return;}
+          const north=dLat/mag,east=dLng/mag;
+          const c=Math.cos(start.lat*Math.PI/180),half=.000055;
+          const scale=Math.max(.00004,Math.min(.00012,mag*.7));
+          setStartFinish([{lat:start.lat-east*half,lng:start.lng+north*half/c},{lat:start.lat+east*half,lng:start.lng-north*half/c}]);
+          setRaceArrow([start,{lat:start.lat+north*scale,lng:start.lng+east*scale/c}]);
+          quickStartRef.current=null;
+          selectMode(null);
+          setMessage("Checkered start/finish line and racing arrow ready. Click Save Track.");
+          return;
+        }
+        if(current==="start"){
+          setStartFinish(previous=>previous.length>=1?[previous[0],point]:[point]);
+          return;
+        }
+        setTurns(previous=>({...previous,[current]:{...point,radius_m:radiusRef.current}}));
+        selectMode(null);
       });
       mapRef.current = map;
       setMapReady(true);
@@ -616,7 +612,7 @@ export function TrackMapEditor({
       angleRad: 0,
     };
     next.nodes = ellipseNodes(next);
-    setMode(null);
+    selectMode(null);
     setSegmentAdjusting(true);
     setOvalFit(next);
     setGroove(ovalPoints(next));
@@ -736,7 +732,7 @@ export function TrackMapEditor({
           </div>
         )}
       </div>
-      {trackId && <div className="notice"><strong>Two-click race setup:</strong> <button type="button" onClick={()=>{setMode("quick-line");setMessage("Click 1: tap the CENTER of the start/finish location.");}} style={{background:"#eaff00",color:"#111",border:0,padding:"9px 12px",fontWeight:900,cursor:"pointer"}}>Place checkered line + direction (2 clicks)</button><span style={{paddingLeft:10}}>Click 1: start/finish center. Click 2: ahead in race direction. Save track afterward.</span></div>}
+      {trackId && <div className="notice"><strong>Two-click race setup:</strong> <button type="button" onClick={()=>{selectMode("quick-line");quickStartRef.current=null;setMessage("Click 1: tap the CENTER of the start/finish location.");}} style={{background:"#eaff00",color:"#111",border:0,padding:"9px 12px",fontWeight:900,cursor:"pointer"}}>Place checkered line + direction (2 clicks)</button><span style={{paddingLeft:10}}>Click 1: start/finish center. Click 2: ahead in race direction. Save track afterward.</span></div>}
       <div className="notice">{message}</div>
       <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
        {lapShapes.map((shape,i)=><span key={shape.lap} style={{color:LAP_COLORS[i],fontWeight:800}}>Lap {shape.lap}: {shape.seconds.toFixed(3)}s</span>)}
@@ -762,9 +758,9 @@ export function TrackMapEditor({
           <p>Complete this before the first MyChron analysis. Rivali needs the start/finish line, Turns 1-4, and the preferred groove so telemetry is interpreted in the correct part of the track.</p>
         </div>
         <div className="gps-capture-actions">
-          <button type="button" disabled={!trackId} className={mode === "start" ? "active" : ""} onClick={() => { setStartFinish([]); setMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
+          <button type="button" disabled={!trackId} className={mode === "start" ? "active" : ""} onClick={() => { setStartFinish([]); selectMode("start"); setMessage("Click the two ends of the start/finish line across the track."); }}>Set start / finish</button>
           {[1, 2, 3, 4].map((number) => (
-            <button key={number} type="button" disabled={!trackId} className={mode === String(number) ? "active" : ""} onClick={() => { setMode(String(number) as Mode); setMessage(`Click the center of Turn ${number}.`); }}>
+            <button key={number} type="button" disabled={!trackId} className={mode === String(number) ? "active" : ""} onClick={() => { selectMode(String(number) as Mode); setMessage(`Click the center of Turn ${number}.`); }}>
               Set Turn {number}
             </button>
           ))}
@@ -777,7 +773,7 @@ export function TrackMapEditor({
         </div>
         <div className="gps-capture-actions">
           <button type="button" disabled={!trackId} className={ovalFit ? "active" : ""} onClick={fitOvalOverTrack}>{ovalFit ? "Start fresh oval" : "Fit oval over track"}</button>
-          <button type="button" onClick={() => { setOvalFit(null); lastGroovePoint.current = null; setMode("groove"); setMessage("Manual drawing is available when the groove is not oval. Hold the mouse and trace it; finish drawing to pan or zoom again."); }}>Draw manually instead</button>
+          <button type="button" onClick={() => { setOvalFit(null); lastGroovePoint.current = null; selectMode("groove"); setMessage("Manual drawing is available when the groove is not oval. Hold the mouse and trace it; finish drawing to pan or zoom again."); }}>Draw manually instead</button>
           <button type="button" onClick={() => { setOvalFit(null); setSegmentAdjusting(false); setGroove([]); }} disabled={!groove.length}>Clear groove</button>
         </div>
         <small className="muted">{segmentAdjusting ? "Drag a numbered point at the part of the groove you want to change—such as pulling an apex down to square off a corner. Drag yellow ✥ to move the entire oval." : `${groove.length} groove points in the current draft.`} Zooming and panning are safe; save the groove when it looks right.</small>
@@ -790,7 +786,7 @@ export function TrackMapEditor({
           className={mode === "start" ? "active" : ""}
           onClick={() => {
             setStartFinish([]);
-            setMode("start");
+            selectMode("start");
             setMessage(
               "Tap two points across the track. The second tap completes the line.",
             );
@@ -803,7 +799,7 @@ export function TrackMapEditor({
             key={number}
             className={mode === String(number) ? "active" : ""}
             onClick={() => {
-              setMode(String(number) as Mode);
+              selectMode(String(number) as Mode);
               setMessage(`Tap the center of Turn ${number}.`);
             }}
           >
@@ -814,7 +810,7 @@ export function TrackMapEditor({
           onClick={() => {
             setStartFinish([]);
             setTurns({});
-            setMode(null);
+            selectMode(null);
           }}
         >
           Clear markers
