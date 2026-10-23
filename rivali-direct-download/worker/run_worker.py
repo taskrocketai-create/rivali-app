@@ -18,6 +18,7 @@ from engine.xrk_raw_samples import extract_samples, rpm_lap_summaries, align_rpm
 from engine.xrk_channel_inventory import inventory_file
 from engine.lateral_grip import compare_lateral_grip
 from engine.gps_laps import reconstruct_lap_times
+from engine.turn_proposal import propose_turn_segments
 from engine.knowledge_selection import select_knowledge
 from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
 
@@ -146,11 +147,19 @@ def process_one(client,job_id_override=None):
             if "Track mapping incomplete" not in str(mapping_error):
                 raise
             mapped={"analysis_ready":False,"diagnostic":str(mapping_error)}
+        proposal = None
         if not mapped.get("analysis_ready"):
+            try:
+                proposal = propose_turn_segments(data, track)
+            except (ValueError, TypeError, KeyError) as error:
+                proposal = {"status":"unavailable","reason":f"GPS turn proposal could not be calculated: {error}"}
             # A missing or unvalidated track map must not erase verified lap timing.
             # Store a neutral, timing-only result; do not infer corners or handling.
             mapped={"analysis_ready":False,"diagnostic":mapped.get("diagnostic") or "Track mapping is not validated.",
                     "turns":[],"corner_pairs":[],"groove":None,"alignment":None}
+        # Do not pass proposals through as completed/approved corner analysis.
+        if proposal is not None:
+            mapped["turn_proposal"] = proposal
         raw_channels = extract_samples(path)
         channel_inventory = inventory_file(path)
         rpm_indexes = [c['index'] for c in channel_inventory['channels'] if c['name'].strip().upper() == 'RPM']
@@ -170,7 +179,7 @@ def process_one(client,job_id_override=None):
                 rpm_by_lap = align_rpm_to_laps(rpm_lap_summaries(path, raw_rpm), summary.laps)
             except ValueError as rpm_lap_error:
                 print(f"RPM lap alignment unavailable: {rpm_lap_error}", flush=True)
-        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic},"channel_inventory":channel_inventory,"lateral_grip_validation":grip_diagnostic,"rpm_by_lap":rpm_by_lap,"rpm_summary":{"source":"raw_xrk_sample","sample_count":len(raw_rpm),"min_rpm":min(v for _,v in raw_rpm),"max_rpm":max(v for _,v in raw_rpm),"validation":"pending_rs3_curve_comparison"} if raw_rpm else None},"channel_manifest":[str(column) for column in data.columns]+(["RPM"] if raw_rpm else [])}
+        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"turn_proposal":mapped.get("turn_proposal"),"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic},"channel_inventory":channel_inventory,"lateral_grip_validation":grip_diagnostic,"rpm_by_lap":rpm_by_lap,"rpm_summary":{"source":"raw_xrk_sample","sample_count":len(raw_rpm),"min_rpm":min(v for _,v in raw_rpm),"max_rpm":max(v for _,v in raw_rpm),"validation":"pending_rs3_curve_comparison"} if raw_rpm else None},"channel_manifest":[str(column) for column in data.columns]+(["RPM"] if raw_rpm else [])}
         client.table("session_telemetry").upsert(telemetry).execute()
         session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
         client.table("sessions").update(session_update).eq("id",session_id).execute()
