@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {isNumericSetupField, normalizeSetupNumber} from "@/lib/setup-measurements";
 export const runtime = "nodejs";
 export const maxDuration = 45;
 
@@ -54,6 +55,12 @@ export async function POST(request: Request) {
     .map((x: {text?:string}) => x.text ?? "").join("");
   let result: {entries?: {key:string;value:string;source_text:string;confidence:string}[];warnings?:string[]};
   try { result = JSON.parse(raw); } catch { return NextResponse.json({error:"Could not parse extracted values."},{status:502}); }
-  const entries = (result.entries ?? []).filter((x) => allowed.has(x.key) && x.value?.trim()).slice(0,60);
-  return NextResponse.json({entries,warnings:(result.warnings??[]).slice(0,30)},{headers:{"Cache-Control":"no-store"}});
+  const warnings=[...(result.warnings??[])];
+  const entries=(result.entries??[]).filter(x=>allowed.has(x.key)&&x.value?.trim()).flatMap(x=>{
+    if(!isNumericSetupField(x.key))return [x];
+    const value=normalizeSetupNumber(x.value);
+    if(value===null){warnings.push(`${x.key.replaceAll("_"," ")} could not be measured reliably, so it was omitted.`);return [];}
+    return [{...x,value:String(value)}];
+  }).slice(0,60);
+  return NextResponse.json({entries,warnings:warnings.slice(0,30)},{headers:{"Cache-Control":"no-store"}});
 }

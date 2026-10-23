@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { isNumericSetupField, normalizeSetupNumber } from "@/lib/setup-measurements";
 export const runtime="nodejs";
 export const maxDuration=30;
 const keys=[
@@ -50,7 +51,13 @@ export async function POST(request:Request){
     .filter((x:{type:string})=>x.type==="output_text").map((x:{text?:string})=>x.text??"").join("");
   try{
     const data=JSON.parse(raw) as {entries:{key:string;value:string;confidence:string}[];warnings:string[]};
-    return NextResponse.json({entries:data.entries.filter(x=>keys.includes(x.key)&&x.value.trim()).slice(0,45),
-      warnings:data.warnings.slice(0,15)},{headers});
+    const warnings=[...(data.warnings??[])];
+    const entries=data.entries.filter(x=>keys.includes(x.key)&&x.value?.trim()).flatMap(x=>{
+      if(!isNumericSetupField(x.key)) return [x];
+      const normalized=normalizeSetupNumber(x.value);
+      if(normalized===null){warnings.push(`${x.key.replaceAll("_"," ")} was not a readable measurement, so it was left blank.`);return [];}
+      return [{...x,value:String(normalized)}];
+    }).slice(0,45);
+    return NextResponse.json({entries,warnings:warnings.slice(0,15)},{headers});
   }catch{return NextResponse.json({error:"Could not interpret the dictation."},{status:502,headers});}
 }
