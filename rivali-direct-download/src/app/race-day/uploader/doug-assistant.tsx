@@ -35,9 +35,9 @@ export function DougAssistant({context,trackId,slots}:{context:string;trackId:st
   }catch(e){setError(e instanceof Error?e.message:"Doug unavailable");}
   finally{setBusy(false);}
  }
- return <div className={styles.dougDock}><button className={styles.dougFab} onClick={()=>setOpen(x=>!x)} aria-expanded={open} aria-label="Talk to Doug"><span>ðŸŽ™</span> Talk to Doug</button>{open&&<section className={styles.dougPanel} aria-label="Doug crew chief"><div className={styles.dougHead}><strong>DOUG Â· CREW CHIEF</strong><button onClick={()=>setOpen(false)} aria-label="Close Doug">Ã—</button></div><p>Ask questions, dictate a setup, debrief a driver or challenge a setup choice. Doug weighs evidence, not opinions.</p>
+ return <div className={styles.dougDock}><button className={styles.dougFab} onClick={()=>setOpen(x=>!x)} aria-expanded={open} aria-label="Talk to Doug"><span>ðŸŽ™</span> Talk to Doug</button>{open&&<section className={styles.dougPanel} aria-label="Doug crew chief"><div className={styles.dougHead}><strong>DOUG Â· CREW CHIEF</strong><button onClick={()=>setOpen(false)} aria-label="Close Doug">Ã—</button></div><p>Just talk normally. Ask Doug anything about your kart, the data, setup choices or race-day workflow.</p>
  <DougLiveVoice context={context+"; Selected kart: "+(chosen?.number||"not selected")+"; Driver: "+(chosen?.driver||"not selected")}/>
- <div className={styles.dougModes}>{([["instructions","Instructions"],["setup","Voice setup"],["debrief","Debrief"],["debate","Debate"],["outcome","Test outcome"]] as const).map(([id,label])=><button key={id} className={mode===id?styles.dougSelected:""} onClick={()=>setMode(id)}>{label}</button>)}</div>
+ <div style={{display:"none"}}><div className={styles.dougModes}>{([["instructions","Instructions"],["setup","Voice setup"],["debrief","Debrief"],["debate","Debate"],["outcome","Test outcome"]] as const).map(([id,label])=><button key={id} className={mode===id?styles.dougSelected:""} onClick={()=>setMode(id)}>{label}</button>)}</div>
  <label style={{display:"block",marginBottom:8}}>Kart context <select value={slotId||slots[0]?.id||""} onChange={e=>setSlotId(e.target.value)} style={{width:"100%",background:"#121a1a",color:"#fff",padding:9,border:"1px solid #4b5656"}}>{slots.map((s,i)=><option value={s.id} key={s.id}>{s.number||"Kart "+(i+1)} Â· {s.driver||"Unassigned"}</option>)}</select></label>
  <button type="button" onClick={()=>{setHistory([]);setReply("");setMessage("");}} style={{fontSize:12,background:"transparent",border:"1px solid #555",color:"#ccc",padding:6,marginBottom:8,cursor:"pointer"}}>New conversation</button>
  <textarea value={message} onChange={e=>setMessage(e.target.value)} rows={5} placeholder={mode==="debate"?"I think we should move a 5 lb weight rearward because...":mode==="outcome"?"We tried the change. The measured result was...":"Tell Doug what happened or what to record..."} />
@@ -50,8 +50,8 @@ export function DougAssistant({context,trackId,slots}:{context:string;trackId:st
    }catch{setSavedNote("Could not save setup.");}
  }}>Confirm and save setup</button></div>}
  {mode==="debrief"&&reply&&chosen&&<button type="button" className={styles.dougSave} onClick={()=>{const key="rivali-uploader-debriefs-v1:"+trackId+":"+(chosen.number||chosen.driver||"new");const old=JSON.parse(localStorage.getItem(key)||"[]") as unknown[];localStorage.setItem(key,JSON.stringify([{at:new Date().toISOString(),driver:chosen.driver,kart:chosen.number,transcript:message,doug:reply},...old]));setSavedNote("Debrief saved locally for this kart.");}}>Save driver debrief</button>}
- {savedNote&&<p>{savedNote}</p>}
+ </div>{savedNote&&<p>{savedNote}</p>}
  {error&&<p role="alert" className={styles.dougError}>{error}</p>}{reply&&<div className={styles.dougReply}><strong>Doug's assessment</strong><p>{reply}</p></div>}
- <small>Voice is speech-to-text where supported. Suggested setups are not saved automatically. Test outcomes need validation and review before entering the knowledge base.</small></section>}</div>;
+ <small>Two-way voice is the primary interface. Changes require your approval before saving.</small></section>}</div>;
 }
 

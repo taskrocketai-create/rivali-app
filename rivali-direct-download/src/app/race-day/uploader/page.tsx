@@ -5,7 +5,11 @@ export const dynamic = "force-dynamic";
 export default async function OperatorUploaderPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (!data?.claims?.sub) redirect("/login");
+  if (!data?.claims?.sub) {
+    if(process.env.RIVALI_UPLOADER_STANDALONE === "1")
+      return <UploaderClient tracks={[]} racers={[]} karts={[]} sessions={[]} />;
+    redirect("/login");
+  }
   const [tracks, racers, karts, sessions] = await Promise.all([
     supabase.from("tracks").select("id,name,location,surface_type,latitude,longitude,start_finish,turns").order("name"),
     supabase.from("racers").select("id,name,primary_class").order("name"),

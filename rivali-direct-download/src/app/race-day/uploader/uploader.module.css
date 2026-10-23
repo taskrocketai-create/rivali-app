@@ -66,3 +66,5 @@
 .dougSave{background:#eaff00;border:0;color:#101010;padding:10px 14px;border-radius:7px;font-weight:900;cursor:pointer;margin:10px 0}
 
 .dougVoice{padding:12px;border:1px solid #eaff00;border-radius:9px;background:#151b13;margin:12px 0}.dougVoice strong{color:#eaff00}.dougVoice p{margin:6px 0}.dougVoice small{display:block;color:#bcc6c6}
+
+.dougPanel{width:min(400px,calc(100vw - 28px));max-height:65vh}.dougVoice{border:0;background:transparent;padding:10px 0}.dougVoice .dougActions button{border-radius:35px;min-height:54px;font-size:16px}.dougPanel>p{font-size:15px}.dougDock{z-index:1400}
