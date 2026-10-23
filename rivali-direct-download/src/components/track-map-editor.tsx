@@ -6,6 +6,28 @@ import type { LatLng, RaceSession, Track, TurnMarker } from "@/types/domain";
 
 type Mode = "start" | "1" | "2" | "3" | "4" | "groove" | null;
 type TracePoint = { lat: number; lng: number; time: number; speed_mph?: number };
+type LapShape = { lap:number; seconds:number; points:TracePoint[] };
+const LAP_COLORS = ["#eaff00","#00c8ff","#ff5cbd","#ff9c24","#9a7bff"];
+const SEGMENT_COLORS = ["#00d37e","#2387ff","#f7464e","#ffab13"];
+function topFiveLapShapes(points:TracePoint[], lapRows:unknown[]):LapShape[] {
+  if(!Array.isArray(lapRows)||points.length<4)return [];
+  const laps=lapRows.map((raw,index)=>{
+    const r=raw as Record<string,unknown>;
+    const seconds=Number(r.duration_seconds??r.lap_time_sec);
+    const end=Number(r.end_timestamp_ms)/1000;
+    const lap=Number(r.lap_number??r.record_ordinal??index+1);
+    return {seconds,end,lap};
+  }).filter(r=>Number.isFinite(r.seconds)&&r.seconds>=3&&r.seconds<=180&&Number.isFinite(r.end)&&Number.isInteger(r.lap));
+  const traceTimes=points.map(p=>p.time).filter(Number.isFinite);
+  if(!traceTimes.length)return [];
+  const minT=Math.min(...traceTimes),maxT=Math.max(...traceTimes);
+  return laps.map(r=>{
+    const start=r.end-r.seconds;
+    const selected=points.filter(p=>p.time>=start&&p.time<=r.end&&Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+    const rangeCovered=start>=minT-1&&r.end<=maxT+1;
+    return {...r,points:rangeCovered?selected:[]};
+  }).filter(r=>r.points.length>=12).sort((a,b)=>a.seconds-b.seconds).slice(0,5).map(({lap,seconds,points})=>({lap,seconds,points}));
+}
 type GeoPoint = { lat: number; lng: number; accuracy_ft: number; captured_at: string };
 type OvalFit = { center: { lat: number; lng: number }; radiusXFt: number; radiusYFt: number; angleRad: number; nodes?: GeoPoint[] };
 type WalkLayout = { points: Record<string, GeoPoint>; saved_at?: string };
@@ -88,6 +110,7 @@ export function TrackMapEditor({
   const [radiusFeet, setRadiusFeet] = useState(60);
   const radiusRef = useRef(feetToMeters(radiusFeet));
   const [trace, setTrace] = useState<TracePoint[]>([]);
+  const [lapShapes,setLapShapes]=useState<LapShape[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -138,27 +161,20 @@ export function TrackMapEditor({
     if (!L || !map) return;
     layers.current.forEach((layer) => map.removeLayer(layer));
     layers.current = [];
-    if (trace.length) {
-      const line = L.polyline(
-        trace.map((x) => [x.lat, x.lng]),
-        { color: "#e03426", weight: 3, opacity: 0.9 },
-      ).addTo(map);
+    lapShapes.forEach((shape,index)=>{
+      const line=L.polyline(shape.points.map(p=>[p.lat,p.lng]),{color:LAP_COLORS[index],weight:2,opacity:.95,interactive:false}).addTo(map);
       layers.current.push(line);
-      if (!traceFitted.current) {
-        map.fitBounds(line.getBounds(), { padding: [20, 20] });
-        traceFitted.current = true;
-      }
-      const slowest = trace.filter((point) => typeof point.speed_mph === "number").sort((a, b) => (a.speed_mph ?? Infinity) - (b.speed_mph ?? Infinity)).slice(0, 4);
-      slowest.forEach((point, index) => {
-        const marker = L.circleMarker([point.lat, point.lng], { radius: 6, color: "#f59e0b", weight: 2, fillColor: "#111", fillOpacity: 0.9 })
-          .bindTooltip(`Speed dip ${index + 1}: ${point.speed_mph?.toFixed(1)} mph`, { permanent: false })
-          .addTo(map);
-        layers.current.push(marker);
-      });
-    }
+      if(index===0&&!traceFitted.current){map.fitBounds(line.getBounds(),{padding:[20,20]});traceFitted.current=true;}
+    });
     if (groove.length > 1) {
-      const line = L.polyline(groove.map((x) => [x.lat, x.lng]), { color: "#22c55e", weight: 4, opacity: 0.9, dashArray: "6 5" }).addTo(map);
-      layers.current.push(line);
+      const sectionSize=Math.max(2,Math.ceil(groove.length/4));
+      for(let i=0;i<4;i++){
+        const start=i*sectionSize;
+        const pts=groove.slice(Math.min(start,groove.length-2),Math.min(groove.length,start+sectionSize+1));
+        if(pts.length<2)continue;
+        const line=L.polyline(pts.map(p=>[p.lat,p.lng]),{color:SEGMENT_COLORS[i],weight:5,opacity:.85}).addTo(map);
+        layers.current.push(line);
+      }
     }
     if (ovalFit) {
       const makeHandle = (point: GeoPoint, label: string, color: string) => L.marker([point.lat, point.lng], {
@@ -263,7 +279,7 @@ export function TrackMapEditor({
       }).addTo(map);
       layers.current.push(marker, circle);
     });
-  }, [startFinish, trace, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
+  }, [startFinish, lapShapes, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
   useEffect(() => {
     radiusRef.current = feetToMeters(radiusFeet);
   }, [radiusFeet]);
@@ -338,7 +354,7 @@ export function TrackMapEditor({
     setMessage("Loading GPS trace...");
     const { data, error } = await supabase
       .from("session_telemetry")
-      .select("gps_trace")
+      .select("gps_trace,laps")
       .eq("session_id", sessionId)
       .single();
     if (error) return setMessage(error.message);
@@ -349,7 +365,9 @@ export function TrackMapEditor({
       );
     traceFitted.current = false;
     setTrace(trace);
-    setMessage(`Loaded ${trace.length} GPS points.`);
+    const shapes=topFiveLapShapes(trace,(data?.laps??[]) as unknown[]);
+    setLapShapes(shapes);
+    setMessage(shapes.length?`Showing ${shapes.length} fastest verified GPS laps in distinct thin colors.`:"GPS downloaded, but lap boundaries cannot be reliably aligned to this trace. No lap lines drawn.");
   }
   function chooseTrack(id: string) {
     setTrackId(id);
@@ -667,12 +685,18 @@ export function TrackMapEditor({
                 Load
               </button>
             </div>
-            <small className="muted">This only overlays a finished lap and its speed dips. It is not part of saving the track or preferred groove.</small>
+            <small className="muted">Shows only the five fastest valid laps with aligned GPS timing. No estimated lap lines. It is not part of saving the track or preferred groove.</small>
           </div>
         )}
       </div>
       <div className="notice">{message}</div>
-      {trackId && <div className="notice"><strong>{setupReady ? "Track analysis ready." : "Track analysis not ready."}</strong> Start/Finish: {startFinish.length === 2 ? "saved" : "needed"} · Turns: {currentTurnCount}/4 · Groove: {groove.length > 1 ? "saved" : "needed"}. {setupReady ? "Rivali can use this geometry to interpret the next MyChron run." : "Finish all three before uploading telemetry."}</div>}
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
+       {lapShapes.map((shape,i)=><span key={shape.lap} style={{color:LAP_COLORS[i],fontWeight:800}}>Lap {shape.lap}: {shape.seconds.toFixed(3)}s</span>)}
+      </div>
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
+       {SEGMENT_COLORS.map((color,i)=><span key={i} style={{color,fontWeight:800}}>Segment {i+1}</span>)}
+      </div>
+      {trackId && <div className="notice"><strong>{setupReady ? "Track analysis ready." : "Track analysis not ready."}</strong> Start/Finish: {startFinish.length === 2 ? "saved" : "needed"} · Turns: {currentTurnCount}/4 · Groove: {groove.length > 1 ? "saved" : "needed"}. {setupReady ? "Rivali can use this geometry to interpret the next MyChron run." : "You may upload now; complete mapping for corner-level analysis."}</div>}
       {!trackId && <div className="notice"><strong>Choose the track first.</strong> Search above, then click the correct result. Rivali will create and select it before the map tools unlock.</div>}
       <small className="muted">Race Day Track Setup does not require a MyChron file: select the track, set Start/Finish, set Turns 1-4, fit the preferred groove, then approve and save. The lap overlay appears only after a MyChron upload has finished processing.</small>
       {grooveInsight && (

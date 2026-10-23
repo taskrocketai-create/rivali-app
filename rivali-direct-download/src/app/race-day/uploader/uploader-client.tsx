@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { RivaliLogo } from "@/components/rivali-logo";
 import { TrackMapEditor } from "@/components/track-map-editor";
-import type { Track as DomainTrack } from "@/types/domain";
+import type { Track as DomainTrack, RaceSession } from "@/types/domain";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { Plus, Trash2, UploadCloud, CheckCircle2, AlertCircle, Flag, MapPinned, ClipboardCheck } from "lucide-react";
 import styles from "./uploader.module.css";
@@ -14,7 +14,7 @@ type Slot = { id:string; driver:string; number:string; className:string; session
 type Draft = { trackId:string; eventDate:string; slots:Slot[] };
 const makeSlot = (index:number):Slot => ({id:crypto.randomUUID(),driver:"",number:"",className:"",sessionType:"practice",fileName:"",status:"waiting",message:""});
 const KEY = "rivali-operator-raceday-v1";
-export function UploaderClient({tracks,racers,karts}:{tracks:Track[];racers:Racer[];karts:Kart[]}) {
+export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];racers:Racer[];karts:Kart[];sessions:RaceSession[]}) {
   const [draft,setDraft] = useState<Draft>({trackId:"",eventDate:"",slots:[]});
   const [hydrated,setHydrated] = useState(false);
   const [files,setFiles] = useState<Record<string,File>>({});
@@ -78,7 +78,7 @@ export function UploaderClient({tracks,racers,karts}:{tracks:Track[];racers:Race
       </section>
       {showMapper && <section className={styles.mapperPanel}>
         <div className={styles.mapperHeading}><div><h2>Track Mapper</h2><p>Map the selected track here without leaving Rivali Uploader.</p></div><button type="button" onClick={()=>setShowMapper(false)}>Close mapper</button></div>
-        <TrackMapEditor tracks={currentTracks} sessions={[]} selectedTrackId={draft.trackId} onTrackUpdated={updated=>setCurrentTracks(list=>list.map(t=>t.id===updated.id?updated:t))}/>
+        <TrackMapEditor tracks={currentTracks} sessions={sessions.filter(s=>s.tracks?.id===draft.trackId)} selectedTrackId={draft.trackId} onTrackUpdated={updated=>setCurrentTracks(list=>list.map(t=>t.id===updated.id?updated:t))}/>
       </section>}
       <div className={styles.sectionHeader}><div><h2>Your Karts</h2><span>{draft.slots.length} of 5 configured</span></div><button disabled={draft.slots.length>=5} onClick={add}><Plus size={18}/> Add Kart</button></div>
       <div className={styles.grid}>{draft.slots.map((slot,i)=><article className={styles.card} key={slot.id}>
