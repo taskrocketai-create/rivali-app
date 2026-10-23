@@ -1,11 +1,13 @@
 "use client";
 import Link from "next/link";
 import { RivaliLogo } from "@/components/rivali-logo";
+import { TrackMapEditor } from "@/components/track-map-editor";
+import type { Track as DomainTrack } from "@/types/domain";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { Plus, Trash2, UploadCloud, CheckCircle2, AlertCircle, Flag, MapPinned, ClipboardCheck } from "lucide-react";
 import styles from "./uploader.module.css";
 
-type Track = { id:string; name:string; start_finish: unknown[] | null; turns: Record<string,unknown> | null };
+type Track = DomainTrack;
 type Racer = { id:string; name:string; primary_class:string | null };
 type Kart = { id:string; name:string; racer_id:string | null; chassis_make:string | null; chassis_model:string | null };
 type Slot = { id:string; driver:string; number:string; className:string; sessionType:string; fileName:string; status:"waiting"|"uploading"|"queued"|"error"; message:string; sessionId?:string };
@@ -16,7 +18,9 @@ export function UploaderClient({tracks,racers,karts}:{tracks:Track[];racers:Race
   const [draft,setDraft] = useState<Draft>({trackId:"",eventDate:"",slots:[]});
   const [hydrated,setHydrated] = useState(false);
   const [files,setFiles] = useState<Record<string,File>>({});
-  const chosenTrack = tracks.find(t=>t.id===draft.trackId);
+  const [showMapper,setShowMapper] = useState(false);
+  const [currentTracks,setCurrentTracks] = useState(tracks);
+  const chosenTrack = currentTracks.find(t=>t.id===draft.trackId);
   const turnNames=chosenTrack?.turns?Object.keys(chosenTrack.turns).filter(x=>/^[1-4]$/.test(x)):[];
   const groove=(chosenTrack?.turns?._rivali as {groove?:unknown[]} | undefined)?.groove;
   const mapReady=!!chosenTrack && Array.isArray(chosenTrack.start_finish) && chosenTrack.start_finish.length>=2 && turnNames.length===4 && Array.isArray(groove) && groove.length>=2;
@@ -65,13 +69,17 @@ export function UploaderClient({tracks,racers,karts}:{tracks:Track[];racers:Race
   return <main className={styles.page}>
     <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav><Link href="/race-day/uploader">Race Day</Link><Link href="/race-day/admin">Race Day Admin</Link><Link href="/reports">Reports</Link></nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
     <div className={styles.content}>
-      <div className={styles.heading}><div><h1>Race Day</h1><p>Set up drivers, upload MyChron data, analyze and deliver reports.</p></div><Link className={styles.trackLink} href="/race-day/uploader/track-editor"><MapPinned size={17}/> Track Editor</Link></div>
+      <div className={styles.heading}><div><h1>Race Day</h1><p>Set up drivers, upload MyChron data, analyze and deliver reports.</p></div><button type="button" className={styles.trackLink} onClick={()=>setShowMapper(v=>!v)}><MapPinned size={17}/>{showMapper?"Close Track Mapper":"Open Track Mapper"}</button></div>
       <section className={styles.setup}>
-        <label>Track<select value={draft.trackId} onChange={e=>setDraft(d=>({...d,trackId:e.target.value}))}><option value="">Select track</option>{tracks.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+        <label>Track<select value={draft.trackId} onChange={e=>setDraft(d=>({...d,trackId:e.target.value}))}><option value="">Select track</option>{currentTracks.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
         <label>Race date<input type="date" value={draft.eventDate} onChange={e=>setDraft(d=>({...d,eventDate:e.target.value}))}/></label>
-        {chosenTrack && <div className={styles.trackStatus}><strong>{chosenTrack.name} selected</strong><span>{mapReady?"Track map ready for XRK analysis":"Track saved; mapping incomplete for analysis"}</span><small>Start/Finish: {chosenTrack.start_finish?.length??0} points · Turns: {turnNames.length}/4 · Groove: {Array.isArray(groove)?groove.length:0} points</small><Link href="/race-day/uploader/track-editor">Open track editor</Link></div>}
+        {chosenTrack && <div className={styles.trackStatus}><strong>{chosenTrack.name} selected</strong><span>{mapReady?"Track map ready for XRK analysis":"Track saved; mapping incomplete for analysis"}</span><small>Start/Finish: {chosenTrack.start_finish?.length??0} points · Turns: {turnNames.length}/4 · Groove: {Array.isArray(groove)?groove.length:0} points</small><button type="button" className={styles.mapInline} onClick={()=>setShowMapper(true)}>Edit this track below</button></div>}
         <div className={styles.setupNote}><Flag size={16}/> Pre-race entries save in this browser. Uploads are linked directly to your Rivali account, track, driver, and kart. No pass code needed.</div>
       </section>
+      {showMapper && <section className={styles.mapperPanel}>
+        <div className={styles.mapperHeading}><div><h2>Track Mapper</h2><p>Map the selected track here without leaving Rivali Uploader.</p></div><button type="button" onClick={()=>setShowMapper(false)}>Close mapper</button></div>
+        <TrackMapEditor tracks={currentTracks} sessions={[]} selectedTrackId={draft.trackId} onTrackUpdated={updated=>setCurrentTracks(list=>list.map(t=>t.id===updated.id?updated:t))}/>
+      </section>}
       <div className={styles.sectionHeader}><div><h2>Your Karts</h2><span>{draft.slots.length} of 5 configured</span></div><button disabled={draft.slots.length>=5} onClick={add}><Plus size={18}/> Add Kart</button></div>
       <div className={styles.grid}>{draft.slots.map((slot,i)=><article className={styles.card} key={slot.id}>
         <div className={styles.cardTop}><div className={styles.cardName}><span className={styles.number}>{i+1}</span><b>Kart {i+1}</b></div><span className={slot.status==="queued"?styles.success:slot.status==="error"?styles.error:styles.wait}>{slot.status==="uploading"?"Uploading":slot.status==="queued"?"Queued":slot.status==="error"?"Needs attention":"Waiting"}</span><button className={styles.remove} title="Remove kart" onClick={()=>remove(slot.id)}><Trash2 size={17}/></button></div>
