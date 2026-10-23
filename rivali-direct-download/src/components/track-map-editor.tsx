@@ -167,13 +167,25 @@ export function TrackMapEditor({
       if(index===0&&!traceFitted.current){map.fitBounds(line.getBounds(),{padding:[20,20]});traceFitted.current=true;}
     });
     if (groove.length > 1) {
-      const sectionSize=Math.max(2,Math.ceil(groove.length/4));
-      for(let i=0;i<4;i++){
-        const start=i*sectionSize;
-        const pts=groove.slice(Math.min(start,groove.length-2),Math.min(groove.length,start+sectionSize+1));
-        if(pts.length<2)continue;
-        const line=L.polyline(pts.map(p=>[p.lat,p.lng]),{color:SEGMENT_COLORS[i],weight:5,opacity:.85}).addTo(map);
-        layers.current.push(line);
+      // Four continuous colored turn sections, anchored to actual saved groove vertices.
+      const usable=groove.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+      const edgeCount=usable.length;
+      if(edgeCount>=4){
+        for(let i=0;i<4;i++){
+          const start=Math.floor(i*edgeCount/4);
+          const end=Math.floor((i+1)*edgeCount/4);
+          const points=usable.slice(start,end+1);
+          if(i===3)points.push(usable[0]);
+          if(points.length<2)continue;
+          const line=L.polyline(points.map(p=>[p.lat,p.lng]),{color:SEGMENT_COLORS[i],weight:7,opacity:.93,interactive:false}).addTo(map);
+          layers.current.push(line);
+          // Boundary line across the racing path, not a circular turn-radius marker.
+          const b=usable[start], prev=usable[(start-1+edgeCount)%edgeCount], next=usable[(start+1)%edgeCount];
+          const dx=next.lng-prev.lng,dy=next.lat-prev.lat,scale=Math.hypot(dx,dy)||1;
+          const offset=.000065;
+          const boundary=L.polyline([[b.lat-dx/scale*offset,b.lng+dy/scale*offset],[b.lat+dx/scale*offset,b.lng-dy/scale*offset]],{color:"#ffffff",weight:3,opacity:.95}).addTo(map);
+          layers.current.push(boundary);
+        }
       }
     }
     if (ovalFit) {
@@ -250,7 +262,7 @@ export function TrackMapEditor({
     if (startFinish.length === 2) {
       const line = L.polyline(
         startFinish.map((x) => [x.lat, x.lng]),
-        { color: "#ffd43b", weight: 5 },
+        { color: "#f5ff00", weight: 6, opacity: 1 },
       ).addTo(map);
       layers.current.push(line);
     }
@@ -259,9 +271,9 @@ export function TrackMapEditor({
         draggable: true,
         icon: L.divIcon({
           className: "",
-          html: `<div style="width:28px;height:28px;border-radius:50%;background:#a72a20;color:white;border:2px solid white;display:grid;place-items:center;font-weight:900">${number}</div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
+          html: `<div style="background:#090909;color:${SEGMENT_COLORS[(Number(number)-1+4)%4]};border:1px solid ${SEGMENT_COLORS[(Number(number)-1+4)%4]};padding:3px 7px;white-space:nowrap;font-weight:900;font-size:12px">TURN ${number}</div>`,
+          iconSize: [66, 23],
+          iconAnchor: [33, 12],
         }),
       }).addTo(map);
       marker.on("dragend", () => {
@@ -271,13 +283,7 @@ export function TrackMapEditor({
           [number]: { lat: next.lat, lng: next.lng, radius_m: point.radius_m },
         }));
       });
-      const circle = L.circle([point.lat, point.lng], {
-        radius: point.radius_m,
-        color: "#f2eadb",
-        weight: 1,
-        fillOpacity: 0.08,
-      }).addTo(map);
-      layers.current.push(marker, circle);
+      layers.current.push(marker);
     });
   }, [startFinish, lapShapes, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
   useEffect(() => {
@@ -693,6 +699,7 @@ export function TrackMapEditor({
       <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
        {lapShapes.map((shape,i)=><span key={shape.lap} style={{color:LAP_COLORS[i],fontWeight:800}}>Lap {shape.lap}: {shape.seconds.toFixed(3)}s</span>)}
       </div>
+      {trackId && groove.length<4 && <div className="notice"><strong>Colored turns are not mapped yet.</strong> Choose <button type="button" onClick={fitOvalOverTrack} style={{background:"#eaff00",color:"#111",padding:"8px 12px",border:0,fontWeight:900,cursor:"pointer"}}>Place 4 colored track sections</button> then drag the eight shape handles around the actual racing surface and save. The initial outline is an editable draft, not verified geometry.</div>}
       <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
        {SEGMENT_COLORS.map((color,i)=><span key={i} style={{color,fontWeight:800}}>Segment {i+1}</span>)}
       </div>
