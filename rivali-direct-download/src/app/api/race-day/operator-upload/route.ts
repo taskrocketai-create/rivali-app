@@ -21,7 +21,7 @@ export async function POST(request:Request) {
   const turns=(track.turns??{}) as Record<string,unknown>;
   const count=Object.keys(turns).filter(k=>/^[1-4]$/.test(k)).length;
   const groove=(turns._rivali as {groove?:unknown[]} | undefined)?.groove;
-  if(!Array.isArray(track.start_finish)||track.start_finish.length<2||count<4||!Array.isArray(groove)||groove.length<2)return NextResponse.json({error:"Complete the track map (start/finish, turns 1-4, and groove) before uploading."},{status:409});
+  const mapReady=Array.isArray(track.start_finish)&&track.start_finish.length>=2&&count===4&&Array.isArray(groove)&&groove.length>=2;
   let {data:racer}=await admin.from("racers").select("id").eq("user_id",userId).eq("name",driver).maybeSingle();
   if(!racer){const q=await admin.from("racers").insert({user_id:userId,name:driver,primary_class:className}).select("id").single();if(q.error||!q.data)return NextResponse.json({error:q.error?.message??"Driver save failed."},{status:500});racer=q.data;}
   let {data:kart}=await admin.from("karts").select("id").eq("user_id",userId).eq("racer_id",racer.id).eq("name",kartNumber).maybeSingle();
@@ -29,9 +29,9 @@ export async function POST(request:Request) {
   const id=crypto.randomUUID(),safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_"),path=`${userId}/${id}/${safe}`;
   const {error:uploadError}=await admin.storage.from("telemetry").upload(path,file,{contentType:"application/octet-stream",upsert:false});
   if(uploadError)return NextResponse.json({error:uploadError.message},{status:500});
-  const {error:sessionError}=await admin.from("sessions").insert({id,user_id:userId,racer_id:racer.id,kart_id:kart.id,track_id:trackId,session_date:date,session_type:sessionType,raw_file_name:file.name,raw_storage_path:path,setup:{class_name:className,kart_number:kartNumber,source:"raceday_operator"},conditions:{},handling_feedback:{},status:"queued",report_status:"processing"});
+  const {error:sessionError}=await admin.from("sessions").insert({id,user_id:userId,racer_id:racer.id,kart_id:kart.id,track_id:trackId,session_date:date,session_type:sessionType,raw_file_name:file.name,raw_storage_path:path,setup:{class_name:className,kart_number:kartNumber,source:"raceday_operator",track_mapping_ready:mapReady},conditions:{},handling_feedback:{},status:"queued",report_status:"processing"});
   if(sessionError){await admin.storage.from("telemetry").remove([path]);return NextResponse.json({error:sessionError.message},{status:500});}
   const {error:jobError}=await admin.from("processing_jobs").insert({user_id:userId,session_id:id,status:"queued"});
   if(jobError){await admin.from("sessions").delete().eq("id",id);await admin.storage.from("telemetry").remove([path]);return NextResponse.json({error:jobError.message},{status:500});}
-  return NextResponse.json({ok:true,sessionId:id,message:"XRK uploaded and analysis queued."});
+  return NextResponse.json({ok:true,sessionId:id,message:mapReady?"XRK uploaded and analysis queued.":"XRK accepted. Track mapping incomplete; any corner-specific analysis will have limited confidence.",trackMappingReady:mapReady});
 }

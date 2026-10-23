@@ -65,11 +65,11 @@ export function UploaderClient({tracks,racers,karts}:{tracks:Track[];racers:Race
   return <main className={styles.page}>
     <header className={styles.bar}><div className={styles.brand}><RivaliLogo compact /><span>Uploader</span></div><nav><Link href="/race-day/uploader">Race Day</Link><Link href="/race-day/admin">Race Day Admin</Link><Link href="/reports">Reports</Link></nav><span className={styles.tag}>OPERATOR Â· 5 KART MAX</span></header>
     <div className={styles.content}>
-      <div className={styles.heading}><div><h1>Race Day</h1><p>Set up drivers, upload MyChron data, analyze and deliver reports.</p></div><Link className={styles.trackLink} href="/dashboard"><MapPinned size={17}/> Track Editor / Race Shop</Link></div>
+      <div className={styles.heading}><div><h1>Race Day</h1><p>Set up drivers, upload MyChron data, analyze and deliver reports.</p></div><Link className={styles.trackLink} href="/race-day/uploader/track-editor"><MapPinned size={17}/> Track Editor</Link></div>
       <section className={styles.setup}>
         <label>Track<select value={draft.trackId} onChange={e=>setDraft(d=>({...d,trackId:e.target.value}))}><option value="">Select track</option>{tracks.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
         <label>Race date<input type="date" value={draft.eventDate} onChange={e=>setDraft(d=>({...d,eventDate:e.target.value}))}/></label>
-        {chosenTrack && <div className={styles.trackStatus}><strong>{chosenTrack.name} selected</strong><span>{mapReady?"Track map ready for XRK analysis":"Track saved; mapping incomplete for analysis"}</span><small>Start/Finish: {chosenTrack.start_finish?.length??0} points · Turns: {turnNames.length}/4 · Groove: {Array.isArray(groove)?groove.length:0} points</small><Link href="/dashboard">Open track editor</Link></div>}
+        {chosenTrack && <div className={styles.trackStatus}><strong>{chosenTrack.name} selected</strong><span>{mapReady?"Track map ready for XRK analysis":"Track saved; mapping incomplete for analysis"}</span><small>Start/Finish: {chosenTrack.start_finish?.length??0} points · Turns: {turnNames.length}/4 · Groove: {Array.isArray(groove)?groove.length:0} points</small><Link href="/race-day/uploader/track-editor">Open track editor</Link></div>}
         <div className={styles.setupNote}><Flag size={16}/> Pre-race entries save in this browser. Uploads are linked directly to your Rivali account, track, driver, and kart. No pass code needed.</div>
       </section>
       <div className={styles.sectionHeader}><div><h2>Your Karts</h2><span>{draft.slots.length} of 5 configured</span></div><button disabled={draft.slots.length>=5} onClick={add}><Plus size={18}/> Add Kart</button></div>
