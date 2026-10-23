@@ -9,6 +9,33 @@ type TracePoint = { lat: number; lng: number; time: number; speed_mph?: number }
 type LapShape = { lap:number; seconds:number; points:TracePoint[] };
 const LAP_COLORS = ["#eaff00","#00c8ff","#ff5cbd","#ff9c24","#9a7bff"];
 const SEGMENT_COLORS = ["#00d37e","#2387ff","#f7464e","#ffab13"];
+const ZONE_NAMES=["Front straight","Turn 1","Turn 2","Back straight","Turn 3","Turn 4"];
+const ZONE_COLORS=["#00bcd4","#15cb83","#427eff","#c058ff","#ff6b64","#ffba2f"];
+const DEFAULT_ZONE_BREAKS=[0,.17,.31,.49,.67,.81];
+function zonePoint(line:GeoPoint[],fraction:number):LatLng {
+  const idx=((fraction%1)+1)%1*line.length;
+  const first=Math.floor(idx)%line.length,next=(first+1)%line.length,t=idx-Math.floor(idx);
+  return {lat:line[first].lat+(line[next].lat-line[first].lat)*t,lng:line[first].lng+(line[next].lng-line[first].lng)*t};
+}
+function zoneCrossSection(line:GeoPoint[],fraction:number,widthMeters:number):[LatLng,LatLng]{
+  const p=zonePoint(line,fraction),prev=zonePoint(line,fraction-.002),next=zonePoint(line,fraction+.002);
+  const cl=Math.max(.1,Math.cos(p.lat*Math.PI/180));
+  const dx=(next.lng-prev.lng)*cl,dy=next.lat-prev.lat,mag=Math.hypot(dx,dy)||1;
+  const latitudeOffset=widthMeters/2/111320;
+  return [{lat:p.lat-dx/mag*latitudeOffset,lng:p.lng+dy/mag*latitudeOffset/cl},
+          {lat:p.lat+dx/mag*latitudeOffset,lng:p.lng-dy/mag*latitudeOffset/cl}];
+}
+function zonePolygon(line:GeoPoint[],start:number,end:number,widthMeters:number):[number,number][]{
+  const total=(end>start?end:end+1)-start;
+  const steps=Math.max(8,Math.ceil(total*line.length*2));
+  const outer:[number,number][]=[],inner:[number,number][]=[];
+  for(let i=0;i<=steps;i++){
+    const [o,inside]=zoneCrossSection(line,start+total*i/steps,widthMeters);
+    outer.push([o.lat,o.lng]);inner.push([inside.lat,inside.lng]);
+  }
+  return [...outer,...inner.reverse()];
+}
+
 function topFiveLapShapes(points:TracePoint[], lapRows:unknown[]):LapShape[] {
   if(!Array.isArray(lapRows)||points.length<4)return [];
   const laps=lapRows.map((raw,index)=>{
@@ -107,6 +134,10 @@ export function TrackMapEditor({
   const [mode, setMode] = useState<Mode>(null);
   const [startFinish, setStartFinish] = useState<LatLng[]>([]);
   const [raceArrow,setRaceArrow] = useState<LatLng[] | null>(null);
+  const [zoneBreaks,setZoneBreaks]=useState<number[]>(DEFAULT_ZONE_BREAKS);
+  const [zoneWidth,setZoneWidth]=useState(12);
+  const [showZones,setShowZones]=useState(true);
+
   const quickStartRef = useRef<LatLng | null>(null);
   const modeRef = useRef<Mode>(null);
   const selectMode = (next:Mode) => { modeRef.current=next; setMode(next); };
@@ -170,25 +201,50 @@ export function TrackMapEditor({
       layers.current.push(line);
       if(index===0&&!traceFitted.current){map.fitBounds(line.getBounds(),{padding:[20,20]});traceFitted.current=true;}
     });
-    if (groove.length > 1) {
-      // Four continuous colored turn sections, anchored to actual saved groove vertices.
+    if(groove.length>=4){
       const usable=groove.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
-      const edgeCount=usable.length;
-      if(edgeCount>=4){
-        for(let i=0;i<4;i++){
-          const start=Math.floor(i*edgeCount/4);
-          const end=Math.floor((i+1)*edgeCount/4);
-          const points=usable.slice(start,end+1);
-          if(i===3)points.push(usable[0]);
-          if(points.length<2)continue;
-          const line=L.polyline(points.map(p=>[p.lat,p.lng]),{color:SEGMENT_COLORS[i],weight:7,opacity:.93,interactive:false}).addTo(map);
-          layers.current.push(line);
-          // Boundary line across the racing path, not a circular turn-radius marker.
-          const b=usable[start], prev=usable[(start-1+edgeCount)%edgeCount], next=usable[(start+1)%edgeCount];
-          const dx=next.lng-prev.lng,dy=next.lat-prev.lat,scale=Math.hypot(dx,dy)||1;
-          const offset=.000065;
-          const boundary=L.polyline([[b.lat-dx/scale*offset,b.lng+dy/scale*offset],[b.lat+dx/scale*offset,b.lng-dy/scale*offset]],{color:"#ffffff",weight:3,opacity:.95}).addTo(map);
-          layers.current.push(boundary);
+      if(usable.length>=4){
+        for(let i=0;i<6;i++){
+          const start=zoneBreaks[i],end=zoneBreaks[(i+1)%6];
+          if(showZones){
+            const poly=L.polygon(zonePolygon(usable,start,end,zoneWidth),{
+              color:ZONE_COLORS[i],weight:1,opacity:.8,fillColor:ZONE_COLORS[i],fillOpacity:.24,interactive:false
+            }).addTo(map);
+            layers.current.push(poly);
+          }
+          const [a,b]=zoneCrossSection(usable,start,zoneWidth);
+          if(showZones){
+            const boundary=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{color:"#fff",weight:1.5,opacity:.9,interactive:false}).addTo(map);
+            layers.current.push(boundary);
+          }
+          const center=zonePoint(usable,start);
+          const handle=L.marker([center.lat,center.lng],{
+            draggable:true,
+            icon:L.divIcon({
+              className:"",
+              html:`<div style="background:#111;color:${ZONE_COLORS[i]};border:2px solid ${ZONE_COLORS[i]};border-radius:4px;padding:3px 5px;font:bold 11px sans-serif;white-space:nowrap;box-shadow:0 1px 4px #000"> ${i+1} </div>`,
+              iconSize:[27,23],iconAnchor:[14,12]
+            })
+          }).addTo(map).bindTooltip("Drag boundary: "+ZONE_NAMES[i]);
+          handle.on("dragend",()=>{
+            const newPoint=handle.getLatLng();
+            let best=zoneBreaks[i],distance=Infinity;
+            for(let n=0;n<usable.length*8;n++){
+              const candidate=n/(usable.length*8);
+              const p=zonePoint(usable,candidate);
+              const delta=(p.lat-newPoint.lat)**2+((p.lng-newPoint.lng)*Math.cos(p.lat*Math.PI/180))**2;
+              if(delta<distance){distance=delta;best=candidate;}
+            }
+            setZoneBreaks(current=>{
+              const prev=i===0?current[5]-1:current[i-1];
+              const next=i===5?current[0]+1:current[i+1];
+              const adjusted=i===0?(best>.5?best-1:best):best;
+              const bounded=Math.max(prev+.012,Math.min(next-.012,adjusted));
+              const updated=[...current];updated[i]=i===0?((bounded+1)%1):bounded;
+              return updated;
+            });
+          });
+          layers.current.push(handle);
         }
       }
     }
@@ -302,7 +358,7 @@ export function TrackMapEditor({
       });
       layers.current.push(marker);
     });
-  }, [startFinish, raceArrow, lapShapes, turns, groove, walk, ovalFit, segmentAdjusting, setTurns]);
+  }, [startFinish, raceArrow, lapShapes, turns, groove, walk, ovalFit, segmentAdjusting, setTurns,zoneBreaks,zoneWidth,showZones]);
   useEffect(() => {
     radiusRef.current = feetToMeters(radiusFeet);
   }, [radiusFeet]);
@@ -418,6 +474,10 @@ export function TrackMapEditor({
     setStartFinish(sf);
     const arrow=(markers as Record<string,unknown>)._rivali as {race_arrow?:LatLng[]} | undefined;
     setRaceArrow(Array.isArray(arrow?.race_arrow)&&arrow.race_arrow.length===2?arrow.race_arrow:null);
+    const savedZones=(markers as Record<string,unknown>)._rivali as {zones?:{breaks?:number[];width_m?:number}}|undefined;
+    setZoneBreaks(Array.isArray(savedZones?.zones?.breaks)&&savedZones.zones.breaks.length===6?savedZones.zones.breaks:DEFAULT_ZONE_BREAKS);
+    setZoneWidth(typeof savedZones?.zones?.width_m==="number"?savedZones.zones.width_m:12);
+
     setTurns(Object.fromEntries(Object.entries(markers).filter(([key]) => /^[1-4]$/.test(key))) as Record<string, TurnMarker>);
     const metadata = (markers as Record<string, unknown>)._rivali as { walk?: WalkLayout; groove?: GeoPoint[] } | undefined;
     setWalk(metadata?.walk ?? { points: {} });
@@ -651,6 +711,8 @@ export function TrackMapEditor({
         walk: { ...walk, saved_at: new Date().toISOString() },
         groove: hasGroove ? groove : (existingMeta.groove ?? []),
         race_arrow: raceArrow ?? existingMeta.race_arrow ?? null,
+        zones:{breaks:zoneBreaks,width_m:zoneWidth,names:ZONE_NAMES,review_status:"draft"},
+
       },
     };
     const previousStart = existing?.start_finish;
@@ -737,6 +799,13 @@ export function TrackMapEditor({
       <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
        {lapShapes.map((shape,i)=><span key={shape.lap} style={{color:LAP_COLORS[i],fontWeight:800}}>Lap {shape.lap}: {shape.seconds.toFixed(3)}s</span>)}
       </div>
+      {trackId && <div className="notice" style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
+        <strong>6 adjustable sections</strong>
+        <label style={{display:"flex",gap:5,alignItems:"center"}}><input type="checkbox" checked={showZones} onChange={e=>setShowZones(e.target.checked)}/> Show colored overlay</label>
+        <label>Track width <input aria-label="Track width in meters" type="number" min={5} max={40} step={1} value={zoneWidth} onChange={e=>setZoneWidth(Math.max(5,Math.min(40,Number(e.target.value)||12)))} style={{width:64}}/> meters</label>
+        <span>Drag the six numbered boundaries along the track. Hiding colors keeps your saved definitions.</span>
+        <div style={{display:"flex",gap:7,flexWrap:"wrap",width:"100%"}}>{ZONE_NAMES.map((name,i)=><span key={name} style={{color:ZONE_COLORS[i],fontWeight:800}}>{name}</span>)}</div>
+      </div>}
       {trackId && groove.length<4 && <div className="notice"><strong>Colored turns are not mapped yet.</strong> Choose <button type="button" onClick={fitOvalOverTrack} style={{background:"#eaff00",color:"#111",padding:"8px 12px",border:0,fontWeight:900,cursor:"pointer"}}>Place 4 colored track sections</button> then drag the eight shape handles around the actual racing surface and save. The initial outline is an editable draft, not verified geometry.</div>}
       <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"10px 0"}}>
        {SEGMENT_COLORS.map((color,i)=><span key={i} style={{color,fontWeight:800}}>Segment {i+1}</span>)}
