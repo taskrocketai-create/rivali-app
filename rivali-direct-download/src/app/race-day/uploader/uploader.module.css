@@ -70,3 +70,5 @@
 .dougPanel{width:min(400px,calc(100vw - 28px));max-height:65vh}.dougVoice{border:0;background:transparent;padding:10px 0}.dougVoice .dougActions button{border-radius:35px;min-height:54px;font-size:16px}.dougPanel>p{font-size:15px}.dougDock{z-index:1400}
 
 .dougMinimalStatus{position:absolute;bottom:60px;right:0;border:1px solid #eaff00;border-radius:10px;background:#0b1111;color:#eaff00;padding:12px 18px;white-space:nowrap}.dougMinimalStatus small{display:block;white-space:normal;max-width:300px;color:#fff;margin-top:7px}.dougFab:disabled{opacity:.7;cursor:wait}
+
+.dougConfirm{position:absolute;right:0;bottom:67px;width:min(380px,calc(100vw - 25px));max-height:60vh;overflow:auto;padding:16px;border:1px solid #f4ff00;border-radius:12px;background:#0d1112;color:white;box-shadow:0 10px 30px #000c}.dougConfirm strong{color:#f4ff00}.dougConfirm p{line-height:1.4}.dougConfirm small{display:block;margin:7px 0}.dougConfirm>div{display:flex;gap:8px;margin-top:15px}.dougConfirm button{padding:11px 13px;background:#f4ff00;color:#111;font-weight:800;border:0;border-radius:6px;cursor:pointer}.dougConfirm button+button{background:#242b2b;color:#fff}
