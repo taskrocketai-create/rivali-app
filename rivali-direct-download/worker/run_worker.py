@@ -137,7 +137,7 @@ def process_one(client,job_id_override=None):
         track=client.table("tracks").select("start_finish,turns").eq("id",session["track_id"]).single().execute().data
         timing_source=("raw_xrk_rs3_verified" if any("RS3 lap numbering validated" in warning for warning in summary.warnings) else "raw_xrk_packet_fallback" if any("raw XRK packets" in warning for warning in summary.warnings) else "aim_lap_table");timing_diagnostic=("Lap numbers checked against five RS3 screenshot reference times; raw status flags remain unvalidated." if timing_source=="raw_xrk_rs3_verified" else "Lap times recovered from XRK LAP packets; RS3 numbering and status flags require validation." if timing_source=="raw_xrk_packet_fallback" else "Lap times read from the XRK lap table.")
         if not summary.laps:
-            gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"))
+            gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"),race_arrow=((track.get("turns") or {}).get("_rivali") or {}).get("race_arrow"))
             summary=summary_from_gps_laps(summary,gps_times,timing_diagnostic)
             timing_source="gps_start_finish" if gps_times else "unavailable"
         try:
