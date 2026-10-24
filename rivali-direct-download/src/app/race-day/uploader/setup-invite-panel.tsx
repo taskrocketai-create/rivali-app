@@ -1,6 +1,7 @@
 "use client";
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {createClient} from "@/lib/supabase/client";
+import {SetupReviewEditor} from "./setup-review-editor";
 
 type Baseline={id:string;kart_id:string;racer_id:string;setup:Record<string,unknown>;
  status:"pending_review"|"approved"|"rejected";submitted_at:string};
@@ -93,6 +94,7 @@ export function SetupInvitePanel({racers,karts}:{racers:Person[];karts:Person[]}
        </div>)}
       </div>
      </details>
+     <details style={{marginTop:12}}><summary style={{cursor:"pointer",fontWeight:800,color:"#eaf43e"}}>Complete missing fields or correct intake values</summary><SetupReviewEditor key={record.id+record.submitted_at} id={record.id} setup={record.setup} status={record.status} onSaved={reload}/></details>
      {record.status==="pending_review"&&<div style={{display:"flex",gap:10,marginTop:10}}>
       <button style={button} type="button" disabled={busy} onClick={()=>void changeReview(record.id,"approved")}>Approve baseline</button>
       <button style={{...button,background:"#343d36",color:"#e9ede7"}} type="button" disabled={busy} onClick={()=>void changeReview(record.id,"rejected")}>Reject</button>
