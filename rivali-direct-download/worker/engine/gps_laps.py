@@ -31,7 +31,7 @@ def _point(raw):
         return None
 
 
-def reconstruct_lap_times(data, start_finish, min_lap_sec=5.0, max_lap_sec=180.0):
+def reconstruct_lap_times(data, start_finish, min_lap_sec=5.0, max_lap_sec=180.0, race_arrow=None):
     """Return same-direction line-crossing lap times and a diagnostic message."""
     if not isinstance(start_finish, list) or len(start_finish) < 2:
         return [], "Track has no saved two-point start/finish line."
@@ -81,7 +81,18 @@ def reconstruct_lap_times(data, start_finish, min_lap_sec=5.0, max_lap_sec=180.0
         if not crossings[direction] or crossing_time - crossings[direction][-1] >= min_lap_sec:
             crossings[direction].append(crossing_time)
 
-    selected = max(crossings.values(), key=len)
+    # A saved directional arrow makes crossing direction explicit instead of
+    # guessing based on whichever side has more detections.
+    direction_from_arrow = None
+    if isinstance(race_arrow, list) and len(race_arrow) == 2:
+        arrow_a, arrow_b = _point(race_arrow[0]), _point(race_arrow[1])
+        if arrow_a is not None and arrow_b is not None:
+            dx = (arrow_b[1]-arrow_a[1]) * meters_lon
+            dy = (arrow_b[0]-arrow_a[0]) * meters_lat
+            cross = vx * dy - vy * dx
+            if abs(cross) > 1e-5:
+                direction_from_arrow = 1 if cross > 0 else -1
+    selected = crossings[direction_from_arrow] if direction_from_arrow else max(crossings.values(), key=len)
     lap_times = [
         round(end - start, 4)
         for start, end in zip(selected, selected[1:])
@@ -89,4 +100,4 @@ def reconstruct_lap_times(data, start_finish, min_lap_sec=5.0, max_lap_sec=180.0
     ]
     if not lap_times:
         return [], f"Detected {len(selected)} same-direction start/finish crossing(s), not enough for a complete lap."
-    return lap_times, f"Reconstructed {len(lap_times)} lap(s) from {len(selected)} GPS start/finish crossings."
+    return lap_times, f"Reconstructed {len(lap_times)} lap(s) from {len(selected)} GPS start/finish crossings ({'saved race direction' if direction_from_arrow else 'direction inferred from data'})."

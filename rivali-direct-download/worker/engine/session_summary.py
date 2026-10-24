@@ -130,6 +130,29 @@ def summarize_session(xrk_path: str) -> SessionSummary:
         )
 
     if not raw_laps:
+        from .xrk_lap_decoder import decode_laps
+        with open(xrk_path, "rb") as source:
+            packet_records = decode_laps(source.read())
+        # Screenshot-verified mapping is permitted only for this exact file.
+        # Other XRK files keep their raw ordinals until independently validated.
+        import hashlib
+        from .rs3_reference import validate_offset
+        with open(xrk_path, "rb") as source:
+            file_sha = hashlib.sha256(source.read()).hexdigest()
+        known_sha = "09f77f45f3064b4031a737e4e2c9f804701eb7188a192d713f247d6d55d7a500"
+        offset = validate_offset(packet_records) if file_sha == known_sha else None
+        raw_laps = [
+            {"lap_number": record["record_ordinal"] + (offset or 0),
+             "lap_time": round(record["duration_seconds"] * 1000)}
+            for record in packet_records
+            if 3 <= record["duration_seconds"] <= 180
+        ]
+        warnings.append(
+            "Lap times recovered from raw XRK packets. "
+            + ("RS3 lap numbering validated against five screenshot references; raw status flags remain unvalidated." if offset is not None else "RS3 numbering and raw status flags are not validated.")
+        )
+
+    if not raw_laps:
         warnings.append(
             "No lap data found in this session. This can happen with a "
             "bench/test session, a session where the unit never crossed "

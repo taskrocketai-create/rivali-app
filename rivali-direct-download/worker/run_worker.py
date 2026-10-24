@@ -2,6 +2,7 @@
 import argparse
 import math
 import os
+import socket
 import tempfile
 import time
 import shutil
@@ -13,7 +14,12 @@ from daq_tools.readers import XRKReader
 from supabase import create_client
 from engine.mapped_track_analysis import analyze_mapped_track
 from engine.session_summary import summarize_session, summary_from_gps_laps
+from engine.xrk_raw_samples import extract_samples, rpm_lap_summaries, align_rpm_to_laps
+from engine.xrk_channel_inventory import inventory_file
+from engine.lateral_grip import compare_lateral_grip
 from engine.gps_laps import reconstruct_lap_times
+from engine.turn_proposal import propose_turn_segments
+from engine.sector_analysis import classify_track_sectors
 from engine.knowledge_selection import select_knowledge
 from engine.video_knowledge import distill_transcript, extract_audio_chunks, transcribe_chunks
 
@@ -117,30 +123,74 @@ def save_grounded_recommendation(client, session_id, owner_id):
         })
     client.table("recommendations").upsert({"user_id": owner_id, "session_id": session_id, "recommendation": text, "confidence": confidence, "evidence": evidence}, on_conflict="session_id").execute()
 
-def process_one(client):
-    response=client.rpc("claim_processing_job").execute()
-    if not response.data:return False
+def process_one(client,job_id_override=None):
+    print(f"worker={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2 attempting claim",flush=True)
+    response=(client.rpc("claim_reserved_processing_job",{"p_job_id":job_id_override}).execute() if job_id_override is not None else client.rpc("claim_processing_job").execute())
+    if not response.data:
+        print("no processing job claimed",flush=True)
+        return False
     job=response.data[0];job_id,session_id,owner_id=job["job_id"],job["session_id"],job["user_id"];path=None
+    print(f"claimed job={job_id} session={session_id} worker={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2",flush=True)
     try:
         payload=client.storage.from_("telemetry").download(job["raw_storage_path"])
         with tempfile.NamedTemporaryFile(suffix=".xrk",delete=False) as handle:path=handle.name;handle.write(payload)
         summary=summarize_session(path);_header,data=XRKReader.read(path,header_only=False)
         session=client.table("sessions").select("track_id,race_day_pass_id").eq("id",session_id).single().execute().data
         track=client.table("tracks").select("start_finish,turns").eq("id",session["track_id"]).single().execute().data
-        timing_source="aim_lap_table";timing_diagnostic="Lap times read from the XRK lap table."
+        timing_source=("raw_xrk_rs3_verified" if any("RS3 lap numbering validated" in warning for warning in summary.warnings) else "raw_xrk_packet_fallback" if any("raw XRK packets" in warning for warning in summary.warnings) else "aim_lap_table");timing_diagnostic=("Lap numbers checked against five RS3 screenshot reference times; raw status flags remain unvalidated." if timing_source=="raw_xrk_rs3_verified" else "Lap times recovered from XRK LAP packets; RS3 numbering and status flags require validation." if timing_source=="raw_xrk_packet_fallback" else "Lap times read from the XRK lap table.")
         if not summary.laps:
-            gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"))
+            gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"),race_arrow=((track.get("turns") or {}).get("_rivali") or {}).get("race_arrow"))
             summary=summary_from_gps_laps(summary,gps_times,timing_diagnostic)
             timing_source="gps_start_finish" if gps_times else "unavailable"
-        mapped=analyze_mapped_track(data,track)
+        zones=((track.get("turns") or {}).get("_rivali") or {}).get("zones") or {}
+        six_zone_map=(zones.get("review_status")=="approved" and len(zones.get("breaks") or [])==6)
+        try:
+            mapped=({"analysis_ready":False,"diagnostic":"Six-zone track definitions saved; detailed per-turn alignment remains unverified.","turns":[],"corner_pairs":[],"groove":None,"alignment":None} if six_zone_map else analyze_mapped_track(data,track))
+        except RuntimeError as mapping_error:
+            if "Track mapping incomplete" not in str(mapping_error):
+                raise
+            mapped={"analysis_ready":False,"diagnostic":str(mapping_error)}
+        sector_assignments=classify_track_sectors(data,track)
+        proposal = None
         if not mapped.get("analysis_ready"):
-            raise RuntimeError(mapped.get("diagnostic") or "Track mapping is not ready for analysis.")
-        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic}},"channel_manifest":[str(column) for column in data.columns]}
+            try:
+                proposal = propose_turn_segments(data, track)
+            except (ValueError, TypeError, KeyError) as error:
+                proposal = {"status":"unavailable","reason":f"GPS turn proposal could not be calculated: {error}"}
+            # A missing or unvalidated track map must not erase verified lap timing.
+            # Store a neutral, timing-only result; do not infer corners or handling.
+            mapped={"analysis_ready":False,"diagnostic":mapped.get("diagnostic") or "Track mapping is not validated.",
+                    "turns":[],"corner_pairs":[],"groove":None,"alignment":None}
+        # Do not pass proposals through as completed/approved corner analysis.
+        if proposal is not None:
+            mapped["turn_proposal"] = proposal
+        mapped["sector_assignments"]=sector_assignments
+        raw_channels = extract_samples(path)
+        channel_inventory = inventory_file(path)
+        rpm_indexes = [c['index'] for c in channel_inventory['channels'] if c['name'].strip().upper() == 'RPM']
+        raw_rpm = raw_channels.get(rpm_indexes[0], []) if len(rpm_indexes) == 1 else []
+        grip_indexes = [c['index'] for c in channel_inventory['channels'] if c['name'].strip().lower() in ('lateral grip', 'lat gri')]
+        grip_diagnostic = {'status': 'unavailable', 'reason': 'No unique Lateral Grip channel or GPS lateral acceleration'}
+        gps_latacc_column = find_column(data, ('GPS LatAcc',))
+        if len(grip_indexes) == 1 and gps_latacc_column is not None:
+            grip_diagnostic = compare_lateral_grip(raw_channels.get(grip_indexes[0], []), data.index, plain(data[gps_latacc_column]))
+        for channel in channel_inventory["channels"]:
+            channel["raw_record_count"] = len(raw_channels.get(channel["index"], []))
+            channel["raw_decode_status"] = "provisional_uncalibrated" if channel["raw_record_count"] else "no_raw_records_found"
+        channel_inventory["note"] = "XRK channel definitions are not proof of samples. Raw counts are provisional until record framing and engineering-unit calibration are validated."
+        rpm_by_lap = []
+        if raw_rpm and summary.laps:
+            try:
+                rpm_by_lap = align_rpm_to_laps(rpm_lap_summaries(path, raw_rpm), summary.laps)
+            except ValueError as rpm_lap_error:
+                print(f"RPM lap alignment unavailable: {rpm_lap_error}", flush=True)
+        telemetry={"session_id":session_id,"user_id":owner_id,"laps":[asdict(lap) for lap in summary.laps],"gps_trace":gps_trace(data),"corner_analysis":{"turn_proposal":mapped.get("turn_proposal"),"sector_assignments":mapped.get("sector_assignments"),"diagnostic":mapped.get("diagnostic"),"turns":mapped.get("turns"),"corner_pairs":mapped.get("corner_pairs"),"groove":mapped.get("groove"),"alignment":mapped.get("alignment"),"lap_timing":{"source":timing_source,"diagnostic":timing_diagnostic},"channel_inventory":channel_inventory,"lateral_grip_validation":grip_diagnostic,"rpm_by_lap":rpm_by_lap,"rpm_summary":{"source":"raw_xrk_sample","sample_count":len(raw_rpm),"min_rpm":min(v for _,v in raw_rpm),"max_rpm":max(v for _,v in raw_rpm),"validation":"pending_rs3_curve_comparison"} if raw_rpm else None},"channel_manifest":[str(column) for column in data.columns]+(["RPM"] if raw_rpm else [])}
         client.table("session_telemetry").upsert(telemetry).execute()
         session_update={"status":"completed","parse_error":None,"lap_count":summary.lap_count,"best_lap_sec":summary.best_lap_sec,"average_lap_sec":summary.average_lap_sec,"consistency_stdev_sec":summary.consistency_stdev_sec}
         client.table("sessions").update(session_update).eq("id",session_id).execute()
         try:
-            save_grounded_recommendation(client, session_id, owner_id)
+            if mapped.get("analysis_ready") and timing_source == "aim_lap_table":
+                save_grounded_recommendation(client, session_id, owner_id)
         except Exception as recommendation_error:
             print(f"recommendation skipped for {session_id}: {recommendation_error}", flush=True)
         if session.get("race_day_pass_id"):
@@ -214,11 +264,12 @@ def process_knowledge_video(client):
     return True
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--interval",type=int,default=8);args=parser.parse_args();url,secret=os.environ.get("SUPABASE_URL"),os.environ.get("SUPABASE_SECRET_KEY")
+    parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--job-id",type=int);parser.add_argument("--interval",type=int,default=8);args=parser.parse_args();url,secret=os.environ.get("SUPABASE_URL"),os.environ.get("SUPABASE_SECRET_KEY")
     if not url or not secret:raise SystemExit("SUPABASE_URL and SUPABASE_SECRET_KEY are required")
     client=create_client(url,secret)
+    print(f"Rivali worker startup host={socket.gethostname()} pid={os.getpid()} version=timing-fallback-v2",flush=True)
     while True:
-        found=process_knowledge_video(client) or process_one(client)
+        found=process_one(client,args.job_id) if args.once else (process_knowledge_video(client) or process_one(client))
         if args.once:break
         if not found:time.sleep(args.interval)
 if __name__=="__main__":main()
