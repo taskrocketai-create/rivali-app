@@ -83,3 +83,37 @@ def align_rpm_to_laps(raw_summaries, reported_laps):
         previous_ordinal = match["raw_lap_ordinal"]
         aligned.append({"lap_number": number, **match})
     return aligned
+
+
+def extract_lateral_grip(path):
+    """Read recorded AiM 'Lat Gri' trace as float32, without claiming G units.
+
+    The channel number is assigned per XRK file (e.g. MyChron 6 uses 32).
+    The 'Lat Gri' values seen in Race Studio have an unspecified [#] unit.
+    Return (timestamp_ms, value) pairs; retain zeros so timing is preserved.
+    """
+    import math
+    data = Path(path).read_bytes()
+    matches = []
+    offset = 0
+    while (offset := data.find(b"<hCHS", offset)) >= 0:
+        header = data[offset:offset + 150]
+        if b"Lat Gri\x00Lateral Grip\x00" in header:
+            matches.append(struct.unpack_from("<I", data, offset + 12)[0])
+        offset += 5
+    channels = set(matches)
+    if len(channels) != 1 or not all(0 <= ch < 256 for ch in channels):
+        raise ValueError("Could not uniquely identify Lateral Grip channel in XRK header")
+    channel = next(iter(channels))
+    result = []
+    offset = 0
+    while (offset := data.find(b"(S", offset)) >= 0:
+        if offset + 13 <= len(data) and data[offset + 6] == channel and data[offset + 12] == 0x29:
+            stamp = struct.unpack_from("<I", data, offset + 2)[0]
+            value = struct.unpack_from("<f", data, offset + 8)[0]
+            if math.isfinite(value):
+                result.append((stamp, value))
+            offset += 13
+        else:
+            offset += 2
+    return result
