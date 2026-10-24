@@ -142,8 +142,10 @@ def process_one(client,job_id_override=None):
             gps_times,timing_diagnostic=reconstruct_lap_times(data,track.get("start_finish"),race_arrow=((track.get("turns") or {}).get("_rivali") or {}).get("race_arrow"))
             summary=summary_from_gps_laps(summary,gps_times,timing_diagnostic)
             timing_source="gps_start_finish" if gps_times else "unavailable"
+        zones=((track.get("turns") or {}).get("_rivali") or {}).get("zones") or {}
+        six_zone_map=(zones.get("review_status")=="approved" and len(zones.get("breaks") or [])==6)
         try:
-            mapped=analyze_mapped_track(data,track)
+            mapped=({"analysis_ready":False,"diagnostic":"Six-zone track definitions saved; detailed per-turn alignment remains unverified.","turns":[],"corner_pairs":[],"groove":None,"alignment":None} if six_zone_map else analyze_mapped_track(data,track))
         except RuntimeError as mapping_error:
             if "Track mapping incomplete" not in str(mapping_error):
                 raise

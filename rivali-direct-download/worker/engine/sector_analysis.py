@@ -11,8 +11,8 @@ def classify_track_sectors(data,track):
         return {"status":"unapproved","reason":"Sector boundaries require operator approval."}
     if (not isinstance(breaks,list) or len(breaks)!=6 or
         any(not isinstance(x,(float,int)) or not 0<=x<1 for x in breaks) or
-        breaks!=sorted(breaks) or len(groove)<4):
-        return {"status":"invalid","reason":"Approved segment definitions must have six ordered fractions and a saved track centerline."}
+        len(set(breaks))!=6 or len(groove)<4):
+        return {"status":"invalid","reason":"Approved segment definitions must have six distinct fractions and a saved track centerline."}
     latcol,loncol=_find(data,GPS_LAT_NAMES),_find(data,GPS_LON_NAMES)
     if latcol is None or loncol is None:
         return {"status":"unavailable","reason":"GPS positions missing."}
@@ -40,7 +40,7 @@ def classify_track_sectors(data,track):
         zone=5
         for i in range(6):
             start=breaks[i];end=breaks[i+1] if i<5 else 1
-            if start<=fraction<end:zone=i;break
+            if (start<=fraction<end if start<end else fraction>=start or fraction<end):zone=i;break
         counts[zone]+=1
     coverage=inside/total if total else 0
     return {"status":"classified" if coverage>=.6 and min(counts)>=3 else "low_coverage",
