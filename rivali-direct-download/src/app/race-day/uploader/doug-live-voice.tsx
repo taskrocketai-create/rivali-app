@@ -9,13 +9,19 @@ type Kart={id:string;number:string;driver:string;className:string};
 type Pending={kind:"setup"|"debrief";kartId:string;summary:string;values?:Record<string,string>;transcript?:string};
 const KEY="rivali-doug-conversation-v2";
 const setupFields=["lf","rf","lr","rr","stagger","ballastFL","ballastFR","ballastCL","ballastCR","ballastRL","ballastRR","cross","gear","driverSprocket","rearSprocket","rideF","rideR","frontCamber","rearCamber","caster","frontToe","widthF","widthR","seat","tireBrand","compound","feedback","notes"];
-export function DougLiveVoice({context,trackId,karts,onSelectKart}:{context:string;trackId:string;karts:Kart[];onSelectKart:(id:string)=>void}){
+export function DougLiveVoice({context,reportContext="",trackId,karts,onSelectKart}:{context:string;reportContext?:string;trackId:string;karts:Kart[];onSelectKart:(id:string)=>void}){
  const session=useRef<RealtimeSession|null>(null);
  const kartRef=useRef(karts),selectRef=useRef(onSelectKart),trackRef=useRef(trackId);
- kartRef.current=karts;selectRef.current=onSelectKart;trackRef.current=trackId;
+ const reportRef=useRef(reportContext);
+ kartRef.current=karts;selectRef.current=onSelectKart;trackRef.current=trackId;reportRef.current=reportContext;
  const [status,setStatus]=useState<"idle"|"connecting"|"listening"|"speaking"|"error">("idle");
  const [caption,setCaption]=useState(""),[turns,setTurns]=useState<Turn[]>([]),[pending,setPending]=useState<Pending|null>(null),[notice,setNotice]=useState("");
  useEffect(()=>{try{const v=JSON.parse(sessionStorage.getItem(KEY)||"[]");if(Array.isArray(v))setTurns(v.slice(-60));}catch{};return()=>{session.current?.close();session.current=null;};},[]);
+ useEffect(()=>{
+  if(!session.current)return;
+  const next=reportContext.trim();
+  session.current.sendMessage(next? "The operator switched the open Rivali report. Use this NEW report as the sole source for report findings. Do not mix sessions. "+next.slice(0,11000):"The operator closed the report. Do not rely on a previously opened report.");
+ },[reportContext]);
  function remember(role:Turn["role"],text:string){const value=text.trim();if(!value)return;setTurns(old=>{const next=[...old,{role,text:value}].slice(-60);try{sessionStorage.setItem(KEY,JSON.stringify(next));}catch{}return next;});}
  function commit(){
   if(!pending)return;
@@ -46,14 +52,14 @@ export function DougLiveVoice({context,trackId,karts,onSelectKart}:{context:stri
    const selectKart=tool({name:"select_kart",description:"Select an existing kart when the user asks to change or discuss a kart. Call before changing that kart's setup.",parameters:z.object({kart_id:z.string()}),execute:async({kart_id})=>{const kart=kartRef.current.find(k=>k.id===kart_id);if(!kart)return "Unknown kart. Ask the driver which kart.";selectRef.current(kart_id);return "Active kart now "+(kart.number||"unassigned")+" driven by "+(kart.driver||"unassigned")+". Continue our conversation."; }});
    const stageSetup=tool({name:"prepare_setup_change",description:"After gathering explicitly stated numeric or text kart setup settings, show an on-screen confirmation before saving. Never infer missing values. Use count of 5 lb ballast weights for ballast fields.",parameters:z.object({kart_id:z.string(),summary:z.string(),values:z.record(z.string(),z.string())}),execute:async({kart_id,summary,values})=>{if(!kartRef.current.some(k=>k.id===kart_id))return "Unknown kart, ask which kart.";const safe=Object.fromEntries(Object.entries(values).filter(([k,v])=>setupFields.includes(k)&&typeof v==="string"&&v.length<=150));if(!Object.keys(safe).length)return "No recognized setup values; ask for details.";setPending({kind:"setup",kartId:kart_id,summary,values:safe});return "Setup proposal displayed for approval. Ask operator to tap Confirm before it is saved."; }});
    const stageDebrief=tool({name:"prepare_driver_debrief",description:"Record driver feedback for the current kart and show a confirmation card. Include the observed handling and turn location if stated.",parameters:z.object({kart_id:z.string(),summary:z.string(),driver_words:z.string()}),execute:async({kart_id,summary,driver_words})=>{if(!kartRef.current.some(k=>k.id===kart_id))return "Unknown kart, ask which kart.";setPending({kind:"debrief",kartId:kart_id,summary,transcript:driver_words});return "Debrief prepared. Ask operator to confirm on screen to save."; }});
-   const agent=new RealtimeAgent({name:"Doug",voice:"cedar",tools:[selectKart,stageSetup,stageDebrief],instructions:`You are Doug, the Rivali dirt oval kart crew chief. Conversation is natural, continuous, short and direct. No modes. Infer instructions, driver debrief, setup debate or setup entry from speech. Explain or disagree with mechanical evidence, uncertainty and missing measurements. Five-pound ballast weights are discrete pieces. Never pretend telemetry or corner weights exist. Use select_kart to switch active kart, prepare_setup_change for setup writes, prepare_driver_debrief for debriefs. Ask operator to confirm on screen. Never say a save happened before confirmation. Do not modify the knowledge base. Existing kart IDs: ${JSON.stringify(karts)}. Track: ${context}. Conversation so far: ${recent}`});
+   const agent=new RealtimeAgent({name:"Doug",voice:"cedar",tools:[selectKart,stageSetup,stageDebrief],instructions:`You are Doug, the Rivali dirt oval kart crew chief. Conversation is natural, continuous, short and direct. No modes. Infer instructions, driver debrief, setup debate or setup entry from speech. Explain or disagree with mechanical evidence, uncertainty and missing measurements. Five-pound ballast weights are discrete pieces. Never pretend telemetry or corner weights exist. Use select_kart to switch active kart, prepare_setup_change for setup writes, prepare_driver_debrief for debriefs. Ask operator to confirm on screen. Never say a save happened before confirmation. Do not modify the knowledge base. Existing kart IDs: ${JSON.stringify(karts)}. Track: ${context}. ${reportRef.current?"REPORT CURRENTLY OPEN ON SCREEN (use this directly, do not pretend to see charts absent from it): "+reportRef.current.slice(0,11000):"No interpreted report is currently open; do not claim to have read one."} When a report is open, discuss its measured findings and uncertainty with the operator first. Ask what the driver felt before proposing setup changes, and do not treat report suggestions as approved setup modifications. Conversation so far: ${recent}`});
    const live=new RealtimeSession(agent,{model:"gpt-realtime-2.1"});
    live.on("audio_start",()=>setStatus("speaking"));live.on("audio_stopped",()=>setStatus("listening"));
    live.on("agent_end",(_context,_agent,output)=>{if(output){const answer=String(output);setCaption(answer);remember("doug",answer);}});
    live.on("transport_event",event=>{const e=event as {type?:string;transcript?:string};if(e.type==="conversation.item.input_audio_transcription.completed"&&e.transcript)remember("driver",e.transcript);});
    live.on("error",()=>{setStatus("error");setCaption("Voice connection interrupted. Tap again.");session.current?.close();session.current=null;});
    await live.connect({apiKey:payload.value});session.current=live;setStatus("listening");
-   live.sendMessage(recent?"Continue naturally from the earlier conversation. Ask how to help now.":"Greet me briefly as Doug and listen.");
+   live.sendMessage(reportRef.current?"I have the report on screen. Give me your quick take on the key finding and ask what Stephen felt in the kart.":recent?"Continue naturally from the earlier conversation. Ask how to help now.":"Greet me briefly as Doug and listen.");
   }catch(e){setStatus("error");setCaption(e instanceof Error?e.message:"Could not connect.");}
  }
  function end(){session.current?.close();session.current=null;setStatus("idle");setCaption("Call ended. Session history retained on this device.");}
@@ -61,6 +67,7 @@ export function DougLiveVoice({context,trackId,karts,onSelectKart}:{context:stri
  return <div className={styles.dougDock}>
  {pending&&<section className={styles.dougConfirm}><strong>{pending.kind==="setup"?"Confirm kart setup":"Confirm driver debrief"}</strong><p>{pending.summary}</p>{pending.values&&Object.entries(pending.values).map(([k,v])=><small key={k}>{k}: {v}</small>)}<div><button type="button" onClick={commit}>Confirm & Save</button><button type="button" onClick={()=>{setPending(null);setNotice("Discarded.");}}>Discard</button></div></section>}
  {notice&&<div className={styles.dougMinimalStatus}>{notice}</div>}
+ {reportContext&&<div className={styles.dougMinimalStatus}>Doug has the open report context. Talk through the findings together.</div>}
  <button type="button" className={styles.dougFab} disabled={status==="connecting"} onClick={()=>active?end():void start()}>{status==="connecting"?"Connecting...":active?"End Doug Call":"Talk to Doug"}</button>
  {(active||status==="error")&&!pending&&!notice&&<div className={styles.dougMinimalStatus}>{active?(status==="speaking"?"Doug speaking":"Listening"):"Connection error"}{status==="error"&&<small>{caption}</small>}</div>}
  </div>;
