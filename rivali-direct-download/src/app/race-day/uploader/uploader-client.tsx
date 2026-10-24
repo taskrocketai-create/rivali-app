@@ -51,10 +51,11 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
     else if(data)setReportTelemetry(data as Record<string,unknown>);
     else setReportError("Telemetry is not available for this session yet.");
   }
-  async function generateReport(id:string,tier:"standard"|"crew_chief"){
+  async function generateReport(id:string){
+    if(generatingReport)return;
     setGeneratingReport(true);setReportError("");
     try{
-      const response=await fetch("/api/race-day/report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId:id,tier})});
+      const response=await fetch("/api/race-day/report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId:id})});
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||"Report generation failed.");
       await inspectReport(id);await refreshSessions();
@@ -145,35 +146,49 @@ export function UploaderClient({tracks,racers,karts,sessions}:{tracks:Track[];ra
         <h2>Imported XRK reports</h2>
         {liveSessions.length===0?<p>No reports yet.</p>:liveSessions.map(item=><div key={item.id} className={styles.sessionRow}>
           <div><strong>{item.racers?.name??"Unassigned driver"}</strong> · {item.tracks?.name??"Track"}<small>{item.raw_file_name}</small></div>
-          <span>{item.status}</span><span>{item.lap_count??0} laps · best {item.best_lap_sec?.toFixed(3)??"Not established"}s</span>
+          <span>{item.status}</span><span>{item.lap_count??0} laps · best {item.best_lap_sec?item.best_lap_sec.toFixed(3)+"s":"Not established"}</span>
           <button type="button" disabled={item.status!=="completed"} onClick={()=>void inspectReport(item.id)}>View analysis</button>
         </div>)}
-        {selectedReport && <div className={styles.reportDetail}><h3>Session analysis</h3>
-          {reportError?<p>{reportError}</p>:!reportTelemetry?<p>Loading session telemetry...</p>:<>
-            <p><strong>Lap records:</strong> {Array.isArray(reportTelemetry.laps)?reportTelemetry.laps.length:"Unavailable"}</p>
-            <p><strong>Recorded channels:</strong> {Array.isArray(reportTelemetry.channel_manifest)?reportTelemetry.channel_manifest.join(", "):"Not recorded"}</p>
-            <p><strong>Analysis diagnostic:</strong> {String((reportTelemetry.corner_analysis as Record<string,unknown>|undefined)?.diagnostic??"No verified corner interpretation available")}</p>
-            <p><strong>Sector assignments:</strong> {String(((reportTelemetry.corner_analysis as Record<string,unknown>|undefined)?.sector_assignments as Record<string,unknown>|undefined)?.status??"Not evaluated")}</p>
-            {(()=>{const report=reportTelemetry.report_analysis as Record<string,unknown>|undefined;
-              const interpretation=report?.interpretation as Record<string,unknown>|undefined;
-              const facts=report?.facts as Record<string,unknown>|undefined;
-              return interpretation?<div style={{padding:"14px",border:"1px solid #53624b",borderRadius:10}}>
-                <h3>Rivali interpretation · {String(report?.tier??"standard").replaceAll("_"," ")}</h3>
-                <p><strong>Confidence:</strong> {String(report?.confidence??"Low")}</p>
-                {([["Summary","summary"],["What the data says","what_data_says"],["What it means","what_it_means"],["Possible causes","possible_causes"],["Confidence reasoning","confidence_reason"],["What to try","what_to_try"],["How to verify","how_to_verify"]] as const).map(([label,key])=>interpretation[key]?<p key={key}><strong>{label}:</strong> {String(interpretation[key])}</p>:null)}
-                <p><small>Timing: {String(facts?.lap_timing_diagnostic??"Unverified")} · Track: {String(facts?.corner_mapping_diagnostic??"Unverified")}</small></p>
-                <p>Original AiM report remains separate; Rivali does not substitute for Race Studio.</p>
-                <a href={`/race-day/uploader/report/${selectedReport}`} target="_blank" rel="noopener noreferrer" style={{color:"#e6f34c"}}>Open printable Rivali report</a>
-              </div>:<p>No Rivali interpreted report saved yet. Generate a draft below.</p>;
-            })()}
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
-              <button type="button" disabled={generatingReport} onClick={()=>void generateReport(selectedReport,"standard")}>Generate Standard draft</button>
-              <button type="button" disabled={generatingReport} onClick={()=>void generateReport(selectedReport,"crew_chief")}>Generate Crew Chief draft</button>
-              {liveSessions.find(s=>s.id===selectedReport)?.report_status==="pending_approval"&&
-                <button type="button" disabled={approvingReport||generatingReport} onClick={()=>void approveReport(selectedReport)}>Approve interpreted report</button>}
-            </div>
-            <p>Drafts remain private until operator approval. Payment is not required.</p>
-          </>}
+        {selectedReport && <div className={styles.reportDetail}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+            <h3>Rivali report</h3>
+            <button type="button" onClick={()=>{setSelectedReport(null);setReportTelemetry(null);setReportError("");}}>Close</button>
+          </div>
+          {reportError&&<p role="alert">{reportError}</p>}
+          {!reportTelemetry?<p>Loading session data…</p>:(()=>{
+            const report=reportTelemetry.report_analysis as Record<string,unknown>|undefined;
+            const content=report?.interpretation as Record<string,unknown>|undefined;
+            const record=liveSessions.find(s=>s.id===selectedReport);
+            const facts=report?.facts as Record<string,unknown>|undefined;
+            const verify=report?.verification as Record<string,unknown>|undefined;
+            const entries:[string,string][]=[["What the data says","what_data_says"],["What it means","what_it_means"],["Possible causes","possible_causes"],["Confidence reasoning","confidence_reason"],["What to try","what_to_try"],["How to verify","how_to_verify"]];
+            return <div style={{display:"grid",gap:14}}>
+              {content?<article style={{padding:18,border:"1px solid #718061",borderRadius:12}}>
+                <div style={{fontSize:12,letterSpacing:1,opacity:.8}}>RIVALI · QUICK READ</div>
+                <h3 style={{margin:"10px 0"}}>{String(content.summary||"Session interpretation")}</h3>
+                <p><strong>{record?.lap_count??"?"} laps</strong> · Best lap <strong>{record?.best_lap_sec?Number(record.best_lap_sec).toFixed(3)+"s":"Unverified"}</strong> · Confidence <strong>{String(report?.confidence||"low")}</strong></p>
+                <p><strong>What it means:</strong> {String(content.what_it_means||"Not established")}</p>
+                <div style={{padding:12,border:"1px solid #52664a",borderRadius:8}}>
+                  <strong>Doug recommends</strong><p>{String(content.what_to_try||"No setup adjustment is supported by the current evidence. Verify the missing measurements.")}</p>
+                </div>
+                {(Boolean(verify?.corner_mapping_incomplete)||Boolean(verify?.timing_provisional))&&<p style={{fontSize:13}}>Limits: {Boolean(verify?.corner_mapping_incomplete)?"Corner map incomplete. ":""}{Boolean(verify?.timing_provisional)?"Timing provisional.":""}</p>}
+                <details style={{marginTop:18}}>
+                  <summary style={{cursor:"pointer",fontWeight:800}}>Expand full report and technical evidence</summary>
+                  <div style={{paddingTop:14}}>
+                    {entries.map(([label,key])=>content[key]?<section key={key} style={{borderTop:"1px solid #405142",padding:"10px 0"}}><strong>{label}</strong><p style={{whiteSpace:"pre-line"}}>{String(content[key])}</p></section>:null)}
+                    <p style={{fontSize:12}}>Timing source: {String(facts?.lap_timing_diagnostic||"Unverified")}</p>
+                    <p style={{fontSize:12}}>Track: {String(facts?.corner_mapping_diagnostic||"Unverified")}</p>
+                    <p style={{fontSize:12}}>Original AiM report remains separate.</p>
+                    <a href={`/race-day/uploader/report/${selectedReport}`} style={{color:"#e6f34c"}}>Printable report / Save PDF</a>
+                  </div>
+                </details>
+              </article>:<p>No report generated for this session yet.</p>}
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                {record?.report_status!=="approved"&&record?.report_status!=="sent"&&<button type="button" disabled={generatingReport} onClick={()=>void generateReport(selectedReport)}>{generatingReport?"Generating report…":content?"Regenerate Rivali report":"Generate Rivali report"}</button>}
+                {content&&record?.report_status==="pending_approval"&&<button type="button" disabled={approvingReport||generatingReport} onClick={()=>void approveReport(selectedReport)}>{approvingReport?"Approving…":"Approve report"}</button>}
+              </div>
+            </div>;
+          })()}
         </div>}
       </div>}
     </section>}
