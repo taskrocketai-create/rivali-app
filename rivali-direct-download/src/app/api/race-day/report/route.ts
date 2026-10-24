@@ -16,6 +16,8 @@ export async function POST(request:Request){
  if(s.report_status==="approved"||s.report_status==="sent")return NextResponse.json({error:"Approved reports cannot be overwritten."},{status:409});
  const {data:t,error:tError}=await db.from("session_telemetry").select("laps,channel_manifest,corner_analysis,report_analysis").eq("session_id",id).eq("user_id",owner).maybeSingle();
  if(tError||!t)return NextResponse.json({error:"Telemetry has not been processed yet."},{status:409});
+ const previous=t.report_analysis as Record<string,unknown>|null;
+ if(tier==="standard"&&previous?.tier==="crew_chief")return NextResponse.json({error:"Crew Chief recommendations already exist; Standard will not overwrite them."},{status:409});
  const laps=(Array.isArray(t.laps)?t.laps:[]) as Lap[];
  const lapTimes=laps.map(x=>Number(x.lap_time_sec??x.duration_sec)).filter(x=>Number.isFinite(x)&&x>0);
  const best=Number(s.best_lap_sec),avg=Number(s.average_lap_sec);
@@ -39,7 +41,7 @@ export async function POST(request:Request){
   confidence_floor:confidence
  };
  if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:"OpenAI is not configured."},{status:503});
- const system=`You write RIVALI trackside dirt oval kart telemetry report SUPPLEMENTS, never claim to reproduce the original AiM Race Studio report. Ground every statement in the supplied measured data; separate facts, plain-language meaning, possible causes, and uncertainty. Do not assert causes from missing channels. If timing packet status or lap alignment is unverified, explicitly label lap times as provisional and do not use raw average as representative pace if outlaps/slow laps may be included. If track turns or groove are unmapped, do NOT diagnose specific corner, turn-in, apex, or exit. If setup was not verified for this run, do not attribute lap differences to it. A sheet-recorded weight is not proof of trackside weighing. Never invent mph, handling issues, sensor channels, weather, precision or driver feedback. Standard tier must remain neutral: no adjustments, tests or prescriptions. Crew chief tier can suggest a conservative evidence-based NEXT TEST only when evidence supports it; otherwise specify what measurements are needed before advice. Include confidence with explicit reasons. Keep concise for trackside reading.`;
+ const system=`You write RIVALI trackside dirt oval kart telemetry report SUPPLEMENTS, never claim to reproduce the original AiM Race Studio report. Ground every statement in the supplied measured data; separate facts, plain-language meaning, possible causes, and uncertainty. Do not assert causes from missing channels. If timing packet status or lap alignment is unverified, explicitly label lap times as provisional and do not use raw average as representative pace if outlaps/slow laps may be included. If track turns or groove are unmapped, do NOT diagnose specific corner, turn-in, apex, or exit. If setup was not verified for this run, do not attribute lap differences to it. A sheet-recorded weight is not proof of trackside weighing. Never invent mph, handling issues, sensor channels, weather, precision or driver feedback. Standard tier must remain neutral: no adjustments, tests or prescriptions. Crew Chief tier must give specific next checks or controlled tests linked to the measured evidence. If chassis adjustment is not supported, explicitly say no adjustment is justified and specify what to measure before recommending a change. Do not invent stagger, spindle washer or weight adjustments. Include confidence with explicit reasons. Keep concise for trackside reading.`;
  const upstream=await fetch("https://api.openai.com/v1/responses",{
   method:"POST",headers:{"Authorization":`Bearer ${process.env.OPENAI_API_KEY}`,"Content-Type":"application/json"},
   body:JSON.stringify({model:"gpt-4.1-mini",store:false,max_output_tokens:1900,
@@ -62,14 +64,16 @@ export async function POST(request:Request){
  .filter((x:{type:string})=>x.type==="output_text").map((x:{text?:string})=>x.text??"").join("");
  let ai:Record<string,string>;
  try{ai=JSON.parse(raw);}catch{return NextResponse.json({error:"Invalid interpretation. Nothing was published."},{status:502});}
+ const nextChecks=unmapped?"Verify the track start/finish and turn markers against GPS; verify lap numbering in Race Studio; record the actual stagger, pressure and scale readings for this kart. No chassis adjustment is justified yet.":"Run a controlled baseline comparison with verified setup and lap timing, then change only one measured variable if evidence supports it.";
+ const verificationSteps="Compare lap timestamps with Race Studio, document actual setup values rather than planned values, and compare clean laps in repeatable conditions.";
  const report={version:1,tier,generated_at:new Date().toISOString(),source:"AiM XRK parsed telemetry",confidence,
   verification:{timing_provisional:limitedTiming,corner_mapping_incomplete:unmapped,setup_unverified_for_run:true},
   facts,interpretation:{
    summary:String(ai.summary??"").slice(0,900),what_data_says:String(ai.what_data_says??"").slice(0,1500),
    what_it_means:String(ai.what_it_means??"").slice(0,1500),possible_causes:String(ai.possible_causes??"").slice(0,1500),
    confidence_reason:String(ai.confidence_reason??"").slice(0,900),
-   what_to_try:tier==="crew_chief"?String(ai.what_to_try??"").slice(0,1100):"",
-   how_to_verify:tier==="crew_chief"?String(ai.how_to_verify??"").slice(0,1100):""
+   what_to_try:tier==="crew_chief"?String(confidence==="low"?nextChecks:(ai.what_to_try||nextChecks)).slice(0,1100):"",
+   how_to_verify:tier==="crew_chief"?String(confidence==="low"?verificationSteps:(ai.how_to_verify||verificationSteps)).slice(0,1100):""
   },original_aim_report:"Not included; attach original AiM report separately if available."
  };
  const {error:saveError}=await db.from("session_telemetry").update({report_analysis:report}).eq("session_id",id).eq("user_id",owner);

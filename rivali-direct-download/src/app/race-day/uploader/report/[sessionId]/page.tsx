@@ -62,6 +62,7 @@ export default async function SessionReportPage({params}:{params:Promise<{sessio
        <div style={{flex:"1 1 110px"}}><small>CONFIDENCE</small><div style={{fontSize:23,fontWeight:800,textTransform:"capitalize"}}>{String(r?.confidence??"low")}</div></div>
       </div>
       <p style={{marginBottom:0,fontSize:14}}><strong>Bottom line:</strong> {String(i.what_it_means??"Not established").slice(0,310)}{String(i.what_it_means??"").length>310?"…":""}</p>
+      {r?.tier==="crew_chief"&&<div style={{marginTop:15,padding:13,background:"#fff"}}><strong>Doug’s recommended next steps</strong><p style={{margin:"8px 0",fontSize:14,lineHeight:1.5}}>{String(i.what_to_try||"No supported recommendation yet.")}</p><small>How to verify: {String(i.how_to_verify||"Confirm measurements before changes.")}</small></div>}
     </section>
     <p style={{fontSize:13,fontWeight:700}}>Key limits: {verification?.corner_mapping_incomplete?"Corner map incomplete. ":""}{verification?.setup_unverified_for_run?"Setup not verified for this run. ":""}{verification?.timing_provisional?"Timing provisional.":""}</p>
     <details style={{border:"1px solid #d5dbd0",borderRadius:10,padding:"15px",marginTop:22}}>
