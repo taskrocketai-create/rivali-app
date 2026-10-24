@@ -1,0 +1,14 @@
+# Rivali trackside telemetry processor. Deploy as ONE always-on background worker.
+# Supabase credentials must be entered as Render secret environment variables.
+services:
+  - type: worker
+    name: rivali-xrk-worker
+    runtime: docker
+    plan: starter
+    dockerContext: ./rivali-direct-download/worker
+    dockerfilePath: ./rivali-direct-download/worker/Dockerfile
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
