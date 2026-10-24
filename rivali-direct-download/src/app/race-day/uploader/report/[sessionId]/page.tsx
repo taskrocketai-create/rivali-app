@@ -53,16 +53,28 @@ export default async function SessionReportPage({params}:{params:Promise<{sessio
      <strong>{s.report_status==="approved"?"OPERATOR APPROVED":"DRAFT · NOT APPROVED FOR DISTRIBUTION"}</strong>
      <p style={{margin:"7px 0 0",fontSize:13}}>The original AiM / Race Studio report is a separate source document and is not embedded here. Telemetry-derived results must be verified against the original when available.</p>
     </section>
-    <h2 style={{fontSize:20}}>Summary</h2>
-    <p style={{lineHeight:1.6}}>{String(i.summary??"Not available")}</p>
-    <h2 style={{fontSize:20,marginTop:25}}>Recorded evidence</h2>
-    <p style={{lineHeight:1.6,fontSize:14}}>File: {s.raw_file_name}. Recorded laps: {s.lap_count??"Not verified"}. Fastest stored lap: {s.best_lap_sec??"Not established"} seconds. Timing source: {String(facts?.lap_timing_source??"Unknown")}.</p>
-    {verification?.timing_provisional&&<p style={{color:"#993b1e",fontWeight:700,fontSize:13}}>Lap timing is provisional and requires Race Studio verification.</p>}
-    {verification?.corner_mapping_incomplete&&<p style={{color:"#993b1e",fontWeight:700,fontSize:13}}>Track corner mapping is incomplete. Corner-specific handling claims are not supported.</p>}
-    {verification?.setup_unverified_for_run&&<p style={{fontSize:13}}>The recorded baseline setup was not verified as installed for this run.</p>}
+    <section aria-label="Quick read" style={{background:"#f5f6ef",borderRadius:10,padding:"20px",marginBottom:16}}>
+      <div style={{fontSize:11,fontWeight:800,letterSpacing:2,color:"#6b752e"}}>QUICK READ · 30 SECONDS</div>
+      <h2 style={{fontSize:23,margin:"9px 0"}}>{String(i.summary??"Analysis not available")}</h2>
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:16}}>
+       <div style={{flex:"1 1 110px"}}><small>LAPS</small><div style={{fontSize:23,fontWeight:800}}>{s.lap_count??"?"}</div></div>
+       <div style={{flex:"1 1 110px"}}><small>BEST LAP</small><div style={{fontSize:23,fontWeight:800}}>{s.best_lap_sec?Number(s.best_lap_sec).toFixed(3)+"s":"Unverified"}</div></div>
+       <div style={{flex:"1 1 110px"}}><small>CONFIDENCE</small><div style={{fontSize:23,fontWeight:800,textTransform:"capitalize"}}>{String(r?.confidence??"low")}</div></div>
+      </div>
+      <p style={{marginBottom:0,fontSize:14}}><strong>Bottom line:</strong> {String(i.what_it_means??"Not established").slice(0,310)}{String(i.what_it_means??"").length>310?"…":""}</p>
+    </section>
+    <p style={{fontSize:13,fontWeight:700}}>Key limits: {verification?.corner_mapping_incomplete?"Corner map incomplete. ":""}{verification?.setup_unverified_for_run?"Setup not verified for this run. ":""}{verification?.timing_provisional?"Timing provisional.":""}</p>
+    <details style={{border:"1px solid #d5dbd0",borderRadius:10,padding:"15px",marginTop:22}}>
+     <summary style={{fontWeight:800,cursor:"pointer",fontSize:17}}>Expand full report and supporting evidence</summary>
+     <h2 style={{fontSize:20,marginTop:22}}>Recorded evidence</h2>
+     <p style={{lineHeight:1.6,fontSize:14}}>File: {s.raw_file_name}. Recorded laps: {s.lap_count??"Not verified"}. Fastest stored lap: {s.best_lap_sec??"Not established"} seconds. Timing source: {String(facts?.lap_timing_source??"Unknown")}.</p>
+    {Boolean(verification?.timing_provisional)&&<p style={{color:"#993b1e",fontWeight:700,fontSize:13}}>Lap timing is provisional and requires Race Studio verification.</p>}
+    {Boolean(verification?.corner_mapping_incomplete)&&<p style={{color:"#993b1e",fontWeight:700,fontSize:13}}>Track corner mapping is incomplete. Corner-specific handling claims are not supported.</p>}
+    {Boolean(verification?.setup_unverified_for_run)&&<p style={{fontSize:13}}>The recorded baseline setup was not verified as installed for this run.</p>}
     {sections.filter(([,key])=>Boolean(i[key])).map(([label,key])=><section key={key} style={{borderTop:"1px solid #ddd",paddingTop:12,marginTop:21}}>
       <h2 style={{fontSize:18}}>{label}</h2><p style={{lineHeight:1.6,whiteSpace:"pre-line"}}>{String(i[key])}</p>
     </section>)}
+    </details>
     <footer style={{borderTop:"1px solid #aaa",paddingTop:12,marginTop:30,fontSize:11,color:"#555"}}>
      RIVALI · Operator review required · Original AiM data remains the technical source of record
     </footer>
