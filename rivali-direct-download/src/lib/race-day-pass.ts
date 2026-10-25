@@ -28,3 +28,13 @@ export async function resolveRaceDayPass(admin: SupabaseClient, token: string | 
   if (new Date(data.expires_at).getTime() < Date.now()) return null;
   return data;
 }
+
+// Native clients use the same hashed, expiring Race Day credential as web cookies.
+export function raceDayToken(request: Request, cookieToken?: string) {
+  const authorization = request.headers.get("authorization");
+  if (authorization !== null) {
+    const match = /^Bearer ([A-Za-z0-9_-]{43})$/i.exec(authorization);
+    return match?.[1];
+  }
+  return cookieToken;
+}

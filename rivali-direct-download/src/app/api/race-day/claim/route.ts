@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PASS_COOKIE, createPassToken, hashPassToken, normalizePassCode } from "@/lib/race-day-pass";
@@ -36,6 +35,7 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({
     ok: true,
+    ...(request.headers.get("x-rivali-native") === "1" ? { accessToken: token, expiresAt: pass.expires_at } : {}),
     pass: {
       className: pass.class_name,
       driverName: pass.driver_name,
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       raceDay: pass.race_days,
     },
   });
+  response.headers.set("Cache-Control", "no-store");
   response.cookies.set(PASS_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
