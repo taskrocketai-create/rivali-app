@@ -193,8 +193,10 @@ def process_one(client,job_id_override=None):
                 save_grounded_recommendation(client, session_id, owner_id)
         except Exception as recommendation_error:
             print(f"recommendation skipped for {session_id}: {recommendation_error}", flush=True)
-        if session.get("race_day_pass_id"):
-            client.table("sessions").update({"report_status":"pending_approval"}).eq("id",session_id).execute()
+        # Every processed session must leave the processing state, including
+        # uploads made from the race-shop dashboard without a RaceDay pass.
+        # Approval safeguards remain enforced by the report review UI/API.
+        client.table("sessions").update({"report_status":"pending_approval"}).eq("id",session_id).execute()
         client.table("processing_jobs").update({"status":"completed","error":None}).eq("id",job_id).execute();print(f"completed session {session_id}",flush=True)
     except Exception as exc:
         message=str(exc)[:2000];client.table("sessions").update({"status":"failed","parse_error":message}).eq("id",session_id).execute();client.table("processing_jobs").update({"status":"failed","error":message}).eq("id",job_id).execute();print(f"failed session {session_id}: {message}",flush=True)
